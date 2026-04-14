@@ -3,6 +3,7 @@ import Image from "next/image";
 import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
 import { getCaseListData, type CaseFilter } from "@/lib/cases";
+import { getServerAuthUser } from "@/lib/supabase/server-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,11 @@ export default async function CasesPage({
 }) {
   const params = await searchParams;
   const activeFilter = normalizeFilter(params.filter);
-  const caseItems = await getCaseListData(activeFilter);
+  const user = await getServerAuthUser();
+  const caseItems = await getCaseListData(activeFilter, user?.id);
 
   return (
-    <SiteShell footerNote="案例库是 MVP 的内容中台，点赞解锁、Prompt 复制和榜单都从这里生长出来。">
+    <SiteShell footerNote="案例库是当前内容中台，点赞解锁、Prompt 复制和榜单都从这里生长出来。">
       <section className="mb-7 grid gap-4 sm:mb-8">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
           Case library
@@ -114,7 +116,12 @@ export default async function CasesPage({
               </div>
 
               <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
-                <LikeButton caseSlug={item.slug} initialCount={item.likedCount} />
+                <LikeButton
+                  caseSlug={item.slug}
+                  initialCount={item.likedCount}
+                  initialHasLiked={Boolean(item.viewerHasLiked)}
+                  initialIsLoggedIn={Boolean(user)}
+                />
                 <Link
                   href={`/cases/${item.slug}`}
                   className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] px-4 text-sm font-semibold transition hover:-translate-y-0.5"

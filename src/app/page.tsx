@@ -3,12 +3,14 @@ import Image from "next/image";
 import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
 import { getHomeData } from "@/lib/cases";
+import { getServerAuthUser } from "@/lib/supabase/server-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const user = await getServerAuthUser();
   const { featuredCase, favoriteLeaderboard, stabilityLeaderboard } =
-    await getHomeData();
+    await getHomeData(user?.id);
 
   return (
     <SiteShell footerNote="登录、点赞、榜单和案例详情已联动，选择方向后可直接进入验证。">
@@ -107,7 +109,12 @@ export default async function Home() {
                     喜爱分 {item.favoriteScore} · 点赞 {item.likedCount}
                   </p>
                 </div>
-                <LikeButton caseSlug={item.slug} initialCount={item.likedCount} />
+                <LikeButton
+                  caseSlug={item.slug}
+                  initialCount={item.likedCount}
+                  initialHasLiked={Boolean(item.viewerHasLiked)}
+                  initialIsLoggedIn={Boolean(user)}
+                />
               </div>
             ))}
           </div>

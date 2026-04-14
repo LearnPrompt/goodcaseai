@@ -9,13 +9,21 @@ export function PromptPanel({
   caseSlug,
   promptPreview,
   promptFull,
+  initialIsLoggedIn,
+  initialHasLiked,
 }: {
   caseSlug: string;
   promptPreview: string;
   promptFull: string;
+  initialIsLoggedIn: boolean;
+  initialHasLiked: boolean;
 }) {
   const { user, isReady, isConfigured } = useAuth();
-  const [hasLiked, setHasLiked] = useState(false);
+  const [hasLiked, setHasLiked] = useState(initialHasLiked);
+
+  useEffect(() => {
+    setHasLiked(initialHasLiked);
+  }, [initialHasLiked]);
 
   const syncState = useCallback(async () => {
     const supabase = getBrowserSupabaseClient();
@@ -74,7 +82,8 @@ export function PromptPanel({
     };
   }, [caseSlug, syncState]);
 
-  const canUnlock = Boolean(user) && hasLiked && isConfigured;
+  const isLoggedIn = isReady ? Boolean(user) : initialIsLoggedIn;
+  const canUnlock = isLoggedIn && hasLiked;
   const hasExpandedPrompt = promptFull.trim() !== promptPreview.trim();
 
   return (
@@ -106,12 +115,12 @@ export function PromptPanel({
           当前未配置 Supabase，无法验证点赞解锁状态。
         </p>
       ) : null}
-      {isConfigured && !user ? (
+      {isConfigured && !isLoggedIn ? (
         <p className="mt-4 text-xs leading-5 text-[var(--muted)]">
           登录并点赞后，这里会显示完整 Prompt。
         </p>
       ) : null}
-      {isConfigured && user && !hasLiked ? (
+      {isConfigured && isLoggedIn && !hasLiked ? (
         <p className="mt-4 text-xs leading-5 text-[var(--muted)]">
           你已登录，点一下爱心即可解锁完整 Prompt。
         </p>

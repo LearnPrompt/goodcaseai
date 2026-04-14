@@ -28,10 +28,10 @@ export function SiteHeader() {
       <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-6">
         <Link href="/" className="flex items-baseline gap-3">
           <span className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            MVP
+            GoodCase
           </span>
           <span className="text-xs tracking-[0.2em] text-[var(--ink)]">
-            AI CASE HUB
+            GOODCASE.AI
           </span>
         </Link>
 

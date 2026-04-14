@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Case Hub",
+  title: "GoodCase.ai",
   description:
-    "案例驱动的 AI 模型评测社区：登录后点赞解锁 Prompt，再看 AI 喜爱榜和 AI 稳定榜。",
+    "creator-first 的 AI 案例学习平台：先看真实 Case，再决定用哪个模型；登录后点赞解锁完整 Prompt。",
 };
 
 export default function RootLayout({

@@ -13,17 +13,29 @@ import { getBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 export function LikeButton({
   caseSlug,
   initialCount,
+  initialHasLiked = false,
+  initialIsLoggedIn = false,
 }: {
   caseSlug: string;
   initialCount: number;
+  initialHasLiked?: boolean;
+  initialIsLoggedIn?: boolean;
 }) {
   const { user, isReady, isConfigured } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [likedCount, setLikedCount] = useState(initialCount);
-  const [hasLiked, setHasLiked] = useState(false);
+  const [hasLiked, setHasLiked] = useState(initialHasLiked);
   const [isPending, setIsPending] = useState(false);
   const [errorText, setErrorText] = useState("");
+
+  useEffect(() => {
+    setLikedCount(initialCount);
+  }, [initialCount]);
+
+  useEffect(() => {
+    setHasLiked(initialHasLiked);
+  }, [initialHasLiked]);
 
   const syncState = useCallback(async () => {
     const supabase = getBrowserSupabaseClient();
@@ -96,7 +108,13 @@ export function LikeButton({
     };
   }, [caseSlug, syncState]);
 
+  const isLoggedIn = isReady ? Boolean(user) : initialIsLoggedIn;
+
   async function handleClick() {
+    if (!isReady) {
+      return;
+    }
+
     if (!user) {
       const next = encodeURIComponent(pathname || "/");
       router.push(`/login?next=${next}`);
@@ -136,7 +154,7 @@ export function LikeButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={isPending || !isConfigured}
+        disabled={isPending || !isConfigured || !isReady}
         className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-70 ${
           hasLiked
             ? "border-[var(--accent)] bg-[rgba(203,92,47,0.14)] text-[var(--ink)]"
@@ -148,7 +166,7 @@ export function LikeButton({
         <span>
           {!isConfigured
             ? "需配置 Supabase"
-            : user
+            : isLoggedIn
               ? hasLiked
                 ? "已点赞"
                 : "点赞解锁"

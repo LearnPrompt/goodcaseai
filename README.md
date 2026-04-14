@@ -1,6 +1,6 @@
-# AI Case Hub MVP
+# GoodCase.ai
 
-一个面向 `AI 喜爱榜 + AI 稳定榜` 的初步版本。
+一个面向 `AI 喜爱榜 + AI 稳定榜` 的 creator-first AI 案例学习平台。
 
 当前已经完成：
 
@@ -42,7 +42,7 @@ npm run dev
 ```bash
 git remote add origin <your-private-repo-url>
 git add .
-git commit -m "feat: bootstrap AI Case Hub MVP"
+git commit -m "feat: bootstrap GoodCase.ai"
 git push -u origin main
 ```
 

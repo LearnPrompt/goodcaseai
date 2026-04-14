@@ -4,6 +4,7 @@ import { LikeButton } from "@/components/like-button";
 import { PromptPanel } from "@/components/prompt-panel";
 import { CaseMedia } from "@/components/case-media";
 import { getCaseDetailData } from "@/lib/cases";
+import { getServerAuthUser } from "@/lib/supabase/server-auth";
 
 function modelCardTone(index: number) {
   if (index === 0) return "border-[rgba(203,92,47,0.38)] bg-[rgba(203,92,47,0.08)]";
@@ -35,7 +36,8 @@ export default async function CaseDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const item = await getCaseDetailData(slug);
+  const user = await getServerAuthUser();
+  const item = await getCaseDetailData(slug, user?.id);
 
   if (!item) {
     notFound();
@@ -59,7 +61,12 @@ export default async function CaseDetailPage({
           </h1>
           <p className="max-w-3xl text-sm leading-7 text-[var(--muted)] sm:text-base sm:leading-8">{item.summary}</p>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <LikeButton caseSlug={item.slug} initialCount={item.likedCount} />
+            <LikeButton
+              caseSlug={item.slug}
+              initialCount={item.likedCount}
+              initialHasLiked={Boolean(item.viewerHasLiked)}
+              initialIsLoggedIn={Boolean(user)}
+            />
             <div className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] bg-white/60 px-4 text-sm">
               复刻 {item.remakeCount}
             </div>
@@ -82,6 +89,8 @@ export default async function CaseDetailPage({
           caseSlug={item.slug}
           promptPreview={item.promptPreview}
           promptFull={item.promptFull}
+          initialIsLoggedIn={Boolean(user)}
+          initialHasLiked={Boolean(item.viewerHasLiked)}
         />
 
         <article

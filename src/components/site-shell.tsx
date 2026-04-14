@@ -13,8 +13,8 @@ export function SiteShell({
       <SiteHeader />
       <main className="px-4 py-7 md:px-6 md:py-8">{children}</main>
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] px-4 py-5 text-sm text-[var(--muted)] md:px-6">
-        <span>AI Case Hub MVP</span>
-        <span>{footerNote ?? "登录、点赞、媒体分发和双榜单已经纳入第一版设计。"}</span>
+        <span>GoodCase.ai</span>
+        <span>{footerNote ?? "登录、点赞、媒体分发和双榜单已经纳入当前可操作版本。"}</span>
       </footer>
     </div>
   );

@@ -1,6 +1,6 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
-import { createClient } from "@supabase/supabase-js";
+import { getServerSupabaseClient } from "@/lib/supabase/server-client";
 import {
   caseItems,
   favoriteLeaderboard,
@@ -28,6 +28,8 @@ type DbCaseRow = {
   cost_band: string;
 };
 
+type ServerSupabase = Awaited<ReturnType<typeof getServerSupabaseClient>>;
+
 const MEDIA_PLACEHOLDER = "/media/placeholder.png";
 
 export type CaseFilter = "all" | "video" | "web" | "image";
@@ -38,22 +40,6 @@ function applyCaseFilter(list: CaseItem[], filter: CaseFilter) {
   }
 
   return list.filter((item) => item.category === filter);
-}
-
-function getServerSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    return null;
-  }
-
-  return createClient(url, anonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
 }
 
 function normalizeCategory(value: string): CaseItem["category"] {
@@ -103,10 +89,7 @@ async function resolveUsableMediaPath(rawPath: string | null) {
   }
 }
 
-async function getLikeCountByCaseId(
-  supabase: ReturnType<typeof getServerSupabaseClient>,
-  caseId: string
-) {
+async function getLikeCountByCaseId(supabase: ServerSupabase, caseId: string) {
   if (!supabase) {
     return 0;
   }
@@ -123,14 +106,42 @@ async function getLikeCountByCaseId(
   return result.count;
 }
 
+async function getViewerLikedCaseIds(
+  supabase: ServerSupabase,
+  caseIds: string[],
+  viewerUserId?: string | null
+) {
+  if (!supabase || !viewerUserId || caseIds.length === 0) {
+    return new Set<string>();
+  }
+
+  const { data, error } = await supabase
+    .from("case_likes")
+    .select("case_id")
+    .eq("user_id", viewerUserId)
+    .in("case_id", caseIds);
+
+  if (error || !data || data.length === 0) {
+    return new Set<string>();
+  }
+
+  return new Set(
+    data
+      .map((item) => item.case_id)
+      .filter((caseId): caseId is string => typeof caseId === "string" && caseId.length > 0)
+  );
+}
+
 async function mapDbCaseRowToCaseItem(
-  supabase: ReturnType<typeof getServerSupabaseClient>,
-  row: DbCaseRow
+  supabase: ServerSupabase,
+  row: DbCaseRow,
+  viewerLikedCaseIds: Set<string>
 ): Promise<CaseItem> {
   const likedCount = await getLikeCountByCaseId(supabase, row.id);
   const mediaUrl = await resolveUsableMediaPath(row.media_url);
   const posterUrl = await resolveUsableMediaPath(row.poster_url);
   const mediaType = normalizeMediaType(row.media_kind, row.media_url);
+  const viewerHasLiked = viewerLikedCaseIds.has(row.id);
 
   return {
     slug: row.slug,
@@ -153,11 +164,15 @@ async function mapDbCaseRowToCaseItem(
         ? row.recommended_models
         : ["待补充模型"],
     costBand: normalizeCostBand(row.cost_band),
+    viewerHasLiked,
   };
 }
 
-async function fetchPublishedCases(filter: CaseFilter = "all"): Promise<CaseItem[] | null> {
-  const supabase = getServerSupabaseClient();
+async function fetchPublishedCases(
+  filter: CaseFilter = "all",
+  viewerUserId?: string | null
+): Promise<CaseItem[] | null> {
+  const supabase = await getServerSupabaseClient();
   if (!supabase) {
     return null;
   }
@@ -180,18 +195,23 @@ async function fetchPublishedCases(filter: CaseFilter = "all"): Promise<CaseItem
     return null;
   }
 
-  return Promise.all(
-    (data as DbCaseRow[]).map((item) => mapDbCaseRowToCaseItem(supabase, item))
+  const rows = data as DbCaseRow[];
+  const viewerLikedCaseIds = await getViewerLikedCaseIds(
+    supabase,
+    rows.map((item) => item.id),
+    viewerUserId
   );
+
+  return Promise.all(rows.map((item) => mapDbCaseRowToCaseItem(supabase, item, viewerLikedCaseIds)));
 }
 
-export async function getCaseListData(filter: CaseFilter = "all") {
-  const fromDb = await fetchPublishedCases(filter);
+export async function getCaseListData(filter: CaseFilter = "all", viewerUserId?: string | null) {
+  const fromDb = await fetchPublishedCases(filter, viewerUserId);
   return fromDb || applyCaseFilter(caseItems, filter);
 }
 
-export async function getCaseDetailData(slug: string) {
-  const supabase = getServerSupabaseClient();
+export async function getCaseDetailData(slug: string, viewerUserId?: string | null) {
+  const supabase = await getServerSupabaseClient();
   if (supabase) {
     const { data, error } = await supabase
       .from("cases")
@@ -203,7 +223,8 @@ export async function getCaseDetailData(slug: string) {
       .maybeSingle();
 
     if (!error && data) {
-      return mapDbCaseRowToCaseItem(supabase, data as DbCaseRow);
+      const viewerLikedCaseIds = await getViewerLikedCaseIds(supabase, [data.id], viewerUserId);
+      return mapDbCaseRowToCaseItem(supabase, data as DbCaseRow, viewerLikedCaseIds);
     }
   }
 
@@ -211,7 +232,7 @@ export async function getCaseDetailData(slug: string) {
 }
 
 export async function getCaseSlugs() {
-  const supabase = getServerSupabaseClient();
+  const supabase = await getServerSupabaseClient();
   if (!supabase) {
     return caseItems.map((item) => item.slug);
   }
@@ -230,8 +251,8 @@ export async function getCaseSlugs() {
     .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
 }
 
-export async function getHomeData() {
-  const list = await getCaseListData();
+export async function getHomeData(viewerUserId?: string | null) {
+  const list = await getCaseListData("all", viewerUserId);
 
   const featuredCase = list[0] || caseItems[0];
   const favorite = [...list].sort((a, b) => b.favoriteScore - a.favoriteScore).slice(0, 10);
