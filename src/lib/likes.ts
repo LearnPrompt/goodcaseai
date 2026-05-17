@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export const LIKES_UPDATED_EVENT = "aicasehub:likes-updated";
+export const LIKES_UPDATED_EVENT = "goodcaseai:likes-updated";
 
 const caseIdCache = new Map<string, string>();
 

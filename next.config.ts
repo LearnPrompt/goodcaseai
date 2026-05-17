@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  distDir: "/tmp/aicasehub-next",
+  distDir: "/tmp/goodcaseai-next",
 };
 
 export default nextConfig;
