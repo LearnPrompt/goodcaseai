@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
 import { PromptPanel } from "@/components/prompt-panel";
 import { CaseMedia } from "@/components/case-media";
-import { getCaseDetailData } from "@/lib/cases";
+import { getCaseDetailData, getCreatorForCase } from "@/lib/cases";
 import { getServerAuthUser } from "@/lib/supabase/server-auth";
 
 function modelCardTone(index: number) {
@@ -28,6 +29,12 @@ function modelEffectText(model: string, category: string) {
   return `${model}：文本约束执行更稳定，适合先定结构再优化表达。`;
 }
 
+function costBandLabel(costBand: "low" | "medium" | "high") {
+  if (costBand === "low") return "低";
+  if (costBand === "medium") return "中";
+  return "高";
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function CaseDetailPage({
@@ -37,14 +44,17 @@ export default async function CaseDetailPage({
 }) {
   const { slug } = await params;
   const user = await getServerAuthUser();
-  const item = await getCaseDetailData(slug, user?.id);
+  const [item, creator] = await Promise.all([
+    getCaseDetailData(slug, user?.id),
+    getCreatorForCase(slug, user?.id),
+  ]);
 
   if (!item) {
     notFound();
   }
 
   return (
-    <SiteShell footerNote="Case 详情页是点赞解锁、Prompt 展示和多模型对比最重要的承载页。">
+    <SiteShell footerNote="Case 详情页现在同时承接分层解锁、编辑判断与稳定复测阅读路径。">
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-start">
         <article className="flex min-w-0 flex-col gap-5 self-start">
           <div className="flex flex-wrap items-center gap-2">
@@ -52,8 +62,9 @@ export default async function CaseDetailPage({
               {item.category}
             </span>
             <span className="rounded-full bg-black/5 px-3 py-1 text-xs">{item.source}</span>
-            <span className="rounded-full bg-black/5 px-3 py-1 text-xs">
-              作者 {item.creator}
+            <span className="rounded-full bg-black/5 px-3 py-1 text-xs">作者 {item.creator}</span>
+            <span className="rounded-full bg-[rgba(35,100,170,0.12)] px-3 py-1 text-xs font-semibold text-[var(--accent-2)]">
+              传播势能 {item.spreadScore}
             </span>
           </div>
           <h1 className="max-w-[12ch] font-[family-name:var(--font-display)] text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl lg:text-6xl">
@@ -85,53 +96,113 @@ export default async function CaseDetailPage({
       </section>
 
       <section className="mt-6 grid gap-5 xl:mt-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <PromptPanel
-          caseSlug={item.slug}
-          promptPreview={item.promptPreview}
-          promptFull={item.promptFull}
-          initialIsLoggedIn={Boolean(user)}
-          initialHasLiked={Boolean(item.viewerHasLiked)}
-        />
+        <div className="grid gap-5">
+          <PromptPanel
+            caseSlug={item.slug}
+            promptPreview={item.promptPreview}
+            promptFull={item.promptFull}
+            promptPublicNote={item.promptPublicNote}
+            promptLoginNotes={item.promptLoginNotes}
+            promptContributionNotes={item.promptContributionNotes}
+            initialIsLoggedIn={Boolean(user)}
+            initialHasLiked={Boolean(item.viewerHasLiked)}
+          />
 
-        <article
-          id="model-effects"
-          className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)] sm:p-6"
-        >
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            Model effects
-          </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl leading-[0.95] tracking-[-0.04em] sm:text-4xl">
-            稳定榜直达区：快速看推荐模型与预期效果。
-          </h2>
-          <div className="mt-5 grid gap-3">
-            {item.recommendedModels.map((model, index) => (
-              <article
-                key={model}
-                className={`rounded-[16px] border px-4 py-4 ${modelCardTone(index)}`}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="font-semibold text-[var(--ink)]">{model}</h3>
-                  <span className="rounded-full border border-[var(--line)] bg-white/70 px-3 py-1 text-xs">
-                    稳定参考 {Math.max(60, item.stabilityScore - index)}
-                  </span>
-                </div>
-                <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                  {modelEffectText(model, item.category)}
+          <article className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)] sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">Editor&apos;s note</p>
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl leading-[0.95] tracking-[-0.04em] sm:text-4xl">
+              为什么这条案例值得继续学，而不只是看一眼就走。
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-[var(--muted)]">{item.editorNote}</p>
+            <div className="mt-4 rounded-[18px] border border-[var(--line)] bg-white/60 p-4 text-sm leading-7 text-[var(--muted)]">
+              <p className="font-semibold text-[var(--ink)]">当前信号拆解</p>
+              <p className="mt-2">传播势能 {item.spreadScore} / 喜爱分 {item.favoriteScore} / 稳定分 {item.stabilityScore}</p>
+              <p className="mt-2 text-xs leading-5">{item.spreadScoreNote}</p>
+            </div>
+          </article>
+        </div>
+
+        <div className="grid gap-5">
+          <article
+            id="model-effects"
+            className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)] sm:p-6"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">Model effects</p>
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl leading-[0.95] tracking-[-0.04em] sm:text-4xl">
+              稳定榜直达区：快速看推荐模型与预期效果。
+            </h2>
+            <div className="mt-5 grid gap-3">
+              {item.recommendedModels.map((model, index) => (
+                <article key={model} className={`rounded-[16px] border px-4 py-4 ${modelCardTone(index)}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="font-semibold text-[var(--ink)]">{model}</h3>
+                    <span className="rounded-full border border-[var(--line)] bg-white/70 px-3 py-1 text-xs">
+                      稳定参考 {Math.max(60, item.stabilityScore - index)}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{modelEffectText(model, item.category)}</p>
+                </article>
+              ))}
+            </div>
+            <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
+              成本档位：
+              <strong className="ml-2 text-[var(--ink)]">{costBandLabel(item.costBand)}</strong>
+            </p>
+          </article>
+
+          <article className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)] sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent-2)]">Lab note</p>
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl leading-[0.95] tracking-[-0.04em] sm:text-4xl">
+              如果你是从稳定榜点进来，先这样试。
+            </h2>
+            <div className="mt-4 grid gap-3 text-sm leading-7 text-[var(--muted)]">
+              {item.labNote.map((note) => (
+                <p key={note} className="rounded-[16px] border border-[var(--line)] bg-white/60 px-4 py-3">
+                  {note}
                 </p>
-              </article>
-            ))}
-          </div>
-          <p className="mt-5 text-sm leading-7 text-[var(--muted)]">
-            成本档位：
-            <strong className="ml-2 text-[var(--ink)]">
-              {item.costBand === "low"
-                ? "低"
-                : item.costBand === "medium"
-                  ? "中"
-                  : "高"}
-            </strong>
-          </p>
-        </article>
+              ))}
+            </div>
+          </article>
+
+          {creator ? (
+            <article className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)] sm:p-6">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">Creator module</p>
+              <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl leading-[0.95] tracking-[-0.04em] sm:text-4xl">
+                这个案例背后的 creator：{creator.name}
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{creator.bio}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full bg-[rgba(203,92,47,0.14)] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">
+                  {creator.highlightedLabel}
+                </span>
+                {creator.tags.map((tag) => (
+                  <span key={tag} className="rounded-full bg-black/5 px-3 py-1 text-xs text-[var(--muted)]">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--muted)]">
+                <span>来源 {creator.sourceFootprint.join(" / ")}</span>
+                <span>点赞 {creator.totalLikes}</span>
+                <span>稳定 {creator.averageStabilityScore}</span>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Link
+                  href={`/creators/${creator.slug}`}
+                  className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] px-4 text-sm font-semibold transition hover:-translate-y-0.5"
+                >
+                  查看 creator 页面
+                </Link>
+                <Link
+                  href={`/cases/${creator.heroCase.slug}`}
+                  className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] bg-white/50 px-4 text-sm font-semibold transition hover:-translate-y-0.5"
+                >
+                  查看代表案例
+                </Link>
+              </div>
+            </article>
+          ) : null}
+        </div>
       </section>
     </SiteShell>
   );

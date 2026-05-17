@@ -1,12 +1,13 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
-import { getServerSupabaseClient } from "@/lib/supabase/server-client";
 import {
-  caseItems,
-  favoriteLeaderboard,
-  stabilityLeaderboard,
-  type CaseItem,
-} from "@/lib/mock-data";
+  deriveCreatorsFromCases,
+  findCreatorByName,
+  findCreatorBySlug,
+  type CreatorItem,
+} from "@/lib/creators";
+import { getServerSupabaseClient } from "@/lib/supabase/server-client";
+import { caseItems, type CaseItem } from "@/lib/mock-data";
 
 type DbCaseRow = {
   id: string;
@@ -30,7 +31,32 @@ type DbCaseRow = {
 
 type ServerSupabase = Awaited<ReturnType<typeof getServerSupabaseClient>>;
 
+type DerivedCaseFields = {
+  spreadScore: number;
+  spreadScoreNote: string;
+  promptPublicNote: string;
+  promptLoginNotes: string[];
+  promptContributionNotes: string[];
+  editorNote: string;
+  labNote: string[];
+};
+
+export type DisplayCaseItem = CaseItem & DerivedCaseFields;
+
 const MEDIA_PLACEHOLDER = "/media/placeholder.png";
+
+const CATEGORY_LABELS: Record<CaseItem["category"], string> = {
+  image: "AI 图像",
+  video: "AI 视频",
+  web: "AI 编程(UI)",
+  copy: "AI 文案",
+};
+
+const COST_BAND_LABELS: Record<CaseItem["costBand"], string> = {
+  low: "低",
+  medium: "中",
+  high: "高",
+};
 
 export type CaseFilter = "all" | "video" | "web" | "image";
 
@@ -87,6 +113,116 @@ async function resolveUsableMediaPath(rawPath: string | null) {
   } catch {
     return MEDIA_PLACEHOLDER;
   }
+}
+
+function getPromptFocus(category: CaseItem["category"]) {
+  if (category === "video") {
+    return "镜头连续性、转场逻辑和动作收束是否同时成立";
+  }
+
+  if (category === "web") {
+    return "页面信息层级、模块顺序和 CTA 是否一口气讲清楚";
+  }
+
+  if (category === "copy") {
+    return "前三秒钩子、证据段和结尾行动指令能不能稳定复用";
+  }
+
+  return "主体、风格和材质约束能不能一起站住";
+}
+
+function getLabFocus(category: CaseItem["category"]) {
+  if (category === "video") {
+    return "镜头长度、转场方式与动作幅度";
+  }
+
+  if (category === "web") {
+    return "模块顺序、价值主张写法与 CTA 位置";
+  }
+
+  if (category === "copy") {
+    return "开场句式、证据数量与行动指令强度";
+  }
+
+  return "主体描述、风格词强度与布光/材质约束";
+}
+
+function getLearningAngle(category: CaseItem["category"]) {
+  if (category === "video") {
+    return "镜头编排与节奏控制";
+  }
+
+  if (category === "web") {
+    return "信息架构与转化表达";
+  }
+
+  if (category === "copy") {
+    return "结构化叙事与口播节奏";
+  }
+
+  return "视觉结构与风格控制";
+}
+
+function getSpreadScore(item: Pick<CaseItem, "remakeCount" | "favoriteScore" | "likedCount">) {
+  // Beta 阶段还没有独立传播数据源，先用复刻数、喜爱分、点赞数做清晰可解释的临时传播势能信号。
+  return Math.round(item.remakeCount / 25 + item.favoriteScore * 0.35 + item.likedCount / 240);
+}
+
+function buildSpreadScoreNote(item: CaseItem) {
+  return `Beta 阶段暂用复刻数 ${item.remakeCount}、喜爱分 ${item.favoriteScore} 与点赞 ${item.likedCount} 派生传播势能，更适合快速发现正在被带着学的内容，不等于真实平台曝光。`;
+}
+
+function buildPromptPublicNote(item: CaseItem) {
+  return `公开层先给你看预览，并告诉你为什么值得继续看：这条 ${CATEGORY_LABELS[item.category]} case 更适合观察 ${getPromptFocus(item.category)}。`;
+}
+
+function buildPromptLoginNotes(item: CaseItem) {
+  const models = item.recommendedModels.slice(0, 2).join(" / ");
+
+  return [
+    `适用场景：${item.summary}`,
+    `登录后优先先试 ${models}，先判断它在 ${getLearningAngle(item.category)} 上是否成立。`,
+    `结构化拆解重点：先看 ${getLabFocus(item.category)}，不要一开始就只盯完整 Prompt。`,
+  ];
+}
+
+function buildPromptContributionNotes(item: CaseItem) {
+  return [
+    "贡献层会放出完整 Prompt、负向约束与更完整记录，方便你直接照着复测。",
+    "当前 Beta 期先把“已点赞”视作临时贡献信号，文案先把门槛表达搭起来，不假装已经有完整贡献体系。",
+    `解锁后复看重点：确认 ${getPromptFocus(item.category)} 有没有在完整 Prompt 里被写清楚。`,
+  ];
+}
+
+function buildEditorNote(item: CaseItem) {
+  const strongerSignal = item.favoriteScore >= item.stabilityScore ? "喜爱信号更强" : "稳定信号更强";
+  const leadModel = item.recommendedModels[0] || "当前推荐模型";
+
+  return `这是一个适合从 ${getLearningAngle(item.category)} 切进去的 case。当前站内信号里，${strongerSignal}：它拿到了 ${item.favoriteScore} 的喜爱分、${item.stabilityScore} 的稳定分，以及 ${item.remakeCount} 次复刻。Beta 版编辑判断会更建议你把它当成“结构样本”来看，而不只是抄一段 Prompt；先理解它为什么在 ${leadModel} 上容易出结果，再决定要不要投入更高成本继续打磨。`;
+}
+
+function buildLabNote(item: CaseItem) {
+  const leadModel = item.recommendedModels[0] || "当前推荐模型";
+  const backupModel = item.recommendedModels[1] || item.recommendedModels[0] || "备选模型";
+
+  return [
+    `第一轮先用 ${leadModel} 建基准版本，再用 ${backupModel} 对照；不要一开始就同时改太多参数。`,
+    `这条 case 的稳定分是 ${item.stabilityScore}，更建议你优先盯 ${getLabFocus(item.category)} 这些变量，看输出是否还能保持同一方向。`,
+    `当前成本档位是 ${COST_BAND_LABELS[item.costBand]}，适合先做小步复测，再决定要不要放大生成次数。`,
+  ];
+}
+
+function enrichCaseItem(item: CaseItem): DisplayCaseItem {
+  return {
+    ...item,
+    spreadScore: getSpreadScore(item),
+    spreadScoreNote: buildSpreadScoreNote(item),
+    promptPublicNote: buildPromptPublicNote(item),
+    promptLoginNotes: buildPromptLoginNotes(item),
+    promptContributionNotes: buildPromptContributionNotes(item),
+    editorNote: buildEditorNote(item),
+    labNote: buildLabNote(item),
+  };
 }
 
 async function getLikeCountByCaseId(supabase: ServerSupabase, caseId: string) {
@@ -171,7 +307,7 @@ async function mapDbCaseRowToCaseItem(
 async function fetchPublishedCases(
   filter: CaseFilter = "all",
   viewerUserId?: string | null
-): Promise<CaseItem[] | null> {
+): Promise<DisplayCaseItem[] | null> {
   const supabase = await getServerSupabaseClient();
   if (!supabase) {
     return null;
@@ -202,12 +338,17 @@ async function fetchPublishedCases(
     viewerUserId
   );
 
-  return Promise.all(rows.map((item) => mapDbCaseRowToCaseItem(supabase, item, viewerLikedCaseIds)));
+  const items = await Promise.all(rows.map((item) => mapDbCaseRowToCaseItem(supabase, item, viewerLikedCaseIds)));
+  return items.map(enrichCaseItem);
 }
 
 export async function getCaseListData(filter: CaseFilter = "all", viewerUserId?: string | null) {
   const fromDb = await fetchPublishedCases(filter, viewerUserId);
-  return fromDb || applyCaseFilter(caseItems, filter);
+  if (fromDb) {
+    return fromDb;
+  }
+
+  return applyCaseFilter(caseItems, filter).map(enrichCaseItem);
 }
 
 export async function getCaseDetailData(slug: string, viewerUserId?: string | null) {
@@ -224,11 +365,13 @@ export async function getCaseDetailData(slug: string, viewerUserId?: string | nu
 
     if (!error && data) {
       const viewerLikedCaseIds = await getViewerLikedCaseIds(supabase, [data.id], viewerUserId);
-      return mapDbCaseRowToCaseItem(supabase, data as DbCaseRow, viewerLikedCaseIds);
+      const item = await mapDbCaseRowToCaseItem(supabase, data as DbCaseRow, viewerLikedCaseIds);
+      return enrichCaseItem(item);
     }
   }
 
-  return caseItems.find((item) => item.slug === slug) || null;
+  const fallback = caseItems.find((item) => item.slug === slug);
+  return fallback ? enrichCaseItem(fallback) : null;
 }
 
 export async function getCaseSlugs() {
@@ -237,10 +380,7 @@ export async function getCaseSlugs() {
     return caseItems.map((item) => item.slug);
   }
 
-  const { data, error } = await supabase
-    .from("cases")
-    .select("slug")
-    .eq("is_published", true);
+  const { data, error } = await supabase.from("cases").select("slug").eq("is_published", true);
 
   if (error || !data || data.length === 0) {
     return caseItems.map((item) => item.slug);
@@ -253,14 +393,45 @@ export async function getCaseSlugs() {
 
 export async function getHomeData(viewerUserId?: string | null) {
   const list = await getCaseListData("all", viewerUserId);
+  const creators = deriveCreatorsFromCases(list);
 
-  const featuredCase = list[0] || caseItems[0];
+  const featuredCase = list[0] || enrichCaseItem(caseItems[0]);
+  const spread = [...list].sort((a, b) => b.spreadScore - a.spreadScore).slice(0, 10);
   const favorite = [...list].sort((a, b) => b.favoriteScore - a.favoriteScore).slice(0, 10);
   const stability = [...list].sort((a, b) => b.stabilityScore - a.stabilityScore).slice(0, 10);
 
   return {
     featuredCase,
-    favoriteLeaderboard: favorite.length > 0 ? favorite : favoriteLeaderboard,
-    stabilityLeaderboard: stability.length > 0 ? stability : stabilityLeaderboard,
+    totalCaseCount: list.length,
+    totalCreatorCount: creators.length,
+    featuredCreators: creators.slice(0, 4),
+    spreadLeaderboard: spread,
+    favoriteLeaderboard: favorite,
+    stabilityLeaderboard: stability,
   };
 }
+
+export async function getCreatorListData(viewerUserId?: string | null) {
+  const list = await getCaseListData("all", viewerUserId);
+  return deriveCreatorsFromCases(list);
+}
+
+export async function getCreatorDetailData(slug: string, viewerUserId?: string | null) {
+  const creators = await getCreatorListData(viewerUserId);
+  return findCreatorBySlug(creators, slug);
+}
+
+export async function getCreatorForCase(slug: string, viewerUserId?: string | null) {
+  const [item, creators] = await Promise.all([
+    getCaseDetailData(slug, viewerUserId),
+    getCreatorListData(viewerUserId),
+  ]);
+
+  if (!item) {
+    return null;
+  }
+
+  return findCreatorByName(creators, item.creator);
+}
+
+export type { CreatorItem };

@@ -106,6 +106,9 @@ export default async function CasesPage({
                 <span className="rounded-full bg-black/5 px-3 py-1 text-xs">
                   稳定 {item.stabilityScore}
                 </span>
+                <span className="rounded-full bg-black/5 px-3 py-1 text-xs text-[var(--muted)]">
+                  {item.favoriteScore >= item.stabilityScore ? "编辑精选" : "值得学习"}
+                </span>
               </div>
 
               <div className="space-y-3">

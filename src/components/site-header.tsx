@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 
 const navItems = [
-  { href: "/", label: "首页" },
-  { href: "/cases", label: "案例库" },
-  { href: "/login", label: "登录" },
+  { href: "/", label: "发现" },
+  { href: "/cases", label: "榜单" },
+  { href: "/creators", label: "创作者" },
 ];
 
 export function SiteHeader() {
@@ -24,23 +25,24 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[rgba(255,250,241,0.88)] backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-6">
-        <Link href="/" className="flex items-baseline gap-3">
-          <span className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            GoodCase
+    <header className="sticky top-0 z-40 border-b border-[var(--hair)] bg-[rgba(250,250,247,0.94)] backdrop-blur-xl">
+      <div className="mx-auto flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-3 px-4 py-3 md:px-6">
+        <Link href="/" className="flex items-center gap-3">
+          <span className="flex size-9 items-center justify-center border border-[var(--hair)] bg-white text-[var(--ink)]">
+            <Image src="/goodcase-mark.svg" alt="GoodCase.ai" width={18} height={18} className="size-[18px]" priority />
           </span>
-          <span className="text-xs tracking-[0.2em] text-[var(--ink)]">
-            GOODCASE.AI
+          <span className="flex flex-col">
+            <span className="text-sm font-semibold tracking-[-0.01em] text-[var(--ink)]">GoodCase.ai</span>
+            <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] sm:block">Case / Creator / Lab / Skill</span>
           </span>
         </Link>
 
-        <nav className="flex flex-wrap gap-2">
+        <nav className="order-3 flex w-full max-w-full overflow-x-auto border border-[var(--hair)] bg-white font-mono text-[10px] uppercase tracking-[0.08em] sm:w-auto md:order-none md:flex-wrap md:overflow-visible">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3 py-2 text-sm text-[var(--muted)] transition hover:bg-black/5 hover:text-[var(--ink)]"
+              className="border-r border-[var(--hair)] px-3 py-2 text-[var(--muted)] transition last:border-r-0 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
             >
               {item.label}
             </Link>
@@ -50,14 +52,12 @@ export function SiteHeader() {
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              <div className="rounded-full border border-[var(--line)] bg-white/60 px-3 py-2 text-sm">
-                {user.name}
-              </div>
+              <div className="border border-[var(--hair)] bg-white px-3 py-2 font-mono text-[11px] uppercase tracking-[0.06em]">{user.name}</div>
               <button
                 type="button"
                 onClick={handleSignOut}
                 disabled={isPending}
-                className="rounded-full border border-[var(--line)] px-3 py-2 text-sm text-[var(--ink)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="border border-[var(--hair)] px-3 py-2 text-sm text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isPending ? "退出中..." : "退出"}
               </button>
@@ -65,9 +65,10 @@ export function SiteHeader() {
           ) : (
             <Link
               href={loginHref}
-              className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg-strong)] transition hover:-translate-y-0.5"
+              className="whitespace-nowrap border border-[var(--ink)] bg-[var(--ink)] px-3 py-2 text-xs text-[var(--paper)] transition hover:-translate-y-0.5 hover:bg-[var(--orange)] sm:px-4 sm:text-sm"
             >
-              登录后点赞
+              <span className="sm:hidden">登录</span>
+              <span className="hidden sm:inline">登录查看更多</span>
             </Link>
           )}
         </div>

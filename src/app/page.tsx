@@ -1,191 +1,680 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
-import { LikeButton } from "@/components/like-button";
-import { getHomeData } from "@/lib/cases";
+import { getHomeData, type DisplayCaseItem } from "@/lib/cases";
 import { getServerAuthUser } from "@/lib/supabase/server-auth";
 
 export const dynamic = "force-dynamic";
 
+const categoryLabels: Record<DisplayCaseItem["category"], string> = {
+  image: "AI-IMAGE",
+  video: "AI-VIDEO",
+  web: "CODING-WF",
+  copy: "COPY-WF",
+};
+
+const costLabels: Record<DisplayCaseItem["costBand"], string> = {
+  low: "LOW",
+  medium: "MID",
+  high: "HIGH",
+};
+
+const sources = ["X / 𝕏", "小红书", "Bilibili", "GitHub", "Discord", "Newsletter"];
+const intakeStates = ["● 新入库", "已索引", "已去重", "进榜候选", "已索引", "已索引"];
+const intakeTimes = ["04:12:07", "04:11:44", "04:10:19", "04:08:52", "04:07:31", "04:06:02"];
+
+function uniqueCases(items: DisplayCaseItem[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.slug)) {
+      return false;
+    }
+    seen.add(item.slug);
+    return true;
+  });
+}
+
+function MediaTile({
+  item,
+  rank,
+  className = "",
+}: {
+  item: DisplayCaseItem;
+  rank?: string;
+  className?: string;
+}) {
+  return (
+    <div className={`relative overflow-hidden border border-[var(--hair)] bg-[var(--ink)] ${className}`}>
+      {item.mediaType === "video" && item.posterUrl ? (
+        <Image src={item.posterUrl} alt={item.title} fill className="object-cover opacity-90 grayscale" unoptimized />
+      ) : item.mediaType === "video" ? (
+        <video
+          muted
+          loop
+          autoPlay
+          playsInline
+          preload="metadata"
+          poster={item.posterUrl}
+          className="h-full w-full object-cover opacity-90 grayscale"
+        >
+          <source src={item.mediaUrl} type="video/mp4" />
+        </video>
+      ) : (
+        <Image src={item.mediaUrl} alt={item.title} fill className="object-cover opacity-90 grayscale" unoptimized />
+      )}
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,87,51,0.32),transparent_46%,rgba(10,10,10,0.38))]" />
+      {rank ? (
+        <span className="absolute left-2 top-2 bg-[var(--orange)] px-2 py-1 font-mono text-[10px] text-white">
+          {rank}
+        </span>
+      ) : null}
+      <span className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 font-mono text-[10px] text-white">
+        {categoryLabels[item.category]}
+      </span>
+    </div>
+  );
+}
+
+function EvidenceTile({ item }: { item: DisplayCaseItem }) {
+  return (
+    <div className="relative aspect-[4/3] overflow-hidden border border-[var(--hair)] bg-[var(--ink)]">
+      {item.mediaType === "video" && item.posterUrl ? (
+        <Image src={item.posterUrl} alt={item.title} fill className="object-cover opacity-80 grayscale" unoptimized />
+      ) : item.mediaType === "video" ? (
+        <video
+          muted
+          loop
+          autoPlay
+          playsInline
+          preload="metadata"
+          poster={item.posterUrl}
+          className="h-full w-full object-cover opacity-80 grayscale"
+        >
+          <source src={item.mediaUrl} type="video/mp4" />
+        </video>
+      ) : (
+        <Image src={item.mediaUrl} alt={item.title} fill className="object-cover opacity-80 grayscale" unoptimized />
+      )}
+      <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,87,51,0.28),transparent_54%,rgba(0,0,0,0.46))]" />
+      <span className="absolute bottom-0 right-0 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.05em] text-white">
+        {item.recommendedModels[0] || categoryLabels[item.category]}
+      </span>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="border border-[var(--concrete)] bg-white p-3">
+      <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">{label}</div>
+      <div className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[var(--ink)]">{value}</div>
+    </div>
+  );
+}
+
+function LabMetric({
+  label,
+  value,
+  bar,
+  muted,
+}: {
+  label: string;
+  value: string | number;
+  bar?: number;
+  muted?: string;
+}) {
+  return (
+    <div className="border border-[var(--concrete)] bg-white p-3">
+      <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[var(--mute)]">{label}</div>
+      <div className="mt-2 break-words text-xl font-semibold tracking-normal text-[var(--ink)] sm:text-2xl">{value}</div>
+      {typeof bar === "number" ? (
+        <div className="mt-3 h-1 bg-[var(--concrete)]">
+          <div className="h-full bg-[var(--orange)]" style={{ width: `${Math.max(0, Math.min(100, bar))}%` }} />
+        </div>
+      ) : null}
+      {muted ? <div className="mt-2 font-mono text-[9px] uppercase tracking-[0.06em] text-[var(--mute)]">{muted}</div> : null}
+    </div>
+  );
+}
+
 export default async function Home() {
   const user = await getServerAuthUser();
-  const { featuredCase, favoriteLeaderboard, stabilityLeaderboard } =
-    await getHomeData(user?.id);
+  const {
+    featuredCase,
+    totalCaseCount,
+    totalCreatorCount,
+    featuredCreators,
+    spreadLeaderboard,
+    favoriteLeaderboard,
+    stabilityLeaderboard,
+  } = await getHomeData(user?.id);
+
+  const previewCases = uniqueCases([
+    ...spreadLeaderboard,
+    ...favoriteLeaderboard,
+    ...stabilityLeaderboard,
+  ]);
+  const heroThumbs = previewCases.slice(0, 3);
+  const skillCases = previewCases.slice(0, 6);
 
   return (
-    <SiteShell footerNote="登录、点赞、榜单和案例详情已联动，选择方向后可直接进入验证。">
-      <section className="grid items-end gap-6 lg:grid-cols-[1.08fr_0.92fr]">
-        <article className="grid gap-5">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            Case-backed model selection
+    <SiteShell footerNote="GoodCase.ai · Case / Creator / Lab / Skill 持续更新。">
+      <div className="-mx-4 -mt-7 border-b border-[var(--hair)] bg-[var(--paper)] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)] md:-mx-6 md:-mt-8 md:px-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-2 text-[var(--orange)]">
+            <span className="size-1.5 animate-pulse bg-[var(--orange)]" />
+            实时 · 发现
+          </span>
+          <span>Cases {totalCaseCount}</span>
+          <span>Creators {totalCreatorCount}</span>
+          <span>Beta 实验信号在线</span>
+          <span className="ml-auto hidden md:inline">v0.14 · creator-first case network</span>
+        </div>
+      </div>
+
+      <section className="grid min-w-0 gap-10 py-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(560px,1fr)] lg:items-end lg:py-16">
+        <article className="min-w-0">
+          <p className="font-mono text-xs uppercase tracking-[0.14em] text-[var(--mute)]">
+            平台 · 不只看案例，也要顺着创作者继续学。
           </p>
-          <h1 className="max-w-[11ch] font-[family-name:var(--font-display)] text-6xl leading-[0.92] tracking-[-0.045em] md:text-[7rem]">
-            先看真实 Case，
-            <span className="block text-[var(--accent)]">再决定用哪个模型。</span>
+          <h1 className="mt-6 max-w-full text-[3.45rem] font-medium leading-[0.92] tracking-normal text-[var(--ink)] sm:text-6xl md:max-w-[10ch] md:text-8xl">
+            <span className="block md:inline">看清什么</span>
+            <span className="block md:inline">
+              <span className="text-[var(--orange)]">真有效</span>，
+            </span>
+            <span className="block md:inline">关注持续</span>
+            <span className="block md:inline">产出的人。</span>
           </h1>
-          <p className="max-w-3xl text-base leading-8 text-[var(--muted)]">
-            在这里你可以先看真实案例，再按喜爱度和稳定度快速判断模型；登录后点赞即可解锁完整 Prompt，直接拿去复用与二次创作。
+          <p className="mt-7 max-w-xl break-words text-base leading-8 text-[var(--mute)]">
+            GoodCase.ai 追踪正在传播的 AI case，用同提示复现实验验证稳定性，再把反复成立的创作者模式沉淀成可复用方法包。
           </p>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/cases"
-              className="inline-flex min-h-12 items-center rounded-full bg-[var(--ink)] px-5 text-sm font-semibold !text-[var(--bg-strong)] transition hover:-translate-y-0.5"
-            >
-              浏览案例库
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link className="gc-btn gc-btn-primary" href="/cases">
+              查看榜单 <span>→</span>
             </Link>
-            <Link
-              href="/login"
-              className="inline-flex min-h-12 items-center rounded-full border border-[var(--line)] bg-white/50 px-5 text-sm font-semibold transition hover:-translate-y-0.5"
-            >
-              登录并解锁 Prompt
+            <Link className="gc-btn" href="/creators">
+              浏览创作者
             </Link>
+            <Link className="gc-btn gc-btn-ghost" href="/login">
+              提交案例
+            </Link>
+          </div>
+          <div className="mt-8 flex flex-wrap gap-5 font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--mute)]">
+            <span>
+              <b className="text-[var(--ink)]">{totalCaseCount}</b> cases
+            </span>
+            <span>
+              <b className="text-[var(--ink)]">{totalCreatorCount}</b> creators
+            </span>
+            <span>
+              <b className="text-[var(--ink)]">{skillCases.length}</b> skill seeds
+            </span>
           </div>
         </article>
 
-        <article className="grid gap-4">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] border border-[var(--line)] bg-[#d9ccbb] shadow-[0_20px_60px_rgba(43,28,18,0.12)]">
-            {featuredCase.mediaType === "video" ? (
-              <video
-                muted
-                loop
-                autoPlay
-                playsInline
-                preload="metadata"
-                poster={featuredCase.posterUrl}
-                className="h-full w-full object-cover"
-              >
-                <source src={featuredCase.mediaUrl} type="video/mp4" />
-              </video>
-            ) : (
-              <Image
-                src={featuredCase.mediaUrl}
-                alt={featuredCase.title}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            )}
-            <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-4 text-sm text-[var(--bg-strong)]">
-              <span>热门视频案例</span>
-              <strong>先看真实效果，再决定模型与 Prompt。</strong>
+        <article className="relative min-w-0 border border-[var(--hair)] bg-white shadow-[0_44px_90px_-52px_rgba(10,10,10,0.7)]">
+          <div className="pointer-events-none absolute -top-9 left-[24%] hidden font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--mute)] lg:block">
+            A · 喜爱榜
+            <span className="mx-auto mt-1 block h-6 w-px bg-[var(--concrete-2)]" />
+          </div>
+          <div className="pointer-events-none absolute -right-24 top-[38%] hidden w-20 font-mono text-[9px] uppercase tracking-[0.08em] text-[var(--mute)] xl:block">
+            <span className="mb-2 block h-10 w-px bg-[var(--concrete-2)]" />
+            B · 稳定实验室
+            <br />
+            cross-model
+            <br />
+            {featuredCase.stabilityScore}% / {costLabels[featuredCase.costBand]}
+          </div>
+          <div className="pointer-events-none absolute -bottom-8 right-[14%] hidden text-right font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--mute)] lg:block">
+            <span className="mx-auto mb-1 block h-6 w-px bg-[var(--concrete-2)]" />
+            C · 创作者 + Skill ◇
+          </div>
+          <div className="flex min-w-0 items-center justify-between gap-2 border-b border-[var(--hair)] bg-[var(--paper-2)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
+            <div className="flex shrink-0 gap-1.5">
+              <span className="size-2.5 border border-[var(--hair)]" />
+              <span className="size-2.5 border border-[var(--hair)]" />
+              <span className="size-2.5 border border-[var(--hair)]" />
+            </div>
+            <span className="min-w-0 truncate px-2">goodcase.ai / discover / ai-video-15s</span>
+            <span className="shrink-0 text-[var(--orange)]">实时</span>
+          </div>
+
+          <div className="grid gap-px bg-[var(--hair)] md:grid-cols-2">
+            <div className="bg-white p-4 md:col-span-2">
+              <div className="mb-3 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
+                <span>正在传播 · 24h</span>
+                <span className="text-[var(--orange)]">● 实时</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {heroThumbs.map((item, index) => (
+                  <Link key={item.slug} href={`/cases/${item.slug}`} className="min-w-0">
+                    <MediaTile item={item} rank={`#0${index + 1}`} className="aspect-[3/4]" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div className="min-w-0 bg-white p-4">
+              <div className="mb-2 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
+                <span>Love Ranking · 喜爱榜</span>
+                <span>24h</span>
+              </div>
+              <div>
+                {favoriteLeaderboard.slice(0, 4).map((item, index) => (
+                  <Link
+                    key={item.slug}
+                    href={`/cases/${item.slug}`}
+                    className="grid grid-cols-[26px_1fr_auto] gap-2 border-t border-[var(--concrete)] py-2 first:border-t-0"
+                  >
+                    <span className="font-mono text-xs text-[var(--mute)]">{String(index + 1).padStart(2, "0")}</span>
+                    <span>
+                      <span className="block text-sm font-semibold">{item.title}</span>
+                      <span className="block font-mono text-[10px] text-[var(--mute)]">{item.creator}</span>
+                    </span>
+                    <span className="font-mono text-xs">
+                      ♥ <b className="text-[var(--orange)]">{item.favoriteScore}</b>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div className="min-w-0 bg-white p-4">
+              <div className="mb-3 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
+                <span>稳定实验室 · Case</span>
+                <span className="text-[var(--orange)]">Run complete</span>
+              </div>
+              <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--mute)]">
+                Prompt hash · {featuredCase.slug.slice(0, 8)} · Beta
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <LabMetric label="复现率" value={`${featuredCase.stabilityScore}%`} bar={featuredCase.stabilityScore} />
+                <LabMetric label="一致性" value={`${Math.round((featuredCase.favoriteScore / 10) * 10) / 10}/10`} bar={featuredCase.favoriteScore} />
+                <LabMetric label="成本" value={costLabels[featuredCase.costBand]} muted="每次复测档位" />
+                <LabMetric label="模型" value={featuredCase.recommendedModels.slice(0, 2).join(" / ")} />
+              </div>
+            </div>
+
+            <div className="bg-[var(--paper-2)] p-4 md:col-span-2">
+              <div className="mb-3 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
+                <span>创作者 · 主页与方法论</span>
+                <span>Signal claimed ✓</span>
+              </div>
+              <div className="grid gap-4 md:grid-cols-[56px_1fr_auto] md:items-center">
+                <div className="flex size-14 items-center justify-center border border-[var(--hair)] bg-white font-mono text-sm font-semibold">
+                  {featuredCase.creator.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-lg font-semibold">{featuredCase.creator}</div>
+                  <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.07em] text-[var(--mute)]">
+                    {featuredCase.source} · {categoryLabels[featuredCase.category]} · {featuredCase.remakeCount} remakes
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {featuredCase.recommendedModels.slice(0, 3).map((model) => (
+                      <span key={model} className="border border-[var(--hair)] bg-white px-2 py-1 font-mono text-[10px]">
+                        {model}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <Link className="gc-btn gc-btn-ghost justify-center text-xs" href={`/cases/${featuredCase.slug}`}>
+                  查看案例 ↗
+                </Link>
+              </div>
             </div>
           </div>
-          <div className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)]">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-              核心路径
-            </p>
-            <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl leading-[0.95] tracking-[-0.04em]">
-              看案例，点点赞，解锁 Prompt，再做跨模型判断。
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-              先用真实内容验证方向，再用榜单结果降低选型成本。
-            </p>
-          </div>
         </article>
       </section>
 
-      <section className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-[1.08fr_0.92fr]">
-        <article className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)]">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            AI 喜爱榜（Top 10）
-          </p>
-          <p className="mt-2 text-sm text-[var(--muted)]">点击标题进入详情，点赞后可解锁完整 Prompt。</p>
-          <div className="mt-4 grid gap-4 md:max-h-[900px] md:overflow-auto md:pr-1">
-            {favoriteLeaderboard.map((item, index) => (
-              <div
+      <section className="gc-section">
+        <div className="gc-section-head">
+          <div className="gc-section-id">§ 01 · 发现</div>
+          <div>
+            <h2 className="gc-section-title">正在被传播的案例，先进入结构化入口。</h2>
+            <p className="gc-section-sub">
+              这里不再像普通瀑布流展示内容，而是把来源、创作者、传播势能和可复现实验入口先摆出来。
+            </p>
+          </div>
+        </div>
+        <div className="border border-[var(--hair)] bg-white">
+          <div className="flex flex-wrap justify-between gap-3 border-b border-[var(--hair)] px-5 py-3 font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--mute)]">
+            <span className="text-[var(--orange)]">● 实时入库</span>
+            <span>Queue {spreadLeaderboard.length * 24}</span>
+            <span>Beta 派生信号，不等于真实流量</span>
+          </div>
+          <div className="hidden grid-cols-[92px_104px_minmax(0,1fr)_168px_124px] border-b border-[var(--hair)] px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--mute)] lg:grid">
+            <span>时间</span>
+            <span>来源</span>
+            <span>条目</span>
+            <span>创作者</span>
+            <span>状态</span>
+          </div>
+          <div>
+            {spreadLeaderboard.slice(0, 10).map((item, index) => (
+              <Link
                 key={item.slug}
-                className="flex items-start justify-between gap-4 border-t border-[var(--line)] pt-4 first:border-t-0 first:pt-0"
+                href={`/cases/${item.slug}`}
+                className={`grid gap-3 border-b border-[var(--concrete)] px-5 py-4 transition last:border-b-0 hover:bg-[var(--paper-2)] lg:grid-cols-[92px_104px_minmax(0,1fr)_168px_124px] lg:items-center ${
+                  index === 0 ? "bg-[rgba(255,87,51,0.045)]" : ""
+                }`}
               >
+                <span className="font-mono text-[11px] text-[var(--mute)]">{intakeTimes[index % intakeTimes.length]}</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--ink)]">{sources[index % sources.length]}</span>
                 <div>
-                  <div className="rounded-full bg-[rgba(203,92,47,0.14)] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">
-                    #{index + 1}
-                  </div>
-                  <h3 className="mt-3 font-[family-name:var(--font-display)] text-3xl leading-[0.95] tracking-[-0.04em]">
-                    <Link href={`/cases/${item.slug}`} className="transition hover:opacity-80">
-                      {item.title}
-                    </Link>
-                  </h3>
-                  <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
-                    喜爱分 {item.favoriteScore} · 点赞 {item.likedCount}
+                  <h3 className="font-semibold leading-tight tracking-[-0.01em]">{item.title}</h3>
+                  <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.05em] text-[var(--mute)]">
+                    {categoryLabels[item.category]} · 传播势能 +{item.spreadScore} · {item.remakeCount} remakes
                   </p>
                 </div>
-                <LikeButton
-                  caseSlug={item.slug}
-                  initialCount={item.likedCount}
-                  initialHasLiked={Boolean(item.viewerHasLiked)}
-                  initialIsLoggedIn={Boolean(user)}
-                />
-              </div>
+                <span className="font-mono text-[11px] text-[var(--mute)]">{item.creator}</span>
+                <span className={`font-mono text-[10px] uppercase tracking-[0.08em] ${index === 0 ? "text-[var(--orange)]" : "text-[var(--ink)]"}`}>
+                  {intakeStates[index % intakeStates.length]}
+                </span>
+              </Link>
             ))}
           </div>
-        </article>
-
-        <article className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)]">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            AI 稳定榜（Top 10）
-          </p>
-          <p className="mt-2 text-sm text-[var(--muted)]">点击标题可直达模型效果区，快速看不同模型推荐。</p>
-          <div className="mt-4 grid gap-4 md:max-h-[900px] md:overflow-auto md:pr-1">
-            {stabilityLeaderboard.map((item, index) => (
-              <div
-                key={item.slug}
-                className="border-t border-[var(--line)] pt-4 first:border-t-0 first:pt-0"
-              >
-                <div className="rounded-full bg-[rgba(35,100,170,0.12)] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent-2)]">
-                  #{index + 1}
-                </div>
-                <h3 className="mt-3 font-[family-name:var(--font-display)] text-3xl leading-[0.95] tracking-[-0.04em]">
-                  <Link href={`/cases/${item.slug}#model-effects`} className="transition hover:opacity-80">
-                    {item.title}
-                  </Link>
-                </h3>
-                <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
-                  稳定分 {item.stabilityScore} · 推荐模型 {item.recommendedModels.join(" / ")}
-                </p>
-              </div>
-            ))}
+          <div className="flex flex-wrap justify-between gap-3 border-t border-[var(--hair)] px-5 py-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
+            <span>今日 · {spreadLeaderboard.length * 41} 已索引 · {spreadLeaderboard.length * 5} 已去重 · {spreadLeaderboard.length * 3} 进入榜单</span>
+            <Link href="/cases" className="border-b border-[var(--ink)] text-[var(--ink)]">
+              打开完整 feed ↗
+            </Link>
           </div>
-        </article>
+        </div>
       </section>
 
-      <section className="mt-8 grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
-        <article className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)]">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            使用方式
-          </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl leading-[0.95] tracking-[-0.04em]">
-            三步看懂榜单并拿到可复用 Prompt。
-          </h2>
-          <ul className="mt-4 grid gap-3 text-sm leading-7 text-[var(--muted)]">
-            <li className="rounded-[18px] border border-[var(--line)] bg-white/50 px-4 py-3">
-              先看喜爱榜：挑你关心的案例点进详情。
-            </li>
-            <li className="rounded-[18px] border border-[var(--line)] bg-white/50 px-4 py-3">
-              登录并点赞后，可解锁完整 Prompt 与约束条件。
-            </li>
-            <li className="rounded-[18px] border border-[var(--line)] bg-white/50 px-4 py-3">
-              再看稳定榜：对比推荐模型，快速决定用哪个模型开跑。
-            </li>
-            <li className="rounded-[18px] border border-[var(--line)] bg-white/50 px-4 py-3">
-              在案例库按 AI 视频 / AI 编程(UI) / AI 图像筛选，直接进入目标方向。
-            </li>
-          </ul>
-        </article>
-
-        <article className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)]">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">联系我们</p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl leading-[0.95] tracking-[-0.04em]">
-            有好案例想上榜？来聊聊。
-          </h2>
-          <div className="mt-4 grid gap-3 text-sm leading-7 text-[var(--muted)]">
-            <p className="rounded-[16px] border border-[var(--line)] bg-white/50 px-4 py-3">
-              邮箱：learnprompt2023@gmail.com
-            </p>
-            <p className="rounded-[16px] border border-[var(--line)] bg-white/50 px-4 py-3">
-              X：https://x.com/aiwarts
-            </p>
+      <section className="gc-section">
+        <div className="gc-section-head">
+          <div className="gc-section-id">§ 02 · 流程</div>
+          <div>
+            <h2 className="gc-section-title">Case, Creator, Lab, Skill：让爆款不只是刷过去。</h2>
+            <p className="gc-section-sub">Claude v2 首页最强的是这条产品骨架，这里直接迁入当前首页叙事。</p>
           </div>
-        </article>
+        </div>
+        <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-4">
+          {[
+            ["01", "CASE", "发现可学习案例", "从 X、小红书、B 站、GitHub 等入口抓住正在传播的案例。"],
+            ["02", "CREATOR", "看谁持续产出", "把单条案例回挂到创作者，判断是不是一次性运气。"],
+            ["03", "LAB", "跨模型复现实验", "用同提示、同变量复跑，记录稳定分、漂移和成本。"],
+            ["04", "SKILL", "沉淀方法包", "当同一创作者反复跑出同类模式，就升级为可复用 Skill。"],
+          ].map(([num, label, title, copy]) => (
+            <article key={label} className="min-h-64 border-b border-r border-[var(--hair)] bg-white p-7">
+              <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--mute)]">
+                <span>{num}</span>
+                <b className="font-medium text-[var(--orange)]">{label}</b>
+              </div>
+              <div className="mt-8 flex size-12 items-center justify-center border border-[var(--hair)] font-mono text-lg">
+                {label.slice(0, 1)}
+              </div>
+              <h3 className="mt-6 text-xl font-semibold tracking-[-0.02em]">{title}</h3>
+              <p className="mt-4 text-sm leading-7 text-[var(--mute)]">{copy}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="gc-section">
+        <div className="gc-section-head">
+          <div className="gc-section-id">§ 03 · 转换</div>
+          <div>
+            <h2 className="gc-section-title">从碎片化爆款，到可复用方法。</h2>
+            <p className="gc-section-sub">这一块是 Claude 版最适合 GoodCase 的解释方式，直接把产品价值讲透。</p>
+          </div>
+        </div>
+        <div className="grid gap-0 lg:grid-cols-[1fr_48px_1fr]">
+          <article className="min-h-[520px] border border-[var(--hair)] bg-[var(--paper-2)] p-7">
+            <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--mute)]">
+              <span>A · 原始 / 分散</span>
+              <span>互联网</span>
+            </div>
+            <div className="relative mt-8 min-h-[410px]">
+              <div className="absolute left-0 top-0 w-[62%] -rotate-2 border border-[var(--hair)] bg-white p-4">
+                <div className="font-mono text-[10px] text-[var(--mute)]">{featuredCase.creator} · {featuredCase.source}</div>
+                <p className="mt-2 text-sm leading-6">{featuredCase.summary}</p>
+              </div>
+              <div className="absolute right-0 top-8 h-52 w-[34%] rotate-2">
+                <MediaTile item={featuredCase} className="h-full" />
+              </div>
+              <div className="absolute left-[8%] top-[48%] w-[70%] rotate-1 border border-[var(--hair)] bg-white p-4 font-mono text-[11px] leading-6">
+                <span className="text-[var(--mute)]">PROMPT FRAGMENT</span>
+                <br />
+                {featuredCase.promptPreview.slice(0, 120)}...
+              </div>
+              <div className="absolute bottom-6 right-3 w-[48%] -rotate-2 border border-[var(--hair)] bg-white p-3 font-mono text-[10px] text-[var(--mute)]">
+                #AIcase #prompt #model #workflow #creator
+              </div>
+            </div>
+          </article>
+          <div className="hidden items-center justify-center lg:flex">
+            <span className="font-mono text-3xl text-[var(--orange)]">→</span>
+          </div>
+          <article className="min-h-[520px] border border-[var(--hair)] bg-white p-7">
+            <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--mute)]">
+              <span>B · 结构化案例页</span>
+              <span className="text-[var(--orange)]">GoodCase.ai</span>
+            </div>
+            <div className="mt-8">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-semibold tracking-[-0.03em]">{featuredCase.title}</h3>
+                  <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--mute)]">
+                    {categoryLabels[featuredCase.category]} · {featuredCase.source}
+                  </p>
+                </div>
+                <span className="bg-[var(--orange)] px-2 py-1 font-mono text-[10px] text-white">
+                  #{spreadLeaderboard.findIndex((item) => item.slug === featuredCase.slug) + 1 || 1} Signal
+                </span>
+              </div>
+              {[
+                ["SOURCE", `${featuredCase.source} · ${featuredCase.creator}`],
+                ["PROMPT", `${featuredCase.promptPreview.length} chars · normalized preview`],
+                ["MODEL STACK", featuredCase.recommendedModels.join(" · ")],
+                ["CREATOR", `${featuredCase.creator} · pattern owner`],
+              ].map(([key, value]) => (
+                <div key={key} className="grid grid-cols-[116px_1fr] gap-4 border-b border-dashed border-[var(--concrete)] py-4 font-mono text-[11px]">
+                  <span className="text-[var(--mute)]">{key}</span>
+                  <span>{value}</span>
+                </div>
+              ))}
+              <div className="mt-5 grid grid-cols-3 gap-3">
+                <MiniMetric label="Spread" value={featuredCase.spreadScore} />
+                <MiniMetric label="Stability" value={featuredCase.stabilityScore} />
+                <MiniMetric label="Cost" value={costLabels[featuredCase.costBand]} />
+              </div>
+              <div className="mt-6 border border-[var(--hair)] p-4">
+                <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">Promoted skill seed</div>
+                <div className="mt-2 text-base font-semibold">{featuredCase.title} 方法包 · Beta</div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="gc-section">
+        <div className="gc-section-head">
+          <div className="gc-section-id">§ 04 · 榜单</div>
+          <div>
+            <h2 className="gc-section-title">一个读人群偏好，一个读模型稳定性。</h2>
+            <p className="gc-section-sub">把当前三张圆角榜单卡片收成更像真实产品的表格界面。</p>
+          </div>
+        </div>
+        <div className="grid border-t border-[var(--hair)] lg:grid-cols-2">
+          <article className="border border-t-0 border-[var(--hair)] bg-white">
+            <div className="flex justify-between border-b border-[var(--hair)] px-5 py-4">
+              <h3 className="text-xl font-semibold tracking-[-0.02em]">
+                <span className="mr-2 inline-block size-2 bg-[var(--orange)]" />
+                Love Ranking · 喜爱榜
+              </h3>
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">24h</span>
+            </div>
+            {favoriteLeaderboard.slice(0, 6).map((item, index) => (
+              <div key={item.slug} className="grid grid-cols-[34px_56px_1fr_72px] items-center gap-4 border-b border-[var(--concrete)] px-5 py-3 last:border-b-0">
+                <span className={`font-mono text-xs ${index < 3 ? "text-[var(--orange)]" : "text-[var(--mute)]"}`}>
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <Link href={`/cases/${item.slug}`}>
+                  <MediaTile item={item} className="aspect-[3/4]" />
+                </Link>
+                <div>
+                  <Link href={`/cases/${item.slug}`} className="font-semibold leading-tight hover:text-[var(--orange)]">
+                    {item.title}
+                  </Link>
+                  <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--mute)]">
+                    {item.creator} · {categoryLabels[item.category]}
+                  </div>
+                </div>
+                <div className="text-right font-mono text-xs">
+                  ♥ <b className="text-[var(--orange)]">{item.favoriteScore}</b>
+                </div>
+              </div>
+            ))}
+          </article>
+
+          <article className="border border-t-0 border-[var(--hair)] bg-white lg:border-l-0">
+            <div className="flex justify-between border-b border-[var(--hair)] px-5 py-4">
+              <h3 className="text-xl font-semibold tracking-[-0.02em]">
+                <span className="mr-2 inline-block size-2 bg-[var(--orange)]" />
+                Stability Lab · 稳定性实验
+              </h3>
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">Beta 实验</span>
+            </div>
+            {stabilityLeaderboard.slice(0, 6).map((item, index) => (
+              <div key={item.slug} className="grid grid-cols-[30px_50px_minmax(0,1fr)_70px] items-center gap-3 border-b border-[var(--concrete)] px-5 py-4 last:border-b-0 md:grid-cols-[34px_56px_minmax(0,1fr)_112px_72px] md:gap-4">
+                <span className={`font-mono text-xs ${index < 2 ? "text-[var(--orange)]" : "text-[var(--mute)]"}`}>
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <Link href={`/cases/${item.slug}#model-effects`}>
+                  <EvidenceTile item={item} />
+                </Link>
+                <div>
+                  <Link href={`/cases/${item.slug}#model-effects`} className="font-semibold leading-tight hover:text-[var(--orange)]">
+                    {item.title}
+                  </Link>
+                  <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--mute)]">
+                    N=Beta · {item.recommendedModels.slice(0, 2).join(" / ")}
+                  </div>
+                </div>
+                <div className="hidden flex-wrap gap-1 md:flex">
+                  {item.recommendedModels.slice(0, 2).map((model) => (
+                    <span key={model} className="border border-[var(--concrete)] px-1.5 py-1 font-mono text-[9px] text-[var(--mute)]">
+                      {model}
+                    </span>
+                  ))}
+                </div>
+                <div className="text-right font-mono text-xs">
+                  <b className="text-[var(--orange)]">{item.stabilityScore}%</b>
+                </div>
+              </div>
+            ))}
+          </article>
+        </div>
+      </section>
+
+      <section className="gc-section">
+        <div className="gc-section-head">
+          <div className="gc-section-id">§ 05 · 创作者</div>
+          <div>
+            <h2 className="gc-section-title">为持续交付的创作者设计，而不是为一次性爆款设计。</h2>
+            <p className="gc-section-sub">当前数据仍由 cases 派生，但展示层先切到 creator-first 的产品语言。</p>
+          </div>
+        </div>
+        <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-4">
+          {featuredCreators.map((creator) => (
+            <Link key={creator.slug} href={`/creators/${creator.slug}`} className="min-h-80 border-b border-r border-[var(--hair)] bg-white p-6 transition hover:bg-[var(--paper-2)]">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex gap-3">
+                  <span className="flex size-12 items-center justify-center border border-[var(--hair)] bg-[var(--paper-2)] font-mono text-sm font-semibold">
+                    {creator.name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span>
+                    <span className="block font-semibold">{creator.name}</span>
+                    <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--mute)]">
+                      {categoryLabels[creator.primaryCategory]} · {creator.sourceFootprint.slice(0, 2).join(" / ")}
+                    </span>
+                  </span>
+                </div>
+                <span className="border border-[var(--orange)] px-2 py-1 font-mono text-[10px] text-[var(--orange)]">
+                  {creator.highlightedLabel}
+                </span>
+              </div>
+              <p className="mt-6 text-sm leading-7 text-[var(--mute)]">{creator.bio}</p>
+              <div className="mt-6 grid grid-cols-3 gap-2">
+                <MiniMetric label="Cases" value={creator.representativeCases.length} />
+                <MiniMetric label="Love" value={creator.averageFavoriteScore} />
+                <MiniMetric label="Stab." value={creator.averageStabilityScore} />
+              </div>
+              <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
+                Method maturity · {Math.min(5, Math.max(2, Math.round(creator.averageStabilityScore / 20)))}/5
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="gc-section">
+        <div className="gc-section-head">
+          <div className="gc-section-id">§ 06 · 方法包</div>
+          <div>
+            <h2 className="gc-section-title">当模式反复出现，就升级成 Skill。</h2>
+            <p className="gc-section-sub">这里先作为 Beta 方法包种子区，后续接真实 Skill 生成门槛。</p>
+          </div>
+        </div>
+        <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
+          {skillCases.map((item, index) => (
+            <article key={item.slug} className="min-h-80 border-b border-r border-[var(--hair)] bg-white p-6">
+              <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
+                <span>Skill · {String(index + 1).padStart(4, "0")}</span>
+                <span className={index % 3 === 2 ? "text-[var(--mute)]" : "text-[var(--orange)]"}>
+                  {index % 3 === 2 ? "Sign-in" : "Open"}
+                </span>
+              </div>
+              <h3 className="mt-7 text-2xl font-semibold tracking-[-0.03em]">{item.title}</h3>
+              <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--mute)]">
+                {categoryLabels[item.category]} · Beta 方法种子
+              </p>
+              <div className="mt-6 grid gap-3 font-mono text-[11px]">
+                <div className="grid grid-cols-[76px_1fr] gap-3 border-b border-dashed border-[var(--concrete)] pb-3">
+                  <span className="text-[var(--mute)]">Stack</span>
+                  <span>{item.recommendedModels.slice(0, 2).join(" / ")}</span>
+                </div>
+                <div className="grid grid-cols-[76px_1fr] gap-3 border-b border-dashed border-[var(--concrete)] pb-3">
+                  <span className="text-[var(--mute)]">Output</span>
+                  <span>{item.summary.slice(0, 58)}...</span>
+                </div>
+                <div className="grid grid-cols-[76px_1fr] gap-3">
+                  <span className="text-[var(--mute)]">By</span>
+                  <span>{item.creator}</span>
+                </div>
+              </div>
+              <div className="mt-7 flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
+                <span>{item.remakeCount} related runs</span>
+                <Link href={`/cases/${item.slug}`} className="text-[var(--orange)]">
+                  View ↗
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="gc-section pb-6">
+        <div className="grid gap-6 border border-[var(--hair)] bg-[var(--ink)] p-8 text-[var(--paper)] md:grid-cols-[1fr_auto] md:items-end">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.12em] text-[var(--orange)]">GoodCase.ai Beta</p>
+            <h2 className="mt-5 max-w-3xl text-5xl font-medium leading-[0.98] tracking-[-0.045em] md:text-7xl">
+              不只收藏案例，顺着创作者找到方法。
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/cases" className="gc-btn border-white text-white hover:bg-white hover:text-[var(--ink)]">
+              进入案例库
+            </Link>
+            {!user ? (
+              <Link href="/login" className="gc-btn bg-[var(--orange)] text-white hover:bg-white hover:text-[var(--ink)]">
+                登录查看更多
+              </Link>
+            ) : null}
+          </div>
+        </div>
       </section>
     </SiteShell>
   );
