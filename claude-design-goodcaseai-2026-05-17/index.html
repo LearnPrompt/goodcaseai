@@ -1,0 +1,1339 @@
+<!doctype html>
+<html lang="en" data-locale="en">
+<head>
+<meta charset="utf-8" />
+<title data-i18n="meta.title">GoodCaseAI — Not just cases. Follow the creators behind them.</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/core.css">
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <span class="brand-mark"></span>
+      <span>GoodCase<strong style="font-weight:700">AI</strong></span>
+    </a>
+    <div class="links">
+      <a href="#discover" data-i18n="nav.discover">Discover</a>
+      <a href="#rankings" data-i18n="nav.love">Love Ranking</a>
+      <a href="#rankings" data-i18n="nav.lab">Stability Lab</a>
+      <a href="#creators" data-i18n="nav.creators">Creators</a>
+      <a href="#skills" data-i18n="nav.skills">Skills</a>
+      <a href="#methodology" data-i18n="nav.method">Methodology</a>
+      <a href="#changelog" data-i18n="nav.changelog">Changelog</a>
+    </div>
+    <div class="meta">
+      <span class="lang" id="lang-switch" role="group" aria-label="Locale">
+        <span class="on" data-set-locale="en">EN</span><span data-set-locale="zh">中文</span>
+      </span>
+      <a class="btn btn-ghost" href="#" data-i18n="nav.signin">Sign in</a>
+      <a class="btn btn-primary" href="#"><span data-i18n="nav.submit">Submit a Case</span> <span class="arrow">→</span></a>
+    </div>
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="wrap">
+    <span class="live" data-i18n="rail.live_discover">LIVE · DISCOVER</span>
+    <span class="sep"></span>
+    <span data-i18n="rail.sources">SOURCES X · GITHUB · BILI · XHS · DISCORD</span>
+    <span class="sep"></span>
+    <span data-i18n="rail.cases">CASES INDEXED 4,218</span>
+    <span class="sep"></span>
+    <span data-i18n="rail.creators">CREATORS TRACKED 612</span>
+    <span class="sep"></span>
+    <span class="live" data-i18n="rail.live_lab">LIVE · STABILITY LAB</span>
+    <span class="sep"></span>
+    <span data-i18n="rail.run">RUN #0412 · veo-3 / sora-2 / kling-2 / hailuo-02</span>
+    <span class="sep"></span>
+    <span data-i18n="rail.metrics">REPRO 74.2% · COST $0.43/CLIP · N=128</span>
+    <span class="sep"></span>
+    <span data-i18n="rail.skills">SKILLS PROMOTED 37</span>
+    <span class="sep"></span>
+    <span style="color:var(--ink)" data-i18n="rail.version">v0.14.3 · 2026.04.18</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <!-- LEFT -->
+      <div>
+        <span class="eyebrow mono" data-i18n="hero.pre">PLATFORM · Not just cases. Follow the creators behind them.</span>
+        <h1>
+          <span data-i18n="hero.h1_a">Rank what’s</span> <em data-i18n="hero.h1_b">real</em><span data-i18n="hero.h1_c">. Follow</span><br/>
+          <span data-i18n="hero.h1_d">who keeps</span> <em data-i18n="hero.h1_e">shipping</em>.
+        </h1>
+        <p class="hero-lede" data-i18n="hero.lede">
+          GoodCaseAI tracks the AI videos and workflows moving across China and the global AI web, reruns the strongest cases across frontier models, and turns repeat creator patterns into reusable Skills.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#rankings"><span data-i18n="hero.btn.rankings">Explore Rankings</span> <span class="arrow">→</span></a>
+          <a class="btn" href="#" data-i18n="hero.btn.submit">Submit a Case</a>
+          <a class="btn btn-ghost" href="#" data-i18n="hero.btn.claim">Claim Creator Profile</a>
+        </div>
+        <div class="hero-meta">
+          <span><strong>4,218</strong> <span data-i18n="hero.m.cases">cases</span></span>
+          <span><strong>612</strong> <span data-i18n="hero.m.creators">creators</span></span>
+          <span><strong>37</strong> <span data-i18n="hero.m.skills">skills</span></span>
+          <span><strong>128</strong> <span data-i18n="hero.m.runs">lab runs / wk</span></span>
+        </div>
+      </div>
+
+      <!-- RIGHT — product preview window -->
+      <div style="position:relative;">
+        <div class="anno anno-t">
+          <span data-i18n="hero.anno.a">A · LOVE RANKING</span>
+          <span class="ln"></span>
+        </div>
+        <div class="anno anno-r">
+          <span class="ln" style="height:40px;"></span>
+          <span data-i18n="hero.anno.b1">B · STABILITY LAB</span><br/>
+          <span data-i18n="hero.anno.b2">Cross-model repro</span><br/>
+          <span data-i18n="hero.anno.b3">74.2% / $0.43</span>
+        </div>
+        <div class="anno anno-b">
+          <span class="ln"></span>
+          <span data-i18n="hero.anno.c">C · CREATOR + SKILL ◇</span>
+        </div>
+
+        <div class="preview">
+          <div class="preview-bar">
+            <div class="dots"><i></i><i></i><i></i></div>
+            <div class="url">goodcase.ai / discover / ai-video-15s</div>
+            <div style="min-width:40px;text-align:right;">▢</div>
+          </div>
+          <div class="preview-body">
+
+            <!-- Thumbnails strip (full width) -->
+            <div class="preview-full">
+              <div class="pv-title">
+                <span data-i18n="hero.pv.trending">TRENDING · 15s VIDEO · 24H</span>
+                <span class="status" data-i18n="hero.pv.live">● LIVE</span>
+              </div>
+              <div class="thumbs">
+                <div class="thumb">
+                  <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+                    <defs><pattern id="p1" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(20)">
+                      <rect width="6" height="6" fill="#1a1a14"/><line x1="0" y1="0" x2="0" y2="6" stroke="#2a2a20" stroke-width="1"/>
+                    </pattern></defs>
+                    <rect width="100" height="133" fill="url(#p1)"/>
+                    <circle cx="50" cy="60" r="18" fill="none" stroke="#FF5733" stroke-width="1"/>
+                    <text x="50" y="64" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#FF5733">15s</text>
+                  </svg>
+                  <span class="rank">#01</span>
+                  <span class="tag">VEO-3</span>
+                </div>
+                <div class="thumb">
+                  <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+                    <defs><pattern id="p2" width="10" height="10" patternUnits="userSpaceOnUse">
+                      <rect width="10" height="10" fill="#15120f"/><circle cx="5" cy="5" r="1" fill="#3a2a20"/>
+                    </pattern></defs>
+                    <rect width="100" height="133" fill="url(#p2)"/>
+                    <rect x="30" y="50" width="40" height="28" fill="none" stroke="#e6e6e1" stroke-width=".5"/>
+                  </svg>
+                  <span class="rank">#02</span>
+                  <span class="tag">SORA-2</span>
+                </div>
+                <div class="thumb">
+                  <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+                    <defs><pattern id="p3" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                      <rect width="4" height="4" fill="#1f1a14"/><line x1="0" y1="0" x2="4" y2="0" stroke="#8a5a30" stroke-width=".5"/>
+                    </pattern></defs>
+                    <rect width="100" height="133" fill="url(#p3)"/>
+                  </svg>
+                  <span class="rank">#03</span>
+                  <span class="tag">KLING-2</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Love ranking fragment -->
+            <div>
+              <div class="pv-title">
+                <span data-i18n="hero.pv.love">LOVE RANKING · 喜爱榜</span>
+                <span data-i18n="hero.pv.24h">24H</span>
+              </div>
+              <div class="love-row">
+                <span class="idx">01</span>
+                <div><div class="name">Paperfold city loop</div><div class="creator">@linzi · 林子</div></div>
+                <span class="score">♥ <b>9.4</b>K</span>
+              </div>
+              <div class="love-row">
+                <span class="idx">02</span>
+                <div><div class="name">Ink rain in Chongqing</div><div class="creator">@monk.studio</div></div>
+                <span class="score">♥ <b>7.8</b>K</span>
+              </div>
+              <div class="love-row">
+                <span class="idx">03</span>
+                <div><div class="name">Neon courier cat 15s</div><div class="creator">@neko_ops</div></div>
+                <span class="score">♥ <b>6.1</b>K</span>
+              </div>
+              <div class="love-row">
+                <span class="idx">04</span>
+                <div><div class="name">Claude MCP doc agent</div><div class="creator">@yuki.dev</div></div>
+                <span class="score">♥ <b>4.9</b>K</span>
+              </div>
+            </div>
+
+            <!-- Stability lab card -->
+            <div>
+              <div class="pv-title">
+                <span data-i18n="hero.pv.lab">STABILITY LAB · CASE #0412</span>
+                <span class="status" data-i18n="hero.pv.runcomplete">● RUN COMPLETE</span>
+              </div>
+              <div style="font-size:13px;font-weight:600;letter-spacing:-.01em;margin-bottom:2px;">Paperfold city loop</div>
+              <div class="mono" style="font-size:10px;color:var(--mute);margin-bottom:10px;" data-i18n="hero.pv.prompt">PROMPT HASH 0x8fA2 · N=24 · 2026.04.18</div>
+              <div class="lab-card">
+                <div class="metric">
+                  <div class="k" data-i18n="hero.pv.k.repro">REPRO RATE</div>
+                  <div class="v">74.2<small>%</small></div>
+                  <div class="bar"><i style="width:74%"></i></div>
+                </div>
+                <div class="metric">
+                  <div class="k" data-i18n="hero.pv.k.consistency">CONSISTENCY</div>
+                  <div class="v">8.6<small>/10</small></div>
+                  <div class="bar ink"><i style="width:86%"></i></div>
+                </div>
+                <div class="metric">
+                  <div class="k" data-i18n="hero.pv.k.cost">AVG COST</div>
+                  <div class="v">$0.43</div>
+                  <div class="mono" style="font-size:9px;color:var(--mute);margin-top:6px;" data-i18n="hero.pv.cost.unit">PER 15s CLIP</div>
+                </div>
+                <div class="metric">
+                  <div class="k" data-i18n="hero.pv.k.models">MODELS</div>
+                  <div class="v" style="font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:500;line-height:1.4;margin-top:6px;">veo-3 · sora-2<br/>kling-2 · hailuo</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Creator + Skill (full width, prominent) -->
+            <div class="preview-full" style="background:var(--paper-2);">
+              <div class="pv-title">
+                <span data-i18n="hero.pv.creator">CREATOR · profile & methodology</span>
+                <span data-i18n="hero.pv.claimed">PROFILE CLAIMED ✓</span>
+              </div>
+              <div class="creator-card" style="padding-bottom:14px;border-bottom:1px solid var(--concrete);grid-template-columns:56px 1fr auto;gap:14px;">
+                <div class="avatar" style="width:56px;height:56px;font-size:14px;">LZ</div>
+                <div>
+                  <div style="font-weight:600;font-size:16px;letter-spacing:-.01em;">林子 · Linzi</div>
+                  <div class="mono" style="font-size:10px;color:var(--mute);margin-top:4px;" data-i18n="hero.pv.loc">SHANGHAI · X · XHS · 12 NOTABLE CASES</div>
+                  <div class="mono" style="margin-top:8px;display:flex;gap:10px;font-size:11px;">
+                    <span style="color:var(--orange);font-weight:600;">LOVE 94</span>
+                    <span>STAB 81</span>
+                    <span style="color:var(--mute);">CASES 12</span>
+                  </div>
+                </div>
+                <a class="btn btn-ghost" href="#" style="padding:8px 10px;font-size:11px;" data-i18n="hero.pv.visit">Visit Creator ↗</a>
+              </div>
+              <div style="margin-top:12px;">
+                <span class="mono" style="font-size:10px;color:var(--mute);letter-spacing:.08em;" data-i18n="hero.pv.related">RELATED SKILLS</span>
+                <div style="margin-top:8px;">
+                  <span class="skill-chip orange">PAPERFOLD-LOOP</span>
+                  <span class="skill-chip">CJK-TYPO-MOTION</span>
+                  <span class="skill-chip lock">COURIER-CAMERA ◇</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- DISCOVER -->
+<section class="section" id="discover">
+  <div class="wrap">
+    <div class="section-head">
+      <div><div class="section-id mono" data-i18n="disc.id">§ 01 · DISCOVER</div></div>
+      <div>
+        <h2 class="section-title" data-i18n="disc.title">Discover what is moving now.</h2>
+        <p class="section-sub" data-i18n="disc.sub">A live intake of AI videos and workflows across X, GitHub, Bilibili, Xiaohongshu, Discord, creator newsletters, and selected community sources.</p>
+      </div>
+    </div>
+    <div style="border:1px solid var(--hair);background:#fff;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--hair);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mute);letter-spacing:.08em;">
+        <span style="color:var(--orange);display:inline-flex;align-items:center;gap:8px;"><span style="width:6px;height:6px;background:var(--orange);display:inline-block;animation:blink 1.4s infinite"></span><span data-i18n="disc.rail">LIVE INTAKE · 04:12 CST</span></span>
+        <span data-i18n="disc.throughput">THROUGHPUT 128 / HR</span>
+        <span data-i18n="disc.queue">QUEUE 412 PENDING</span>
+      </div>
+      <!-- live intake feed — chronological, not per-platform -->
+      <div style="display:grid;grid-template-columns:100px 110px 1fr 180px 120px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);letter-spacing:.06em;padding:10px 20px;border-bottom:1px solid var(--hair);background:var(--paper-2);">
+        <span data-i18n="disc.col.time">TIME</span><span data-i18n="disc.col.src">SOURCE</span><span data-i18n="disc.col.item">ITEM</span><span data-i18n="disc.col.creator">CREATOR</span><span data-i18n="disc.col.state">STATE</span>
+      </div>
+      <div id="discover-feed">
+        <div class="intake-row new"><span class="t">04:12:07</span><span class="src">X / 𝕏</span><div class="it"><b>Paperfold city loop</b><span class="tg">15s VIDEO · VEO-3</span></div><span class="cr">@linzi · 林子</span><span class="st live">● JUST ARRIVED</span></div>
+        <div class="intake-row"><span class="t">04:11:44</span><span class="src">GitHub</span><div class="it"><b>Claude MCP doc agent</b><span class="tg">7-STEP WORKFLOW · 2.1K★</span></div><span class="cr">@yuki.dev</span><span class="st">INDEXED</span></div>
+        <div class="intake-row"><span class="t">04:10:19</span><span class="src">Xiaohongshu</span><div class="it"><b>Ink rain in Chongqing</b><span class="tg">15s VIDEO · KLING-2</span></div><span class="cr">@monk.studio</span><span class="st">INDEXED</span></div>
+        <div class="intake-row"><span class="t">04:08:52</span><span class="src">Discord</span><div class="it"><b>OpenClaw content loop</b><span class="tg">12-STEP WORKFLOW</span></div><span class="cr">@ops_lab</span><span class="st">DEDUP ✓</span></div>
+        <div class="intake-row"><span class="t">04:07:31</span><span class="src">Bilibili</span><div class="it"><b>Wuxia rooftops 15s</b><span class="tg">15s VIDEO · VEO-3</span></div><span class="cr">@jianghu</span><span class="st">INDEXED</span></div>
+        <div class="intake-row"><span class="t">04:06:02</span><span class="src">Newsletters</span><div class="it"><b>Neon courier cat 15s</b><span class="tg">15s VIDEO · SORA-2</span></div><span class="cr">@neko_ops</span><span class="st">INDEXED</span></div>
+        <div class="intake-row"><span class="t">04:04:47</span><span class="src">X / 𝕏</span><div class="it"><b>Qipao motion study</b><span class="tg">15s VIDEO · HAILUO-02</span></div><span class="cr">@shuyi.film</span><span class="st">INDEXED</span></div>
+        <div class="intake-row"><span class="t">04:02:18</span><span class="src">GitHub</span><div class="it"><b>cursor-rules bundle v3</b><span class="tg">WORKFLOW · 940★</span></div><span class="cr">@dingd.ai</span><span class="st muted">DUP — SKIPPED</span></div>
+        <div class="intake-row"><span class="t">03:59:05</span><span class="src">Xiaohongshu</span><div class="it"><b>Paper cut village seasons</b><span class="tg">15s VIDEO · KLING-2</span></div><span class="cr">@rongrong</span><span class="st">INDEXED</span></div>
+        <div class="intake-row"><span class="t">03:56:41</span><span class="src">X / 𝕏</span><div class="it"><b>Night market bokeh walk</b><span class="tg">15s VIDEO · SORA-2</span></div><span class="cr">@latenite.cc</span><span class="st">INDEXED</span></div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--hair);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mute);letter-spacing:.06em;display:flex;justify-content:space-between;align-items:center;">
+        <span data-i18n="disc.feed.today">TODAY · 412 INDEXED · 48 DEDUPED · 27 PROMOTED TO RANKINGS</span>
+        <a href="#" style="color:var(--ink);border-bottom:1px solid var(--ink);text-decoration:none;" data-i18n="disc.feed.open">Open full feed ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RANKINGS -->
+<section class="section" id="rankings">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono" data-i18n="rk.id">§ 04 · RANKINGS</div>
+      </div>
+      <div>
+        <h2 class="section-title" data-i18n="rk.title">Two rankings. One reads people, one reads models.</h2>
+        <p class="section-sub" data-i18n="rk.sub">Love Ranking is community signal. Stability Ranking is what survives the same prompt across frontier models.</p>
+      </div>
+    </div>
+
+    <div class="rank-grid">
+      <!-- LOVE -->
+      <div class="rank-col">
+        <div class="rank-head">
+          <div class="t"><span class="dot"></span> Love Ranking · <span class="mono" style="font-weight:400;font-size:14px;color:var(--mute);">好评榜</span></div>
+          <div class="meta">UPDATED 04:12 · 24H</div>
+        </div>
+        <div class="rank-filters">
+          <span class="f on">AI VIDEO 15s</span>
+          <span class="f">CODING WF</span>
+          <span class="f">CHINA</span>
+          <span class="f">GLOBAL</span>
+          <span class="f">X / 𝕏</span>
+          <span class="f">BILIBILI</span>
+          <span class="f">XHS</span>
+        </div>
+        <div class="rank-table">
+          <div class="rrow">
+            <span class="idx top">01</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#16140f"/><path d="M20 100 L50 40 L80 100 Z" fill="none" stroke="#FF5733" stroke-width=".8"/><path d="M10 110 L90 110" stroke="#e6e6e1" stroke-width=".3"/></svg></div>
+            <div class="title">Paperfold city loop<small>CASE #0412 · 15s · VEO-3</small></div>
+            <div class="creator">@linzi · 上海</div>
+            <div class="k">♥ <b>9.4K</b></div>
+            <div class="arrow">↑ 412</div>
+          </div>
+          <div class="rrow">
+            <span class="idx top">02</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><defs><pattern id="m2" width="3" height="3" patternUnits="userSpaceOnUse"><rect width="3" height="3" fill="#0f1014"/><circle cx="1.5" cy="1.5" r=".4" fill="#aaa"/></pattern></defs><rect width="100" height="133" fill="url(#m2)"/></svg></div>
+            <div class="title">Ink rain in Chongqing<small>CASE #0407 · 15s · KLING-2</small></div>
+            <div class="creator">@monk.studio · 重庆</div>
+            <div class="k">♥ <b>7.8K</b></div>
+            <div class="arrow">↑ 88</div>
+          </div>
+          <div class="rrow">
+            <span class="idx top">03</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#1a120c"/><rect x="30" y="55" width="40" height="28" fill="none" stroke="#FF5733" stroke-width=".6"/><circle cx="50" cy="40" r="6" fill="#FF5733"/></svg></div>
+            <div class="title">Neon courier cat 15s<small>CASE #0401 · 15s · SORA-2</small></div>
+            <div class="creator">@neko_ops · TOKYO</div>
+            <div class="k">♥ <b>6.1K</b></div>
+            <div class="arrow">↑ 54</div>
+          </div>
+          <div class="rrow">
+            <span class="idx">04</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#0c0f0e"/><path d="M10 30 Q50 70 90 30" fill="none" stroke="#e6e6e1" stroke-width=".5"/><path d="M10 60 Q50 100 90 60" fill="none" stroke="#FF5733" stroke-width=".5"/></svg></div>
+            <div class="title">Claude MCP doc agent<small>CASE #0395 · CODING WF</small></div>
+            <div class="creator">@yuki.dev · SF</div>
+            <div class="k">♥ <b>4.9K</b></div>
+            <div class="arrow">↑ 32</div>
+          </div>
+          <div class="rrow">
+            <span class="idx">05</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#121014"/><circle cx="50" cy="66" r="28" fill="none" stroke="#e6e6e1" stroke-width=".4"/><circle cx="50" cy="66" r="14" fill="none" stroke="#FF5733" stroke-width=".4"/></svg></div>
+            <div class="title">Moth ritual portrait<small>CASE #0388 · 15s · HAILUO-02</small></div>
+            <div class="creator">@hana.sim · BERLIN</div>
+            <div class="k">♥ <b>4.2K</b></div>
+            <div class="arrow" style="color:var(--mute);">· —</div>
+          </div>
+          <div class="rrow">
+            <span class="idx">06</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#0f1014"/><g stroke="#FF5733" stroke-width=".4" fill="none"><path d="M10 30h80M10 50h80M10 70h80M10 90h80"/></g></svg></div>
+            <div class="title">Wuxia rooftops 15s<small>CASE #0382 · 15s · VEO-3</small></div>
+            <div class="creator">@jianghu · 成都</div>
+            <div class="k">♥ <b>3.7K</b></div>
+            <div class="arrow">↓ 12</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STABILITY -->
+      <div class="rank-col">
+        <div class="rank-head">
+          <div class="t"><span class="dot"></span> <span data-i18n="rk.stab.t">Stability Ranking</span> · <span class="mono" style="font-weight:400;font-size:14px;color:var(--mute);" data-i18n="rk.stab.zh">稳定榜</span></div>
+          <div class="meta" data-i18n="rk.stab.meta">LAB RUN 04·12 · N=24/CASE</div>
+        </div>
+        <div class="rank-filters">
+          <span class="f on">MODEL: ALL</span>
+          <span class="f">COST ↑</span>
+          <span class="f">REPRO ↑</span>
+          <span class="f">CONSIST.</span>
+          <span class="f">DRIFT ↓</span>
+          <span class="f">15s</span>
+          <span class="f">CODING WF</span>
+        </div>
+        <div class="rank-table">
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);font-weight:600;">01</span>
+            <div class="evid"><svg viewBox="0 0 40 30" preserveAspectRatio="xMidYMid slice"><rect width="40" height="30" fill="#1a1a1a"/><path d="M0 22 L8 14 L14 20 L20 10 L26 18 L32 12 L40 22 L40 30 L0 30Z" fill="#D97757"/><path d="M8 14 L14 20 L8 14 Z M20 10 L26 18 L20 10Z" fill="#8a4a35" opacity=".7"/></svg><span class="ebadge">VEO-3</span></div>
+            <div class="title">Paperfold city loop <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=24 · hash 0x8fA2 · 15s</small></div>
+            <div class="models">
+              <span class="mchip pass">veo-3</span>
+              <span class="mchip pass">kling-2</span>
+              <span class="mchip">sora-2</span>
+              <span class="mchip fail">hailuo</span>
+            </div>
+            <div class="repro"><b>74.2%</b></div>
+            <div class="cost">$0.43</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);font-weight:600;">02</span>
+            <div class="evid"><svg viewBox="0 0 40 30" preserveAspectRatio="xMidYMid slice"><rect width="40" height="30" fill="#0f0f0f"/><rect x="4" y="6" width="20" height="2" fill="#D97757"/><rect x="4" y="10" width="14" height="2" fill="#666"/><rect x="4" y="14" width="24" height="2" fill="#D97757"/><rect x="4" y="18" width="10" height="2" fill="#666"/><rect x="4" y="22" width="18" height="2" fill="#aaa"/></svg><span class="ebadge">CLD-S4</span></div>
+            <div class="title">Claude MCP doc agent <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=32 · 7 STEPS · CODING WF</small></div>
+            <div class="models">
+              <span class="mchip pass">cld-s4</span>
+              <span class="mchip pass">gpt-5</span>
+              <span class="mchip pass">qwen-3</span>
+              <span class="mchip">glm-5</span>
+            </div>
+            <div class="repro"><b>91.0%</b></div>
+            <div class="cost">$0.11</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);">03</span>
+            <div class="evid"><svg viewBox="0 0 40 30" preserveAspectRatio="xMidYMid slice"><rect width="40" height="30" fill="#0b0b0b"/><g stroke="#8a8a8a" stroke-width=".5"><line x1="4" y1="0" x2="0" y2="8"/><line x1="12" y1="0" x2="8" y2="10"/><line x1="20" y1="0" x2="16" y2="12"/><line x1="28" y1="0" x2="24" y2="9"/><line x1="36" y1="0" x2="32" y2="11"/><line x1="14" y1="14" x2="10" y2="24"/><line x1="22" y1="14" x2="18" y2="26"/><line x1="30" y1="14" x2="26" y2="25"/></g><rect x="0" y="22" width="40" height="8" fill="#1d1d1d"/></svg><span class="ebadge">KLING-2</span></div>
+            <div class="title">Ink rain in Chongqing <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=24 · 15s · WEATHER</small></div>
+            <div class="models">
+              <span class="mchip pass">kling-2</span>
+              <span class="mchip">veo-3</span>
+              <span class="mchip fail">sora-2</span>
+              <span class="mchip fail">hailuo</span>
+            </div>
+            <div class="repro"><b>52.1%</b></div>
+            <div class="cost">$0.58</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);">04</span>
+            <div class="evid"><svg viewBox="0 0 40 30" preserveAspectRatio="xMidYMid slice"><rect width="40" height="30" fill="#0a0a0a"/><rect x="0" y="18" width="40" height="1" fill="#D97757"/><ellipse cx="20" cy="22" rx="8" ry="3" fill="#D97757" opacity=".3"/><path d="M14 20 L14 16 L16 14 L18 16 L22 16 L24 14 L26 16 L26 20 Z" fill="#D97757"/><rect x="26" y="17" width="4" height="2" fill="#fff"/></svg><span class="ebadge">SORA-2</span></div>
+            <div class="title">Neon courier cat 15s <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=24 · 15s · CHAR MOTION</small></div>
+            <div class="models">
+              <span class="mchip pass">sora-2</span>
+              <span class="mchip pass">veo-3</span>
+              <span class="mchip">kling-2</span>
+              <span class="mchip fail">hailuo</span>
+            </div>
+            <div class="repro"><b>66.7%</b></div>
+            <div class="cost">$0.49</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);">05</span>
+            <div class="evid"><svg viewBox="0 0 40 30" preserveAspectRatio="xMidYMid slice"><rect width="40" height="30" fill="#0f0f0f"/><g stroke="#D97757" stroke-width=".5" fill="none"><path d="M6 15 L16 8 M6 15 L16 22 M16 8 L28 15 M16 22 L28 15 M28 15 L36 15"/></g><g fill="#D97757"><circle cx="6" cy="15" r="1.8"/><circle cx="16" cy="8" r="1.8"/><circle cx="16" cy="22" r="1.8"/><circle cx="28" cy="15" r="1.8"/><circle cx="36" cy="15" r="1.8"/></g></svg><span class="ebadge">CLD-S4</span></div>
+            <div class="title">OpenClaw content agent <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=18 · 12 STEPS · AUTOMATION</small></div>
+            <div class="models">
+              <span class="mchip pass">cld-s4</span>
+              <span class="mchip pass">gpt-5</span>
+              <span class="mchip">glm-5</span>
+              <span class="mchip fail">llama-4</span>
+            </div>
+            <div class="repro"><b>83.3%</b></div>
+            <div class="cost">$0.22</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);">06</span>
+            <div class="evid"><svg viewBox="0 0 40 30" preserveAspectRatio="xMidYMid slice"><rect width="40" height="30" fill="#1a1a1a"/><circle cx="32" cy="8" r="4" fill="#D97757" opacity=".8"/><path d="M0 26 L6 20 L10 22 L14 16 L20 12 L26 18 L32 14 L40 20 L40 30 L0 30Z" fill="#000"/><path d="M10 22 L14 16 L18 20 L14 22 Z" fill="#2a2a2a"/></svg><span class="ebadge">VEO-3</span></div>
+            <div class="title">Wuxia rooftops 15s <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=24 · 15s · ACTION</small></div>
+            <div class="models">
+              <span class="mchip pass">veo-3</span>
+              <span class="mchip">kling-2</span>
+              <span class="mchip fail">sora-2</span>
+              <span class="mchip fail">hailuo</span>
+            </div>
+            <div class="repro"><b>41.7%</b></div>
+            <div class="cost">$0.61</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CREATOR SHOWCASE -->
+<section class="section" id="creators">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono" data-i18n="cr.id">§ 05 · CREATORS</div>
+      </div>
+      <div>
+        <h2 class="section-title" data-i18n="cr.title">Built for creators who keep shipping.</h2>
+        <p class="section-sub" data-i18n="cr.sub">Each profile tracks a body of work, not one lucky post.</p>
+      </div>
+    </div>
+
+    <div class="creators">
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">LZ</div>
+            <div>
+              <div class="name">林子 · Linzi</div>
+              <div class="sub">SHANGHAI · CN · FOLDS / 15s</div>
+              <div class="platforms"><span>X ↗</span><span>XHS ↗</span><span>WB ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--orange);border:1px solid var(--orange);padding:3px 6px;" data-i18n="cr.claimed">CLAIMED ✓</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k" data-i18n="cr.k.cases">CASES</div><div class="v">12</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.love">LOVE</div><div class="v orange">94</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.stab">STAB.</div><div class="v">81</div></div>
+        </div>
+        <div class="maturity">
+          <span data-i18n="cr.maturity">METHOD MATURITY</span>
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#" data-i18n="cr.follow">Follow</a>
+          <a class="btn" href="#"><span data-i18n="cr.view">Visit Creator ↗</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">MK</div>
+            <div>
+              <div class="name">Monk Studio</div>
+              <div class="sub">CHONGQING · CN · ATMOSPHERIC</div>
+              <div class="platforms"><span>XHS ↗</span><span>BILI ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--orange);border:1px solid var(--orange);padding:3px 6px;" data-i18n="cr.claimed">CLAIMED ✓</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k" data-i18n="cr.k.cases">CASES</div><div class="v">9</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.love">LOVE</div><div class="v orange">88</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.stab">STAB.</div><div class="v">66</div></div>
+        </div>
+        <div class="maturity">
+          <span data-i18n="cr.maturity">METHOD MATURITY</span>
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#" data-i18n="cr.follow">Follow</a>
+          <a class="btn" href="#"><span data-i18n="cr.view">Visit Creator ↗</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">YK</div>
+            <div>
+              <div class="name">Yuki Dev</div>
+              <div class="sub">SAN FRANCISCO · CODING WF</div>
+              <div class="platforms"><span>X ↗</span><span>GH ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--mute);border:1px solid var(--concrete-2);padding:3px 6px;" data-i18n="cr.unclaimed">UNCLAIMED ◇</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k" data-i18n="cr.k.cases">CASES</div><div class="v">14</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.love">LOVE</div><div class="v orange">79</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.stab">STAB.</div><div class="v">92</div></div>
+        </div>
+        <div class="maturity">
+          <span data-i18n="cr.maturity">METHOD MATURITY</span>
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#" data-i18n="cr.claim">Claim Profile</a>
+          <a class="btn" href="#"><span data-i18n="cr.view">Visit Creator ↗</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">NK</div>
+            <div>
+              <div class="name">neko_ops</div>
+              <div class="sub">TOKYO · JP · CHAR MOTION</div>
+              <div class="platforms"><span>X ↗</span><span>TT ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--mute);border:1px solid var(--concrete-2);padding:3px 6px;" data-i18n="cr.unclaimed">UNCLAIMED ◇</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k" data-i18n="cr.k.cases">CASES</div><div class="v">7</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.love">LOVE</div><div class="v orange">82</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.stab">STAB.</div><div class="v">71</div></div>
+        </div>
+        <div class="maturity">
+          <span data-i18n="cr.maturity">METHOD MATURITY</span>
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#" data-i18n="cr.follow">Follow</a>
+          <a class="btn" href="#"><span data-i18n="cr.view">Visit Creator ↗</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">HN</div>
+            <div>
+              <div class="name">hana.sim</div>
+              <div class="sub">BERLIN · DE · PORTRAIT / RITUAL</div>
+              <div class="platforms"><span>X ↗</span><span>IG ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--orange);border:1px solid var(--orange);padding:3px 6px;" data-i18n="cr.claimed">CLAIMED ✓</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k" data-i18n="cr.k.cases">CASES</div><div class="v">6</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.love">LOVE</div><div class="v orange">76</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.stab">STAB.</div><div class="v">58</div></div>
+        </div>
+        <div class="maturity">
+          <span data-i18n="cr.maturity">METHOD MATURITY</span>
+          <span class="pips"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#" data-i18n="cr.follow">Follow</a>
+          <a class="btn" href="#"><span data-i18n="cr.view">Visit Creator ↗</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">OP</div>
+            <div>
+              <div class="name">ops_lab</div>
+              <div class="sub">SHENZHEN · CN · AUTOMATION</div>
+              <div class="platforms"><span>X ↗</span><span>GH ↗</span><span>WB ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--orange);border:1px solid var(--orange);padding:3px 6px;" data-i18n="cr.claimed">CLAIMED ✓</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k" data-i18n="cr.k.cases">CASES</div><div class="v">18</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.love">LOVE</div><div class="v orange">71</div></div>
+          <div class="s"><div class="k" data-i18n="cr.k.stab">STAB.</div><div class="v">88</div></div>
+        </div>
+        <div class="maturity">
+          <span data-i18n="cr.maturity">METHOD MATURITY</span>
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#" data-i18n="cr.follow">Follow</a>
+          <a class="btn" href="#"><span data-i18n="cr.view">Visit Creator ↗</span></a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SKILL LIBRARY -->
+<section class="section" id="skills">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono" data-i18n="sk.id">§ 06 · SKILLS</div>
+      </div>
+      <div>
+        <h2 class="section-title" data-i18n="sk.title">When a pattern repeats, it becomes a Skill.</h2>
+        <p class="section-sub" data-i18n="sk.sub">Skills are reusable creator methods with clear attribution.</p>
+      </div>
+    </div>
+
+    <div class="skills">
+
+      <div class="skill-cell">
+        <div class="skill-head">
+          <span class="id">SKILL · 0012</span>
+          <span class="state open">OPEN</span>
+        </div>
+        <h4 data-i18n="sk.1.h">Paperfold loop</h4>
+        <span class="zh">纸城循环法 · v0.3</span>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.use">USE CASE</span><span class="v" data-i18n="sk.1.use">looping 15s city/arch scene</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.stack">STACK</span><span class="v skill-stack"><span class="skill-chip">veo-3</span><span class="skill-chip">kling-2</span></span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.steps">STEPS</span><span class="v" data-i18n="sk.1.steps">4 · prompt → refine → rain pass → stitch</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.output">OUTPUT</span><span class="v" data-i18n="sk.1.output">warm-grey, ink-rain, slow orbit</span></div>
+        <div class="skill-bottom"><span><span data-i18n="sk.by">BY</span> <b>@linzi</b></span><span data-i18n="sk.1.related">12 RELATED CASES ↗</span></div>
+      </div>
+
+      <div class="skill-cell">
+        <div class="skill-head">
+          <span class="id">SKILL · 0009</span>
+          <span class="state open">OPEN</span>
+        </div>
+        <h4 data-i18n="sk.2.h">MCP doc agent</h4>
+        <span class="zh">文档代理法 · v0.7</span>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.use">USE CASE</span><span class="v" data-i18n="sk.2.use">auto knowledge base + recall</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.stack">STACK</span><span class="v skill-stack"><span class="skill-chip">cld-s4</span><span class="skill-chip">mcp</span><span class="skill-chip">obsidian</span></span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.steps">STEPS</span><span class="v" data-i18n="sk.2.steps">7 · ingest → chunk → link → index → query → summarize → publish</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.output">OUTPUT</span><span class="v" data-i18n="sk.2.output">graph-linked markdown, daily digest</span></div>
+        <div class="skill-bottom"><span><span data-i18n="sk.by">BY</span> <b>@yuki.dev</b></span><span data-i18n="sk.2.related">9 RELATED CASES ↗</span></div>
+      </div>
+
+      <div class="skill-cell locked">
+        <div class="skill-head">
+          <span class="id">SKILL · 0017</span>
+          <span class="state locked">SIGN-IN</span>
+        </div>
+        <h4 data-i18n="sk.3.h">OpenClaw content loop</h4>
+        <span class="zh">内容生产闭环 · v0.4</span>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.use">USE CASE</span><span class="v" data-i18n="sk.3.use">daily content production, CN+EN</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.stack">STACK</span><span class="v skill-stack"><span class="skill-chip">cld+gpt5</span><span class="skill-chip">openclaw</span><span class="skill-chip">notion</span></span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.steps">STEPS</span><span class="v">12 · <span style="color:var(--mute)" data-i18n="sk.3.lock">steps unlock with sign-in ◇</span></span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.output">OUTPUT</span><span class="v" data-i18n="sk.3.output">bilingual posts, scheduled</span></div>
+        <div class="skill-bottom"><span><span data-i18n="sk.by">BY</span> <b>@ops_lab</b></span><span style="color:var(--orange)" data-i18n="sk.unlock">UNLOCK ↗</span></div>
+      </div>
+
+      <div class="skill-cell">
+        <div class="skill-head">
+          <span class="id">SKILL · 0021</span>
+          <span class="state open">OPEN</span>
+        </div>
+        <h4 data-i18n="sk.4.h">Ink-weather pass</h4>
+        <span class="zh">墨天气法 · v0.2</span>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.use">USE CASE</span><span class="v" data-i18n="sk.4.use">atmosphere layer for 15s shots</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.stack">STACK</span><span class="v skill-stack"><span class="skill-chip">kling-2</span><span class="skill-chip">ae</span></span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.steps">STEPS</span><span class="v" data-i18n="sk.4.steps">3 · base clip → rain pass → regrade</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.output">OUTPUT</span><span class="v" data-i18n="sk.4.output">moody, sinogram-heavy, damp light</span></div>
+        <div class="skill-bottom"><span><span data-i18n="sk.by">BY</span> <b>@monk.studio</b></span><span data-i18n="sk.4.related">5 RELATED CASES ↗</span></div>
+      </div>
+
+      <div class="skill-cell locked">
+        <div class="skill-head">
+          <span class="id">SKILL · 0024</span>
+          <span class="state locked">CONTRIBUTE</span>
+        </div>
+        <h4 data-i18n="sk.5.h">Courier camera</h4>
+        <span class="zh">快递镜头法 · v0.1</span>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.use">USE CASE</span><span class="v" data-i18n="sk.5.use">character-POV 15s action</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.stack">STACK</span><span class="v skill-stack"><span class="skill-chip">sora-2</span><span class="skill-chip lock">◇ runway</span></span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.steps">STEPS</span><span class="v">5 · <span style="color:var(--mute)" data-i18n="sk.5.lock">submit a repro to unlock ◇</span></span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.output">OUTPUT</span><span class="v" data-i18n="sk.5.output">low-angle, motion-dense, neon</span></div>
+        <div class="skill-bottom"><span><span data-i18n="sk.by">BY</span> <b>@neko_ops</b></span><span style="color:var(--orange)" data-i18n="sk.contribute">CONTRIBUTE ↗</span></div>
+      </div>
+
+      <div class="skill-cell">
+        <div class="skill-head">
+          <span class="id">SKILL · 0006</span>
+          <span class="state open">OPEN</span>
+        </div>
+        <h4 data-i18n="sk.6.h">CJK typo motion</h4>
+        <span class="zh">中日韩字体动效 · v0.5</span>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.use">USE CASE</span><span class="v" data-i18n="sk.6.use">kinetic CJK title cards</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.stack">STACK</span><span class="v skill-stack"><span class="skill-chip">veo-3</span><span class="skill-chip">ae</span></span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.steps">STEPS</span><span class="v" data-i18n="sk.6.steps">4 · grid → mask → stagger → finish</span></div>
+        <div class="skill-row"><span class="k" data-i18n="sk.k.output">OUTPUT</span><span class="v" data-i18n="sk.6.output">tight, editorial, monochrome</span></div>
+        <div class="skill-bottom"><span><span data-i18n="sk.by">BY</span> <b>@linzi</b></span><span data-i18n="sk.6.related">6 RELATED CASES ↗</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED CASES -->
+<section class="section" id="cases">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono" data-i18n="fc.id">§ 07 · FEATURED CASES</div>
+      </div>
+      <div>
+        <h2 class="section-title" data-i18n="fc.title">A compact set of verified cases.</h2>
+        <p class="section-sub" data-i18n="fc.sub">Only cases with a real lab run and creator attribution make this board. For the full index, open the Rankings.</p>
+      </div>
+    </div>
+
+    <div class="cases">
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <defs><pattern id="c1p" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(22)"><rect width="8" height="8" fill="#14120e"/><line x1="0" y1="0" x2="0" y2="8" stroke="#FF5733" stroke-width=".3"/></pattern></defs>
+            <rect width="100" height="133" fill="url(#c1p)"/>
+            <path d="M20 80 L50 30 L80 80 M30 80 L50 50 L70 80" fill="none" stroke="#e6e6e1" stroke-width=".6"/>
+          </svg>
+          <span class="rank">#01</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4 data-i18n="fc.1.h">Paperfold city loop</h4>
+          <div class="zh">纸城循环 · 15s · CASE #0412</div>
+          <div class="meta">
+            <span><span data-i18n="fc.k.model">MODEL</span> · <b>veo-3</b></span>
+            <span><span data-i18n="fc.k.tool">TOOL</span> · <b>none</b></span>
+            <span><span data-i18n="fc.k.cost">COST</span> · <b>$0.43</b></span>
+            <span><span data-i18n="fc.k.repro">REPRO</span> · <b style="color:var(--orange)">74%</b></span>
+          </div>
+          <div class="by"><span data-i18n="fc.by">BY</span> · <b>@linzi</b> · <span data-i18n="fc.1.by">上海</span></div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#0f1014"/>
+            <g stroke="#e6e6e1" stroke-width=".3" opacity=".6"><path d="M0 40 Q50 20 100 40"/><path d="M0 55 Q50 35 100 55"/><path d="M0 70 Q50 50 100 70"/></g>
+            <circle cx="50" cy="85" r="10" fill="#FF5733" opacity=".9"/>
+          </svg>
+          <span class="rank">#02</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4 data-i18n="fc.2.h">Ink rain in Chongqing</h4>
+          <div class="zh">重庆墨雨 · 15s · CASE #0407</div>
+          <div class="meta">
+            <span><span data-i18n="fc.k.model">MODEL</span> · <b>kling-2</b></span>
+            <span><span data-i18n="fc.k.tool">TOOL</span> · <b>ae</b></span>
+            <span><span data-i18n="fc.k.cost">COST</span> · <b>$0.58</b></span>
+            <span><span data-i18n="fc.k.repro">REPRO</span> · <b style="color:var(--orange)">52%</b></span>
+          </div>
+          <div class="by"><span data-i18n="fc.by">BY</span> · <b>@monk.studio</b> · <span data-i18n="fc.2.by">重庆</span></div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#1a120c"/>
+            <rect x="25" y="50" width="50" height="32" fill="none" stroke="#FF5733" stroke-width=".6"/>
+            <path d="M50 50 L50 82 M25 66 L75 66" stroke="#e6e6e1" stroke-width=".3"/>
+            <circle cx="50" cy="34" r="8" fill="#e6e6e1"/>
+          </svg>
+          <span class="rank">#03</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4 data-i18n="fc.3.h">Neon courier cat</h4>
+          <div class="zh">霓虹快递猫 · 15s · CASE #0401</div>
+          <div class="meta">
+            <span><span data-i18n="fc.k.model">MODEL</span> · <b>sora-2</b></span>
+            <span><span data-i18n="fc.k.tool">TOOL</span> · <b>runway</b></span>
+            <span><span data-i18n="fc.k.cost">COST</span> · <b>$0.49</b></span>
+            <span><span data-i18n="fc.k.repro">REPRO</span> · <b style="color:var(--orange)">67%</b></span>
+          </div>
+          <div class="by"><span data-i18n="fc.by">BY</span> · <b>@neko_ops</b> · <span data-i18n="fc.3.by">TOKYO</span></div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#0c0f0e"/>
+            <g fill="none" stroke="#e6e6e1" stroke-width=".4"><path d="M10 30 Q50 60 90 30"/><path d="M10 50 Q50 80 90 50"/><path d="M10 70 Q50 100 90 70"/></g>
+            <rect x="36" y="92" width="28" height="12" fill="none" stroke="#FF5733" stroke-width=".5"/>
+            <text x="50" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="5" fill="#FF5733">CLAUDE</text>
+          </svg>
+          <span class="rank">#04</span>
+          <span class="kind">CODING-WF</span>
+          <span class="timecode">7 STEPS</span>
+        </div>
+        <div class="body">
+          <h4 data-i18n="fc.4.h">Claude MCP doc agent</h4>
+          <div class="zh">文档代理工作流 · CASE #0395</div>
+          <div class="meta">
+            <span><span data-i18n="fc.k.model">MODEL</span> · <b>cld-s4</b></span>
+            <span><span data-i18n="fc.k.tool">TOOL</span> · <b>mcp+obs</b></span>
+            <span><span data-i18n="fc.k.cost">COST</span> · <b>$0.11</b></span>
+            <span><span data-i18n="fc.k.repro">REPRO</span> · <b style="color:var(--orange)">91%</b></span>
+          </div>
+          <div class="by"><span data-i18n="fc.by">BY</span> · <b>@yuki.dev</b> · <span data-i18n="fc.4.by">SF</span></div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#121014"/>
+            <circle cx="50" cy="66" r="28" fill="none" stroke="#e6e6e1" stroke-width=".3"/>
+            <circle cx="50" cy="66" r="18" fill="none" stroke="#e6e6e1" stroke-width=".3"/>
+            <circle cx="50" cy="66" r="8" fill="#FF5733"/>
+          </svg>
+          <span class="rank">#05</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4 data-i18n="fc.5.h">Moth ritual portrait</h4>
+          <div class="zh">蛾之仪式 · 15s · CASE #0388</div>
+          <div class="meta">
+            <span><span data-i18n="fc.k.model">MODEL</span> · <b>hailuo-02</b></span>
+            <span><span data-i18n="fc.k.tool">TOOL</span> · <b>krea</b></span>
+            <span><span data-i18n="fc.k.cost">COST</span> · <b>$0.52</b></span>
+            <span><span data-i18n="fc.k.repro">REPRO</span> · <b style="color:var(--orange)">48%</b></span>
+          </div>
+          <div class="by"><span data-i18n="fc.by">BY</span> · <b>@hana.sim</b> · <span data-i18n="fc.5.by">BERLIN</span></div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#0f1014"/>
+            <g stroke="#FF5733" stroke-width=".3" fill="none" opacity=".9"><path d="M10 30h80M10 50h80M10 70h80M10 90h80"/></g>
+            <path d="M15 40 L85 75 L15 95" fill="none" stroke="#e6e6e1" stroke-width=".4"/>
+          </svg>
+          <span class="rank">#06</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4 data-i18n="fc.6.h">Wuxia rooftops</h4>
+          <div class="zh">武侠屋檐 · 15s · CASE #0382</div>
+          <div class="meta">
+            <span><span data-i18n="fc.k.model">MODEL</span> · <b>veo-3</b></span>
+            <span><span data-i18n="fc.k.tool">TOOL</span> · <b>topaz</b></span>
+            <span><span data-i18n="fc.k.cost">COST</span> · <b>$0.61</b></span>
+            <span><span data-i18n="fc.k.repro">REPRO</span> · <b style="color:var(--orange)">42%</b></span>
+          </div>
+          <div class="by"><span data-i18n="fc.by">BY</span> · <b>@jianghu</b> · <span data-i18n="fc.6.by">成都</span></div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#0a0d0d"/>
+            <g fill="none" stroke="#e6e6e1" stroke-width=".3"><rect x="14" y="20" width="32" height="20"/><rect x="54" y="20" width="32" height="20"/><rect x="14" y="48" width="32" height="20"/><rect x="54" y="48" width="32" height="20"/><rect x="14" y="76" width="72" height="20"/></g>
+            <path d="M30 40 Q30 48 46 58 M70 40 Q70 48 54 58" stroke="#FF5733" stroke-width=".5" fill="none"/>
+            <path d="M50 68 L50 76" stroke="#FF5733" stroke-width=".5"/>
+          </svg>
+          <span class="rank">#07</span>
+          <span class="kind">CODING-WF</span>
+          <span class="timecode">12 STEPS</span>
+        </div>
+        <div class="body">
+          <h4 data-i18n="fc.7.h">OpenClaw content agent</h4>
+          <div class="zh">OpenClaw 内容代理 · CASE #0376</div>
+          <div class="meta">
+            <span><span data-i18n="fc.k.model">MODEL</span> · <b>cld+gpt5</b></span>
+            <span><span data-i18n="fc.k.tool">TOOL</span> · <b>openclaw</b></span>
+            <span><span data-i18n="fc.k.cost">COST</span> · <b>$0.22</b></span>
+            <span><span data-i18n="fc.k.repro">REPRO</span> · <b style="color:var(--orange)">83%</b></span>
+          </div>
+          <div class="by"><span data-i18n="fc.by">BY</span> · <b>@ops_lab</b> · <span data-i18n="fc.7.by">SHENZHEN</span></div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#14120e"/>
+            <path d="M0 66 L100 66" stroke="#e6e6e1" stroke-width=".3"/>
+            <path d="M50 0 L50 133" stroke="#e6e6e1" stroke-width=".3"/>
+            <circle cx="50" cy="66" r="22" fill="none" stroke="#FF5733" stroke-width=".6"/>
+            <text x="50" y="120" text-anchor="middle" font-family="JetBrains Mono" font-size="5" fill="#e6e6e1">15s / loop</text>
+          </svg>
+          <span class="rank">#08</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4 data-i18n="fc.8.h">Taipei dumpling ballet</h4>
+          <div class="zh">台北饺子芭蕾 · 15s · CASE #0371</div>
+          <div class="meta">
+            <span><span data-i18n="fc.k.model">MODEL</span> · <b>veo-3</b></span>
+            <span><span data-i18n="fc.k.tool">TOOL</span> · <b>none</b></span>
+            <span><span data-i18n="fc.k.cost">COST</span> · <b>$0.47</b></span>
+            <span><span data-i18n="fc.k.repro">REPRO</span> · <b style="color:var(--orange)">71%</b></span>
+          </div>
+          <div class="by"><span data-i18n="fc.by">BY</span> · <b>@dumpling.cam</b> · <span data-i18n="fc.8.by">TPE</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="section" id="process">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono" data-i18n="proc.id">§ 02 · PROCESS</div>
+      </div>
+      <div>
+        <h2 class="section-title" data-i18n="proc.title">A four layer system that turns scattered virality into durable method.</h2>
+        <p class="section-sub" data-i18n="proc.sub">Case, Creator, Lab, Skill. Each layer feeds the next so signal compounds over time.</p>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="n"><span>01</span><b>CASE</b></div>
+        <div class="icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M9 3v18"/></svg>
+        </div>
+        <h3 data-i18n="proc.1.h">Discover viral cases</h3>
+        <p data-i18n="proc.1.p">A crawler plus curator seed pulls AI videos and coding workflows from X, Bilibili, WeChat, Xiaohongshu, Reddit, and Discord while they are still actively spreading.</p>
+        <div class="flow">sources ─▶ index</div>
+      </div>
+      <div class="step">
+        <div class="n"><span>02</span><b>CREATOR</b></div>
+        <div class="icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5M3 18l9 5 9-5"/></svg>
+        </div>
+        <h3 data-i18n="proc.2.h">Community love signals</h3>
+        <p data-i18n="proc.2.p">Signed-in readers like, save, follow, submit reproductions, and add parameters. Only real engagement counts; bots and self-inflation are filtered with provenance checks.</p>
+        <div class="flow">index ─▶ love rank</div>
+      </div>
+      <div class="step">
+        <div class="n"><span>03</span><b>LAB</b></div>
+        <div class="icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M9 3v5l-5 10a3 3 0 003 3h10a3 3 0 003-3L15 8V3"/><path d="M8 3h8"/></svg>
+        </div>
+        <h3 data-i18n="proc.3.h">Cross model validation</h3>
+        <p data-i18n="proc.3.p">Top loved cases are re-run with the same normalized prompt across frontier models. Every run reports repro rate, consistency, visual drift, and cost per clip.</p>
+        <div class="flow">prompt ─▶ N models</div>
+      </div>
+      <div class="step">
+        <div class="n"><span>04</span><b>SKILL</b></div>
+        <div class="icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/><path d="M10 7h4M7 10v4M17 10v4M10 17h4"/></svg>
+        </div>
+        <h3 data-i18n="proc.4.h">Turn creator patterns into Skills</h3>
+        <p data-i18n="proc.4.p">When a creator's cases repeatedly converge on the same pattern with measurable stability, that pattern is promoted into a reusable Skill — always attributed back to the creator.</p>
+        <div class="flow">pattern ─▶ skill ↗</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSFORMATION -->
+<section class="section" id="transform">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono" data-i18n="tr.id">§ 03 · TRANSFORMATION</div>
+      </div>
+      <div>
+        <h2 class="section-title" data-i18n="tr.title">From viral post to reusable method.</h2>
+        <p class="section-sub" data-i18n="tr.sub">Raw posts, screenshots, fragments, and captions on the left. A structured case, creator attribution, reproducibility score, and reusable Skill on the right.</p>
+      </div>
+    </div>
+
+    <div class="transform-grid">
+      <!-- LEFT -->
+      <div class="tcol left">
+        <h4><span>A · RAW / SCATTERED</span><span class="state">INTERNET</span></h4>
+        <div class="scatter">
+          <div class="scrap scrap-post tilt-l">
+            <div class="handle">@linzi · X · 412K views</div>
+            <div class="body">"ok the paperfold city loop is finally working, 15s, mostly veo, some kling retries for the rain.. prompt below ↓"</div>
+          </div>
+          <div class="scrap scrap-thumb tilt-r">
+            <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+              <defs><pattern id="sp1" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+                <rect width="5" height="5" fill="#1a1a14"/><line x1="0" y1="0" x2="0" y2="5" stroke="#FF5733" stroke-width=".3"/>
+              </pattern></defs>
+              <rect width="100" height="133" fill="url(#sp1)"/>
+            </svg>
+          </div>
+          <div class="scrap scrap-prompt tilt-r2">
+            <div style="color:var(--mute);font-size:9px;margin-bottom:4px;">PROMPT FRAGMENT (screenshot)</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;">"a paper-folded city, camera<br/>slowly rotating, 15 seconds,<br/>warm grey light, ink rain…"<br/><span style="color:var(--mute)">+ 14 more tokens cropped</span></div>
+          </div>
+          <div class="scrap scrap-tags tilt-l">
+            <div style="color:var(--mute);font-size:9px;margin-bottom:4px;">HASHTAGS + CROSS-POSTS</div>
+            <span class="t">#AIvideo</span><span class="t">#veo3</span><span class="t">#纸城</span><span class="t">#15s</span><span class="t">XHS ↗</span><span class="t">WB ↗</span>
+          </div>
+          <div class="scrap scrap-note tilt-r">
+            <div style="color:var(--mute);font-size:9px;margin-bottom:4px;">COMMENT NOTE</div>
+            <div style="font-family:Inter,sans-serif;font-size:11px;line-height:1.4;">"tried on sora, looks totally different — anyone got the exact seed?"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARROW -->
+      <div class="arrow-col">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#0A0A0A" stroke-width="1">
+          <path d="M4 20h30"/><path d="M26 12l10 8-10 8"/>
+          <circle cx="4" cy="20" r="2" fill="#FF5733" stroke="none"/>
+        </svg>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="tcol">
+        <h4><span>B · NORMALIZED CASE PAGE</span><span class="state" style="color:var(--orange)">GOODCASEAI</span></h4>
+        <div class="normalized">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+            <div>
+              <div style="font-size:20px;font-weight:600;letter-spacing:-.015em;">Paperfold city loop</div>
+              <div class="mono" style="font-size:10.5px;color:var(--mute);letter-spacing:.06em;">CASE #0412 · 纸城循环 · AI-VIDEO / 15s</div>
+            </div>
+            <span class="mono" style="font-size:10px;padding:4px 7px;background:var(--orange);color:#fff;">#01 LOVE 24H</span>
+          </div>
+          <div class="norm-row"><span class="k">SOURCE</span><span class="v">X @linzi · WB ↗ · XHS ↗</span></div>
+          <div class="norm-row"><span class="k">PROMPT</span><span class="v">normalized · 64 tokens · <b>hash 0x8fA2</b></span></div>
+          <div class="norm-row"><span class="k">MODEL STACK</span><span class="v">veo-3 (primary) · kling-2 (rain)</span></div>
+          <div class="norm-row"><span class="k">CREATOR</span><span class="v">@linzi · SHANGHAI · claimed ✓</span></div>
+
+          <div class="norm-score">
+            <div class="s orange"><div class="k">REPRO</div><div class="v">74.2%</div></div>
+            <div class="s"><div class="k">CONSIST.</div><div class="v">8.6</div></div>
+            <div class="s"><div class="k">COST</div><div class="v">$0.43</div></div>
+          </div>
+
+          <div style="margin-top:14px;padding:12px;border:1px solid var(--hair);display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div class="mono" style="font-size:10px;color:var(--mute);letter-spacing:.08em;">PROMOTED SKILL</div>
+              <div style="font-size:14px;font-weight:600;margin-top:3px;">PAPERFOLD-LOOP · 纸城循环法</div>
+            </div>
+            <span class="mono" style="font-size:10.5px;color:var(--orange);">v0.3 ↗</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- METHODOLOGY / TRUST -->
+<section class="section" id="methodology">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono" data-i18n="mt.id">§ 08 · METHODOLOGY / TRUST</div>
+      </div>
+      <div>
+        <h2 class="section-title" data-i18n="mt.title">How the signals work, and why they deserve trust.</h2>
+        <p class="section-sub" data-i18n="mt.sub">Clear scoring, public lab logic, creator attribution, and visible updates keep the system credible.</p>
+      </div>
+    </div>
+
+    <div class="meth">
+      <div class="col">
+        <span class="mnum" data-i18n="mt.1.num">01 / LOVE</span>
+        <h3 data-i18n="mt.1.h">Where Love Ranking comes from</h3>
+        <p data-i18n="mt.1.p">Love is not a like count. It's a weighted aggregate of signed-in actions with cost attached: saving, following, submitting a reproduction, dropping parameters, and adding notes. Bot farms and self-inflation are filtered with provenance checks.</p>
+        <ul>
+          <li><span><b data-i18n="mt.1.l1b">Save · 1.0×</b><span data-i18n="mt.1.l1">Signed-in only. Expires after 90 days unless re-engaged.</span></span></li>
+          <li><span><b data-i18n="mt.1.l2b">Follow · 1.4×</b><span data-i18n="mt.1.l2">Follow the creator, not the post. Costly to fake.</span></span></li>
+          <li><span><b data-i18n="mt.1.l3b">Repro attempt · 3.5×</b><span data-i18n="mt.1.l3">Most expensive action — you actually ran it.</span></span></li>
+          <li><span><b data-i18n="mt.1.l4b">Parameter / note · 2.2×</b><span data-i18n="mt.1.l4">You added knowledge for everyone.</span></span></li>
+        </ul>
+      </div>
+      <div class="col">
+        <span class="mnum" data-i18n="mt.2.num">02 / LAB</span>
+        <h3 data-i18n="mt.2.h">How the Stability Lab spends its budget</h3>
+        <p data-i18n="mt.2.p">Top-loved cases are re-run on our dime with a normalized prompt across a rotating model matrix (N≥18). Every run reports repro rate, consistency, visual drift, and cost-per-output. Costs and failed runs are public.</p>
+        <ul>
+          <li><span><b data-i18n="mt.2.l1b">Prompt hash</b><span data-i18n="mt.2.l1">Every run references a signed, immutable prompt hash.</span></span></li>
+          <li><span><b data-i18n="mt.2.l2b">N ≥ 18 per case</b><span data-i18n="mt.2.l2">Enough to call something stable without burning a month of API.</span></span></li>
+          <li><span><b data-i18n="mt.2.l3b">Failures published</b><span data-i18n="mt.2.l3">Repro failures aren't hidden; they lower the score publicly.</span></span></li>
+          <li><span><b data-i18n="mt.2.l4b">$ per output</b><span data-i18n="mt.2.l4">Dollars and API time are shown next to every score.</span></span></li>
+        </ul>
+      </div>
+      <div class="col" style="border-left:0;border-top:1px solid var(--hair);grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0;padding:0;">
+        <div style="padding:40px;border-right:1px solid var(--hair);">
+          <span class="mnum" data-i18n="mt.3.num">03 / SKILL</span>
+          <h3 data-i18n="mt.3.h">How creators become Skills</h3>
+          <p data-i18n="mt.3.p">A creator's cases are clustered in an embedding space. When ≥4 cases sit inside the same cluster and survive the Lab with average repro ≥ 60%, the pattern is proposed as a Skill — always attributed to the creator, versioned like software.</p>
+          <ul>
+            <li><span><b data-i18n="mt.3.l1b">≥ 4 clustered cases</b><span data-i18n="mt.3.l1">Pattern has to repeat, not just work once.</span></span></li>
+            <li><span><b data-i18n="mt.3.l2b">≥ 60% average repro</b><span data-i18n="mt.3.l2">Else it's an art piece, not a method.</span></span></li>
+            <li><span><b data-i18n="mt.3.l3b">Creator attribution</b><span data-i18n="mt.3.l3">Skills carry the creator's name, forever.</span></span></li>
+          </ul>
+        </div>
+        <div style="padding:40px;">
+          <span class="mnum" data-i18n="mt.4.num">04 / UPDATES</span>
+          <h3 data-i18n="mt.4.h">How scores update over time</h3>
+          <p data-i18n="mt.4.p">Every score decays. Love decays over 30 days; Stability re-runs monthly or when a new frontier model drops. Nothing stays on the ranking forever just because it was great six months ago.</p>
+          <ul>
+            <li><span><b data-i18n="mt.4.l1b">Love half-life · 30d</b><span data-i18n="mt.4.l1">Yesterday's virality doesn't dominate today.</span></span></li>
+            <li><span><b data-i18n="mt.4.l2b">Lab refresh · 30d</b><span data-i18n="mt.4.l2">Plus immediate re-run on any frontier model release.</span></span></li>
+            <li><span><b data-i18n="mt.4.l3b">Open audit log</b><span data-i18n="mt.4.l3">Every score change links to the run that caused it.</span></span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHANGELOG -->
+<section class="section" id="changelog">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono" data-i18n="cl.id">§ 09 · CHANGELOG</div>
+      </div>
+      <div>
+        <h2 class="section-title" data-i18n="cl.title">Built in public, by someone who ships.</h2>
+        <p class="section-sub" data-i18n="cl.sub">This is a working product log from a founder who is both a creator and an independent developer.</p>
+      </div>
+    </div>
+
+    <div class="changelog">
+      <div class="log-head"><span data-i18n="cl.h.date">DATE</span><span data-i18n="cl.h.ver">VERSION</span><span style="text-align:right" data-i18n="cl.h.area">AREA</span></div>
+
+      <div class="log-entry">
+        <span class="date">2026.04.18 · FRI</span>
+        <span class="ver">v0.14.3</span>
+        <div class="summary">
+          <h5 data-i18n="cl.e1.h">Stability Lab opened to public prompts</h5>
+          <p data-i18n="cl.e1.p">Signed-in users can now submit a case with a prompt hash and request a Lab run. First 5/week are free; the rest burn creator budget.</p>
+        </div>
+        <span class="tag">LAB · QUOTA · API</span>
+      </div>
+
+      <div class="log-entry">
+        <span class="date">2026.04.11 · FRI</span>
+        <span class="ver">v0.14.0</span>
+        <div class="summary">
+          <h5 data-i18n="cl.e2.h">Skill promotion algorithm (v0.4)</h5>
+          <p data-i18n="cl.e2.p">Creator cases now cluster in an embedding space before Skill promotion. Fewer false positives on one-off visuals; more reliable attribution.</p>
+        </div>
+        <span class="tag">SKILLS · EMBEDDING</span>
+      </div>
+
+      <div class="log-entry">
+        <span class="date">2026.04.02 · WED</span>
+        <span class="ver">v0.13.7</span>
+        <div class="summary">
+          <h5 data-i18n="cl.e3.h">Bilingual atmosphere pass — 中文 + EN</h5>
+          <p data-i18n="cl.e3.p">Case pages, rankings, and Skill cards now render both scripts side by side. 中文 is no longer a translation afterthought; it's first-class in the data model.</p>
+        </div>
+        <span class="tag">I18N · CN</span>
+      </div>
+
+      <div class="log-entry">
+        <span class="date">2026.03.24 · MON</span>
+        <span class="ver">v0.13.0</span>
+        <div class="summary">
+          <h5 data-i18n="cl.e4.h">Creator profile claim flow</h5>
+          <p data-i18n="cl.e4.p">Claim via DM, X OAuth, or WeChat signed post. Claim moves the creator from shadow profile to signed profile, with public audit on every edit.</p>
+        </div>
+        <span class="tag">CREATORS · AUTH</span>
+      </div>
+
+      <div class="log-entry">
+        <span class="date">2026.03.11 · TUE</span>
+        <span class="ver">v0.12.1</span>
+        <div class="summary">
+          <h5 data-i18n="cl.e5.h">Decay functions shipped</h5>
+          <p data-i18n="cl.e5.p">Love now decays with a 30-day half-life. This single change dropped 41% of the 2025 carry-over from the top ranks. Bias toward what's alive now.</p>
+        </div>
+        <span class="tag">SCORING · DECAY</span>
+      </div>
+
+      <div class="log-founder">
+        <div class="avatar">GC</div>
+        <div class="who">
+          <b data-i18n="cl.founder">谷凯 · Gu Kai — Founder, creator, solo developer</b>
+          <small data-i18n="cl.founder.sub">SHANGHAI · 2026 · BUILDING IN PUBLIC · NOT FUNDED</small>
+        </div>
+        <a class="btn btn-ghost" href="#" data-i18n="cl.read">Read full log ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="crosshair ch-tl"></div>
+  <div class="crosshair ch-tr"></div>
+  <div class="crosshair ch-bl"></div>
+  <div class="crosshair ch-br"></div>
+  <div class="wrap">
+    <span class="eyebrow mono" data-i18n="fn.eyebrow">§ 10 · JOIN THE INDEX</span>
+    <h2><span data-i18n="fn.title_a">Not just cases.</span><br/><span data-i18n="fn.title_b">Follow the creators</span> <em data-i18n="fn.title_c">behind them.</em></h2>
+    <p data-i18n="fn.body">GoodCaseAI is open to read and open to contribute. Sign in to influence the rankings, submit a case for a Lab run, or claim your creator profile to connect your work to the index.</p>
+    <div class="row">
+      <a class="btn btn-primary" href="#rankings"><span data-i18n="fn.btn.rankings">Explore Rankings</span> <span class="arrow">→</span></a>
+      <a class="btn" href="#" data-i18n="fn.btn.submit">Submit a Case</a>
+      <a class="btn" href="#" data-i18n="fn.btn.claim">Claim Creator Profile</a>
+      <a class="btn btn-ghost" href="#" data-i18n="fn.btn.community">Join the Community</a>
+    </div>
+    <div style="margin-top:56px;display:flex;justify-content:center;gap:32px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);letter-spacing:.08em;">
+      <span data-i18n="fn.micro.read">Free to read</span><span>·</span><span data-i18n="fn.micro.signed">Signed-in signals</span><span>·</span><span data-i18n="fn.micro.skills">Creator-attributed Skills</span><span>·</span><span data-i18n="fn.micro.pricing">No pricing yet</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <a class="brand" href="#" style="display:inline-flex;align-items:center;gap:10px;color:var(--paper);text-decoration:none;font-size:20px;font-weight:600;letter-spacing:-.02em;">
+          <span class="brand-mark" style="background:var(--paper);"></span>
+          <span>GoodCase<strong style="font-weight:700">AI</strong></span>
+        </a>
+        <p class="brand-note" data-i18n="ft.desc">A global index for AI creators and AI methods. Built in Shanghai. Shipped in public.</p>
+      </div>
+      <div>
+        <h6 data-i18n="ft.c1">PLATFORM</h6>
+        <ul>
+          <li><a href="#discover" data-i18n="ft.c1.1">Discover</a></li>
+          <li><a href="#rankings" data-i18n="ft.c1.2">Love Ranking</a></li>
+          <li><a href="#rankings" data-i18n="ft.c1.3">Stability Lab</a></li>
+          <li><a href="#cases" data-i18n="ft.c1.4">Cases</a></li>
+          <li><a href="#skills" data-i18n="ft.c1.5">Skills</a></li>
+        </ul>
+      </div>
+      <div>
+        <h6 data-i18n="ft.c2">CREATORS</h6>
+        <ul>
+          <li><a href="#" data-i18n="ft.c2.1">Claim Creator Profile</a></li>
+          <li><a href="#" data-i18n="ft.c2.2">Submit a Case</a></li>
+          <li><a href="#" data-i18n="ft.c2.3">Attribution Policy</a></li>
+          <li><a href="#" data-i18n="ft.c2.4">Creator Grants</a></li>
+        </ul>
+      </div>
+      <div>
+        <h6 data-i18n="ft.c3">OPEN</h6>
+        <ul>
+          <li><a href="#methodology" data-i18n="ft.c3.1">Methodology</a></li>
+          <li><a href="#changelog" data-i18n="ft.c3.2">Changelog</a></li>
+          <li><a href="#" data-i18n="ft.c3.3">Prompt Hash Log</a></li>
+          <li><a href="#" data-i18n="ft.c3.4">Lab Budget</a></li>
+        </ul>
+      </div>
+      <div>
+        <h6 data-i18n="ft.c4">ELSEWHERE</h6>
+        <ul>
+          <li><a href="#" data-i18n="ft.c4.1">X ↗</a></li>
+          <li><a href="#" data-i18n="ft.c4.2">GitHub ↗</a></li>
+          <li><a href="#" data-i18n="ft.c4.3">Xiaohongshu ↗</a></li>
+          <li><a href="#" data-i18n="ft.c4.4">Weibo ↗</a></li>
+          <li><a href="#" data-i18n="ft.c4.5">Discord ↗</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom">
+      <span data-i18n="ft.copy">© 2026 GOODCASEAI · SHANGHAI + GLOBAL</span>
+      <span data-i18n="ft.ver">v0.14.3 · UPDATED 2026.04.18 04:12 CST</span>
+      <span><span data-i18n="ft.live">BUILT IN PUBLIC ·</span> <span style="color:var(--orange)">● LIVE</span></span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/i18n.js"></script>
+</body>
+</html>

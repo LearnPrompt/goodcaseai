@@ -1,0 +1,1674 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GoodCaseAI — Rank, validate & reuse AI creator work</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAFAF7;
+    --paper-2:#F3F2EC;
+    --ink:#0A0A0A;
+    --ink-2:#1C1C1A;
+    --concrete:#E6E6E1;
+    --concrete-2:#D2D2CC;
+    --mute:#6B6B66;
+    --mute-2:#9A9A92;
+    --orange:#FF5733;
+    --orange-ink:#E84821;
+    --grid-line: rgba(10,10,10,.06);
+    --hair: #0A0A0A;
+  }
+  *{box-sizing:border-box;border-radius:0 !important;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11";}
+  body{
+    background:
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px) 0 0 / 80px 100%,
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px) 0 0 / 100% 80px,
+      var(--paper);
+  }
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-feature-settings:"ss01";}
+  .upper{text-transform:uppercase;letter-spacing:.08em;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;border:0;background:none;cursor:pointer;padding:0;color:inherit;}
+  .wrap{max-width:1440px;margin:0 auto;padding:0 48px;}
+  .hair{border:0;border-top:1px solid var(--hair);margin:0;}
+  .hair-soft{border:0;border-top:1px solid var(--concrete);margin:0;}
+  .section{padding:96px 0;border-top:1px solid var(--hair);}
+  .section-head{display:grid;grid-template-columns:minmax(0,220px) 1fr;gap:48px;align-items:start;margin-bottom:56px;}
+  .section-id{font-size:11px;letter-spacing:.12em;color:var(--mute);}
+  .section-title{font-size:48px;line-height:1.02;letter-spacing:-.03em;font-weight:600;margin:0;max-width:900px;}
+  .section-sub{font-size:15px;color:var(--mute);max-width:640px;margin-top:16px;line-height:1.55;}
+  .eyebrow{font-size:11px;letter-spacing:.14em;color:var(--mute);display:inline-flex;align-items:center;gap:10px;}
+  .eyebrow::before{content:"";width:18px;height:1px;background:var(--ink);display:inline-block;}
+  .dot{width:6px;height:6px;background:var(--orange);display:inline-block;}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--hair);font-size:11px;letter-spacing:.06em;}
+  .chip.mono{font-family:'JetBrains Mono',monospace;}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 18px;border:1px solid var(--hair);font-size:13px;font-weight:500;transition:background .15s ease, color .15s ease, border-color .15s ease;}
+  .btn:hover{background:var(--ink);color:var(--paper);}
+  .btn-primary{background:var(--orange);border-color:var(--orange);color:#fff;}
+  .btn-primary:hover{background:var(--orange-ink);border-color:var(--orange-ink);color:#fff;}
+  .btn-ghost{border-color:var(--concrete);}
+  .arrow{display:inline-block;transition:transform .2s;}
+  .btn:hover .arrow{transform:translateX(3px);}
+  /* top nav */
+  nav.top{position:sticky;top:0;z-index:20;background:rgba(250,250,247,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--hair);}
+  nav.top .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em;}
+  .brand-mark{width:14px;height:14px;background:var(--orange);display:inline-block;}
+  .brand-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);letter-spacing:.1em;}
+  nav .links{display:flex;gap:28px;font-size:13px;color:var(--ink);}
+  nav .links a:hover{color:var(--orange);}
+  nav .meta{display:flex;align-items:center;gap:14px;}
+  .lang{display:inline-flex;border:1px solid var(--hair);font-family:'JetBrains Mono',monospace;font-size:10px;}
+  .lang span{padding:4px 8px;}
+  .lang .on{background:var(--ink);color:var(--paper);}
+  /* ticker */
+  .ticker{border-bottom:1px solid var(--hair);background:var(--paper);overflow:hidden;}
+  .ticker .wrap{display:flex;align-items:center;gap:32px;height:34px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);letter-spacing:.04em;white-space:nowrap;}
+  .ticker .sep{width:4px;height:4px;background:var(--concrete-2);display:inline-block;}
+  .ticker .live{color:var(--orange);display:inline-flex;align-items:center;gap:6px;}
+  .ticker .live::before{content:"";width:6px;height:6px;background:var(--orange);display:inline-block;animation:blink 1.4s infinite;}
+  @keyframes blink{50%{opacity:.3}}
+
+  /* HERO */
+  .hero{padding:72px 0 112px;position:relative;}
+  .hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:end;}
+  .hero h1{font-size:96px;line-height:.94;letter-spacing:-.045em;font-weight:500;margin:24px 0 28px;}
+  .hero h1 em{font-style:normal;color:var(--orange);}
+  .hero h1 .slash{color:var(--concrete-2);font-weight:300;}
+  .hero-lede{font-size:17px;line-height:1.55;color:var(--mute);max-width:520px;margin-bottom:36px;}
+  .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;}
+  .hero-meta{display:flex;gap:24px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);letter-spacing:.05em;}
+  .hero-meta span strong{color:var(--ink);font-weight:500;}
+
+  /* product preview window */
+  .preview{border:1px solid var(--hair);background:#fff;box-shadow:0 40px 80px -40px rgba(10,10,10,.25), 0 2px 0 0 var(--concrete);}
+  .preview-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--hair);background:var(--paper-2);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);}
+  .preview-bar .dots{display:flex;gap:6px;}
+  .preview-bar .dots i{width:10px;height:10px;border:1px solid var(--hair);display:inline-block;}
+  .preview-bar .url{flex:1;text-align:center;letter-spacing:.04em;}
+  .preview-body{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hair);}
+  .preview-body > div{background:#fff;padding:18px;}
+  .preview-full{grid-column:1/-1;}
+  .pv-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);letter-spacing:.1em;margin-bottom:12px;display:flex;justify-content:space-between;}
+  .pv-title .status{color:var(--orange);}
+  .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .thumb{aspect-ratio:3/4;position:relative;overflow:hidden;background:#111;}
+  .thumb svg{width:100%;height:100%;display:block;}
+  .thumb .tag{position:absolute;left:6px;bottom:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#fff;background:rgba(0,0,0,.6);padding:2px 5px;}
+  .thumb .rank{position:absolute;right:6px;top:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#fff;background:var(--orange);padding:2px 5px;}
+  .love-row{display:grid;grid-template-columns:28px 1fr auto;gap:10px;padding:10px 0;border-top:1px solid var(--concrete);align-items:center;}
+  .love-row:first-of-type{border-top:0;}
+  .love-row .idx{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mute);}
+  .love-row .name{font-size:13px;font-weight:500;}
+  .love-row .creator{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);}
+  .love-row .score{font-family:'JetBrains Mono',monospace;font-size:11px;}
+  .love-row .score b{color:var(--orange);font-weight:600;}
+  .lab-card{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px;}
+  .metric{border:1px solid var(--concrete);padding:10px;}
+  .metric .k{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--mute);letter-spacing:.08em;}
+  .metric .v{font-size:22px;font-weight:600;letter-spacing:-.02em;margin-top:4px;}
+  .metric .v small{font-size:12px;color:var(--mute);font-weight:400;margin-left:2px;}
+  .bar{height:4px;background:var(--concrete);margin-top:8px;position:relative;}
+  .bar i{position:absolute;left:0;top:0;height:100%;background:var(--orange);}
+  .bar.ink i{background:var(--ink);}
+  .creator-card{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;}
+  .avatar{width:44px;height:44px;border:1px solid var(--hair);background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;}
+  .skill-chip{display:inline-block;padding:3px 6px;border:1px solid var(--hair);font-family:'JetBrains Mono',monospace;font-size:9.5px;margin-right:4px;}
+  .skill-chip.orange{background:var(--orange);color:#fff;border-color:var(--orange);}
+  .skill-chip.lock::before{content:"◇ ";color:var(--mute);}
+
+  /* floating annotations around preview */
+  .anno{position:absolute;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--mute);letter-spacing:.06em;}
+  .anno .ln{display:block;width:1px;background:var(--concrete-2);margin:0 auto;}
+  .anno-t{top:-28px;left:24%;}
+  .anno-t .ln{height:18px;}
+  .anno-r{right:-80px;top:40%;width:72px;}
+  .anno-b{bottom:-28px;right:16%;text-align:right;}
+
+  /* process */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+  .step{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:28px;min-height:260px;display:flex;flex-direction:column;gap:16px;background:#fff;}
+  .step .n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);letter-spacing:.1em;display:flex;justify-content:space-between;}
+  .step .n b{color:var(--orange);font-weight:500;}
+  .step .icon{width:48px;height:48px;border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;}
+  .step h3{font-size:20px;font-weight:600;letter-spacing:-.01em;margin:0;}
+  .step p{font-size:13px;line-height:1.55;color:var(--mute);margin:0;}
+  .step .flow{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink);margin-top:auto;letter-spacing:.04em;}
+
+  /* transformation */
+  .transform-grid{display:grid;grid-template-columns:1fr 40px 1fr;gap:0;align-items:stretch;}
+  .tcol{border:1px solid var(--hair);padding:32px;background:#fff;min-height:560px;display:flex;flex-direction:column;}
+  .tcol h4{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--mute);margin:0 0 24px;display:flex;justify-content:space-between;}
+  .tcol h4 .state{color:var(--ink);}
+  .tcol.left{background:var(--paper-2);}
+  .scatter{position:relative;flex:1;min-height:440px;}
+  .scrap{position:absolute;background:#fff;border:1px solid var(--hair);padding:10px;font-family:'JetBrains Mono',monospace;font-size:10px;}
+  .scrap.tilt-l{transform:rotate(-2.4deg);}
+  .scrap.tilt-r{transform:rotate(2deg);}
+  .scrap.tilt-r2{transform:rotate(-1deg);}
+  .scrap-post{width:58%;top:0;left:0;}
+  .scrap-post .handle{color:var(--mute);font-size:9px;margin-bottom:6px;}
+  .scrap-post .body{font-family:Inter,sans-serif;font-size:12px;color:var(--ink);line-height:1.45;}
+  .scrap-thumb{width:36%;top:30px;right:0;padding:0;aspect-ratio:3/4;}
+  .scrap-thumb svg{display:block;width:100%;height:100%;}
+  .scrap-prompt{width:70%;top:44%;left:8%;}
+  .scrap-tags{width:50%;top:68%;right:2%;}
+  .scrap-tags .t{display:inline-block;border:1px solid var(--concrete-2);padding:2px 5px;margin:2px;}
+  .scrap-note{width:44%;top:82%;left:2%;}
+  .arrow-col{display:flex;align-items:center;justify-content:center;}
+  .arrow-col svg{width:40px;height:40px;}
+  .normalized{flex:1;display:flex;flex-direction:column;gap:12px;}
+  .norm-row{display:grid;grid-template-columns:110px 1fr;gap:16px;font-family:'JetBrains Mono',monospace;font-size:11px;border-bottom:1px dashed var(--concrete);padding-bottom:10px;}
+  .norm-row .k{color:var(--mute);letter-spacing:.08em;}
+  .norm-row .v{color:var(--ink);}
+  .norm-row .v b{font-weight:600;}
+  .norm-score{display:flex;gap:10px;margin-top:4px;}
+  .norm-score .s{border:1px solid var(--hair);padding:8px 10px;flex:1;}
+  .norm-score .s .k{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--mute);letter-spacing:.08em;}
+  .norm-score .s .v{font-size:20px;font-weight:600;letter-spacing:-.02em;}
+  .norm-score .s.orange .v{color:var(--orange);}
+
+  /* rankings */
+  .rank-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--hair);}
+  .rank-col{border:1px solid var(--hair);border-top:0;background:#fff;}
+  .rank-col + .rank-col{border-left:0;}
+  .rank-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--hair);}
+  .rank-head .t{font-size:20px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;}
+  .rank-head .t .dot{width:8px;height:8px;background:var(--orange);display:inline-block;}
+  .rank-head .meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);}
+  .rank-filters{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--hair);}
+  .rank-filters .f{padding:10px 14px;border-right:1px solid var(--hair);font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);letter-spacing:.06em;cursor:pointer;}
+  .rank-filters .f.on{color:var(--ink);background:var(--paper);}
+  .rank-filters .f:hover{color:var(--orange);}
+  .rank-table{}
+  .rrow{display:grid;grid-template-columns:36px 64px 1fr 110px 90px 80px;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--concrete);font-size:13px;transition:background .15s;}
+  .rrow:hover{background:var(--paper-2);}
+  .rrow:last-child{border-bottom:0;}
+  .rrow .idx{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);}
+  .rrow .idx.top{color:var(--orange);font-weight:600;}
+  .rrow .mini{aspect-ratio:3/4;background:#111;position:relative;overflow:hidden;}
+  .rrow .mini svg{display:block;width:100%;height:100%;}
+  .rrow .title{font-weight:500;line-height:1.3;}
+  .rrow .title small{display:block;color:var(--mute);font-size:11px;font-weight:400;margin-top:3px;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;}
+  .rrow .creator{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mute);}
+  .rrow .k{font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right;}
+  .rrow .k b{color:var(--orange);font-weight:600;}
+  .rrow .arrow{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);text-align:right;}
+  /* stability table */
+  .srow{display:grid;grid-template-columns:36px 1fr 120px 90px 80px;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--concrete);font-size:13px;transition:background .15s;}
+  .srow:hover{background:var(--paper-2);}
+  .srow:last-child{border-bottom:0;}
+  .srow .models{display:flex;gap:3px;}
+  .srow .mchip{font-family:'JetBrains Mono',monospace;font-size:9px;padding:3px 5px;border:1px solid var(--concrete-2);color:var(--mute);}
+  .srow .mchip.pass{border-color:var(--ink);color:var(--ink);background:#fff;}
+  .srow .mchip.fail{text-decoration:line-through;color:var(--mute-2);}
+  .srow .repro{font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right;}
+  .srow .repro b{color:var(--orange);}
+  .srow .cost{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mute);text-align:right;}
+
+  /* featured cases */
+  .cases{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+  .case{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);background:#fff;display:flex;flex-direction:column;}
+  .case .media{aspect-ratio:3/4;background:#111;position:relative;overflow:hidden;border-bottom:1px solid var(--hair);}
+  .case .media.wide{aspect-ratio:16/10;}
+  .case .media svg{width:100%;height:100%;display:block;}
+  .case .media .rank{position:absolute;top:10px;left:10px;font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--orange);color:#fff;padding:3px 6px;}
+  .case .media .timecode{position:absolute;right:10px;bottom:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;}
+  .case .media .kind{position:absolute;left:10px;bottom:10px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#fff;letter-spacing:.1em;}
+  .case .body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1;}
+  .case h4{font-size:15px;font-weight:600;margin:0;letter-spacing:-.01em;line-height:1.25;}
+  .case .zh{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);letter-spacing:.05em;}
+  .case .meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);margin-top:auto;padding-top:10px;border-top:1px dashed var(--concrete);}
+  .case .meta span b{color:var(--ink);font-weight:500;}
+  .case .by{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);letter-spacing:.04em;}
+  .case .by b{color:var(--ink);font-weight:500;}
+
+  /* creators */
+  .creators{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+  .creator-cell{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);background:#fff;padding:24px;display:flex;flex-direction:column;gap:16px;min-height:320px;}
+  .creator-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+  .creator-top .who{display:flex;gap:14px;}
+  .creator-top .avatar{width:52px;height:52px;font-size:14px;}
+  .creator-top .name{font-size:17px;font-weight:600;letter-spacing:-.01em;}
+  .creator-top .sub{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);margin-top:4px;letter-spacing:.04em;}
+  .creator-top .platforms{display:flex;gap:4px;margin-top:8px;}
+  .creator-top .platforms span{font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:2px 5px;border:1px solid var(--concrete-2);}
+  .creator-scores{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--hair);}
+  .creator-scores .s{padding:10px;border-right:1px solid var(--hair);}
+  .creator-scores .s:last-child{border-right:0;}
+  .creator-scores .k{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--mute);letter-spacing:.08em;}
+  .creator-scores .v{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-top:4px;}
+  .creator-scores .v.orange{color:var(--orange);}
+  .maturity{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);}
+  .maturity .pips{display:inline-flex;gap:3px;}
+  .maturity .pips i{width:14px;height:6px;background:var(--concrete-2);}
+  .maturity .pips i.on{background:var(--orange);}
+  .creator-actions{display:flex;gap:8px;margin-top:auto;}
+  .creator-actions .btn{flex:1;justify-content:center;padding:10px 12px;font-size:12px;}
+
+  /* skills */
+  .skills{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+  .skill-cell{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);background:#fff;padding:24px;display:flex;flex-direction:column;gap:14px;min-height:340px;position:relative;}
+  .skill-cell.locked{background:
+    repeating-linear-gradient(135deg, transparent 0 10px, rgba(10,10,10,.025) 10px 11px),
+    #fff;}
+  .skill-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+  .skill-head .id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);letter-spacing:.1em;}
+  .skill-head .state{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 6px;border:1px solid var(--hair);letter-spacing:.08em;}
+  .skill-head .state.open{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .skill-head .state.locked{color:var(--orange);border-color:var(--orange);}
+  .skill-cell h4{font-size:20px;font-weight:600;letter-spacing:-.015em;margin:0;line-height:1.2;}
+  .skill-cell .zh{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);letter-spacing:.04em;}
+  .skill-row{display:grid;grid-template-columns:90px 1fr;gap:14px;font-family:'JetBrains Mono',monospace;font-size:10.5px;}
+  .skill-row .k{color:var(--mute);letter-spacing:.08em;}
+  .skill-row .v{color:var(--ink);}
+  .skill-stack{display:flex;flex-wrap:wrap;gap:4px;}
+  .skill-bottom{margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px dashed var(--concrete);font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);}
+  .skill-bottom b{color:var(--ink);font-weight:500;}
+
+  /* methodology */
+  .meth{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--hair);background:#fff;}
+  .meth .col{padding:40px;}
+  .meth .col + .col{border-left:1px solid var(--hair);}
+  .meth h3{font-size:15px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em;}
+  .meth .mnum{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--orange);letter-spacing:.1em;margin-bottom:18px;display:block;}
+  .meth p{font-size:14px;line-height:1.6;color:var(--mute);margin:0 0 24px;}
+  .meth ul{padding:0;margin:0;list-style:none;}
+  .meth li{display:grid;grid-template-columns:20px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--concrete);font-size:13px;}
+  .meth li::before{content:"+";font-family:'JetBrains Mono',monospace;color:var(--orange);line-height:1.3;}
+  .meth li b{font-weight:500;display:block;margin-bottom:3px;}
+  .meth li span{color:var(--mute);font-size:12.5px;line-height:1.5;}
+
+  /* changelog */
+  .changelog{border:1px solid var(--hair);background:#fff;}
+  .log-head{display:grid;grid-template-columns:1fr 1fr 1fr;padding:20px 24px;border-bottom:1px solid var(--hair);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);letter-spacing:.1em;}
+  .log-head span:nth-child(2){text-align:center;}
+  .log-head span:last-child{text-align:right;}
+  .log-entry{display:grid;grid-template-columns:140px 100px 1fr 120px;gap:24px;padding:20px 24px;border-bottom:1px solid var(--concrete);align-items:start;}
+  .log-entry:last-child{border-bottom:0;}
+  .log-entry .date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mute);letter-spacing:.06em;}
+  .log-entry .ver{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--orange);}
+  .log-entry .summary h5{margin:0 0 4px;font-size:14px;font-weight:600;}
+  .log-entry .summary p{margin:0;font-size:12.5px;color:var(--mute);line-height:1.5;}
+  .log-entry .tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);text-align:right;letter-spacing:.06em;}
+  .log-founder{padding:24px;border-top:1px solid var(--hair);display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;background:var(--paper-2);}
+  .log-founder .avatar{width:40px;height:40px;}
+  .log-founder .who{font-size:13px;}
+  .log-founder .who b{font-weight:600;}
+  .log-founder .who small{display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:10.5px;margin-top:2px;}
+
+  /* quotes */
+  .quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+  .quote{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:40px 32px;display:flex;flex-direction:column;gap:24px;background:#fff;min-height:260px;}
+  .quote .q{font-size:20px;line-height:1.35;letter-spacing:-.01em;font-weight:400;margin:0;text-wrap:pretty;}
+  .quote .q::before{content:"“";color:var(--orange);font-size:40px;line-height:0;position:relative;top:16px;margin-right:6px;font-family:Georgia,serif;}
+  .quote .attr{margin-top:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);letter-spacing:.12em;text-transform:uppercase;padding-top:18px;border-top:1px solid var(--concrete);}
+  .quote .attr b{color:var(--ink);font-weight:500;}
+
+  /* final */
+  .final{padding:140px 0;text-align:center;position:relative;background:var(--paper);}
+  .final::before,.final::after{content:"";position:absolute;left:0;right:0;height:1px;background:var(--hair);}
+  .final::before{top:0;}.final::after{bottom:0;}
+  .final .wrap{max-width:1000px;}
+  .final h2{font-size:84px;line-height:.95;letter-spacing:-.04em;font-weight:500;margin:20px 0 24px;}
+  .final h2 em{color:var(--orange);font-style:normal;}
+  .final p{max-width:580px;margin:0 auto 40px;color:var(--mute);font-size:16px;line-height:1.55;}
+  .final .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+  .final .crosshair{position:absolute;width:24px;height:24px;}
+  .final .crosshair::before,.final .crosshair::after{content:"";position:absolute;background:var(--ink);}
+  .final .crosshair::before{left:50%;top:0;bottom:0;width:1px;transform:translateX(-.5px);}
+  .final .crosshair::after{top:50%;left:0;right:0;height:1px;transform:translateY(-.5px);}
+  .ch-tl{top:32px;left:32px;} .ch-tr{top:32px;right:32px;} .ch-bl{bottom:32px;left:32px;} .ch-br{bottom:32px;right:32px;}
+
+  /* footer */
+  footer{border-top:1px solid var(--hair);padding:56px 0 32px;background:var(--paper);}
+  footer .grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:48px;}
+  footer h6{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--mute);margin:0 0 16px;}
+  footer ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+  footer li{font-size:13px;}
+  footer li a:hover{color:var(--orange);}
+  footer .bottom{margin-top:56px;padding-top:24px;border-top:1px solid var(--concrete);display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);letter-spacing:.06em;}
+  footer .brand-big{font-size:64px;letter-spacing:-.04em;font-weight:500;line-height:.9;margin-bottom:16px;}
+  footer .brand-big em{color:var(--orange);font-style:normal;}
+  footer .brand-note{font-size:12.5px;color:var(--mute);max-width:360px;line-height:1.55;}
+
+  /* utility — placeholder thumbnail (striped/blueprint) */
+  .stripe-bg{background:repeating-linear-gradient(45deg, #14140f 0 10px, #1d1d17 10px 20px);}
+
+  @media (max-width:1180px){
+    .hero h1{font-size:72px;}
+    .hero-grid{grid-template-columns:1fr;gap:48px;}
+    .anno-r{display:none;}
+    .steps{grid-template-columns:repeat(2,1fr);}
+    .cases{grid-template-columns:repeat(2,1fr);}
+    .creators{grid-template-columns:repeat(2,1fr);}
+    .skills{grid-template-columns:repeat(2,1fr);}
+    .quotes{grid-template-columns:repeat(1,1fr);}
+    .rank-grid{grid-template-columns:1fr;}
+    .rank-col + .rank-col{border-left:1px solid var(--hair);border-top:0;}
+    .transform-grid{grid-template-columns:1fr;}
+    .arrow-col{padding:16px 0;}
+    .arrow-col svg{transform:rotate(90deg);}
+    .meth{grid-template-columns:1fr;}
+    .meth .col + .col{border-left:0;border-top:1px solid var(--hair);}
+    footer .grid{grid-template-columns:1fr 1fr;}
+    .final h2{font-size:56px;}
+    .section-head{grid-template-columns:1fr;}
+    .section-title{font-size:36px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <span class="brand-mark"></span>
+      <span>GoodCase<strong style="font-weight:700">AI</strong></span>
+      <span class="brand-sub">／好案例</span>
+    </a>
+    <div class="links">
+      <a href="#rankings">Rankings</a>
+      <a href="#lab">Stability Lab</a>
+      <a href="#creators">Creators</a>
+      <a href="#skills">Skills</a>
+      <a href="#methodology">Method</a>
+      <a href="#changelog">Changelog</a>
+    </div>
+    <div class="meta">
+      <span class="lang"><span class="on">EN</span><span>中文</span></span>
+      <a class="btn btn-ghost" href="#">Sign in</a>
+      <a class="btn btn-primary" href="#">Submit a Case <span class="arrow">→</span></a>
+    </div>
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="wrap">
+    <span class="live">LIVE · STABILITY LAB</span>
+    <span class="sep"></span>
+    <span>RUN #0412 · veo-3 / sora-2 / kling-2 / hailuo-02</span>
+    <span class="sep"></span>
+    <span>REPRO 74.2% · COST $0.43/CLIP · N=128</span>
+    <span class="sep"></span>
+    <span>CASES INDEXED 4,218</span>
+    <span class="sep"></span>
+    <span>CREATORS TRACKED 612</span>
+    <span class="sep"></span>
+    <span>SKILLS PROMOTED 37</span>
+    <span class="sep"></span>
+    <span style="color:var(--ink)">v0.14.3 · 2026.04.18</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <!-- LEFT -->
+      <div>
+        <span class="eyebrow mono">PLATFORM / 创作者方法论基础设施</span>
+        <h1>
+          Rank what's<br/>
+          <em>real</em>, reproduce<br/>
+          what's <em>worth</em> it,<br/>
+          <span class="slash">/</span> reuse the rest.
+        </h1>
+        <p class="hero-lede">
+          GoodCaseAI indexes the AI videos and coding workflows actually moving across X, WeChat, Bilibili, Xiaohongshu and Discord — then re-runs the top ones across frontier models so you can see what holds up. Creators who ship repeatedly become Skills.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#rankings">Explore Rankings <span class="arrow">→</span></a>
+          <a class="btn" href="#">Submit a Case</a>
+          <a class="btn btn-ghost" href="#">Claim Creator Profile</a>
+        </div>
+        <div class="hero-meta">
+          <span><strong>4,218</strong> cases</span>
+          <span><strong>612</strong> creators</span>
+          <span><strong>37</strong> skills</span>
+          <span><strong>128</strong> lab runs / wk</span>
+        </div>
+      </div>
+
+      <!-- RIGHT — product preview window -->
+      <div style="position:relative;">
+        <div class="anno anno-t">
+          <span>A · LOVE RANKING</span>
+          <span class="ln"></span>
+        </div>
+        <div class="anno anno-r">
+          <span class="ln" style="height:40px;"></span>
+          B · STABILITY LAB<br/>Cross-model repro<br/>74.2% / $0.43
+        </div>
+        <div class="anno anno-b">
+          <span class="ln"></span>
+          <span>C · SKILL + CREATOR ◇</span>
+        </div>
+
+        <div class="preview">
+          <div class="preview-bar">
+            <div class="dots"><i></i><i></i><i></i></div>
+            <div class="url">goodcase.ai / discover / ai-video-15s</div>
+            <div style="min-width:40px;text-align:right;">▢</div>
+          </div>
+          <div class="preview-body">
+
+            <!-- Thumbnails strip (full width) -->
+            <div class="preview-full">
+              <div class="pv-title">
+                <span>TRENDING · 15s VIDEO · 24H</span>
+                <span class="status">● LIVE</span>
+              </div>
+              <div class="thumbs">
+                <div class="thumb">
+                  <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+                    <defs><pattern id="p1" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(20)">
+                      <rect width="6" height="6" fill="#1a1a14"/><line x1="0" y1="0" x2="0" y2="6" stroke="#2a2a20" stroke-width="1"/>
+                    </pattern></defs>
+                    <rect width="100" height="133" fill="url(#p1)"/>
+                    <circle cx="50" cy="60" r="18" fill="none" stroke="#FF5733" stroke-width="1"/>
+                    <text x="50" y="64" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="#FF5733">15s</text>
+                  </svg>
+                  <span class="rank">#01</span>
+                  <span class="tag">VEO-3</span>
+                </div>
+                <div class="thumb">
+                  <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+                    <defs><pattern id="p2" width="10" height="10" patternUnits="userSpaceOnUse">
+                      <rect width="10" height="10" fill="#15120f"/><circle cx="5" cy="5" r="1" fill="#3a2a20"/>
+                    </pattern></defs>
+                    <rect width="100" height="133" fill="url(#p2)"/>
+                    <rect x="30" y="50" width="40" height="28" fill="none" stroke="#e6e6e1" stroke-width=".5"/>
+                  </svg>
+                  <span class="rank">#02</span>
+                  <span class="tag">SORA-2</span>
+                </div>
+                <div class="thumb">
+                  <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+                    <defs><pattern id="p3" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                      <rect width="4" height="4" fill="#1f1a14"/><line x1="0" y1="0" x2="4" y2="0" stroke="#8a5a30" stroke-width=".5"/>
+                    </pattern></defs>
+                    <rect width="100" height="133" fill="url(#p3)"/>
+                  </svg>
+                  <span class="rank">#03</span>
+                  <span class="tag">KLING-2</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Love ranking fragment -->
+            <div>
+              <div class="pv-title">
+                <span>LOVE RANKING · 好评榜</span>
+                <span>24H</span>
+              </div>
+              <div class="love-row">
+                <span class="idx">01</span>
+                <div><div class="name">Paperfold city loop</div><div class="creator">@linzi · 林子</div></div>
+                <span class="score">♥ <b>9.4</b>K</span>
+              </div>
+              <div class="love-row">
+                <span class="idx">02</span>
+                <div><div class="name">Ink rain in Chongqing</div><div class="creator">@monk.studio</div></div>
+                <span class="score">♥ <b>7.8</b>K</span>
+              </div>
+              <div class="love-row">
+                <span class="idx">03</span>
+                <div><div class="name">Neon courier cat 15s</div><div class="creator">@neko_ops</div></div>
+                <span class="score">♥ <b>6.1</b>K</span>
+              </div>
+              <div class="love-row">
+                <span class="idx">04</span>
+                <div><div class="name">Claude MCP doc agent</div><div class="creator">@yuki.dev</div></div>
+                <span class="score">♥ <b>4.9</b>K</span>
+              </div>
+            </div>
+
+            <!-- Stability lab card -->
+            <div>
+              <div class="pv-title">
+                <span>STABILITY LAB · CASE #0412</span>
+                <span class="status">● RUN COMPLETE</span>
+              </div>
+              <div style="font-size:13px;font-weight:600;letter-spacing:-.01em;margin-bottom:2px;">Paperfold city loop</div>
+              <div class="mono" style="font-size:10px;color:var(--mute);margin-bottom:10px;">PROMPT HASH 0x8fA2 · N=24 · 2026.04.18</div>
+              <div class="lab-card">
+                <div class="metric">
+                  <div class="k">REPRO RATE</div>
+                  <div class="v">74.2<small>%</small></div>
+                  <div class="bar"><i style="width:74%"></i></div>
+                </div>
+                <div class="metric">
+                  <div class="k">CONSISTENCY</div>
+                  <div class="v">8.6<small>/10</small></div>
+                  <div class="bar ink"><i style="width:86%"></i></div>
+                </div>
+                <div class="metric">
+                  <div class="k">AVG COST</div>
+                  <div class="v">$0.43</div>
+                  <div class="mono" style="font-size:9px;color:var(--mute);margin-top:6px;">PER 15s CLIP</div>
+                </div>
+                <div class="metric">
+                  <div class="k">MODELS</div>
+                  <div class="v" style="font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:500;line-height:1.4;margin-top:6px;">veo-3 · sora-2<br/>kling-2 · hailuo</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Creator + Skill (full width) -->
+            <div class="preview-full">
+              <div class="pv-title">
+                <span>CREATOR · 创作者 / 方法论</span>
+                <span>PROFILE CLAIMED ✓</span>
+              </div>
+              <div class="creator-card" style="padding-bottom:12px;border-bottom:1px solid var(--concrete);">
+                <div class="avatar">LZ</div>
+                <div>
+                  <div style="font-weight:600;font-size:14px;">林子 · Linzi</div>
+                  <div class="mono" style="font-size:10px;color:var(--mute);margin-top:3px;">SHANGHAI · X · XHS · 12 NOTABLE CASES</div>
+                </div>
+                <div class="mono" style="font-size:11px;text-align:right;">
+                  <span style="color:var(--orange);font-weight:600;">LOVE 94</span><br/>
+                  <span>STAB 81</span>
+                </div>
+              </div>
+              <div style="margin-top:12px;">
+                <span class="mono" style="font-size:10px;color:var(--mute);letter-spacing:.08em;">RELATED SKILLS</span>
+                <div style="margin-top:6px;">
+                  <span class="skill-chip orange">PAPERFOLD-LOOP / 纸城循环</span>
+                  <span class="skill-chip">CJK-TYPO-MOTION</span>
+                  <span class="skill-chip lock">COURIER-CAMERA ◇</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- PROCESS -->
+<section class="section" id="process">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono">§ 01 · PROCESS</div>
+      </div>
+      <div>
+        <h2 class="section-title">A four-layer system that turns scattered virality into durable method.</h2>
+        <p class="section-sub">Case → Creator → Lab → Skill. Each layer feeds the next, so signal compounds instead of evaporating after the scroll.</p>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="n"><span>01</span><b>CASE</b></div>
+        <div class="icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M9 3v18"/></svg>
+        </div>
+        <h3>Discover viral cases</h3>
+        <p>A crawler + curator seed feeds from X, Bilibili, WeChat, Xiaohongshu, Reddit, and Discord collect AI videos and coding workflows while they're still hot.</p>
+        <div class="flow">sources ─▶ index</div>
+      </div>
+      <div class="step">
+        <div class="n"><span>02</span><b>CREATOR</b></div>
+        <div class="icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5M3 18l9 5 9-5"/></svg>
+        </div>
+        <h3>Community love signals</h3>
+        <p>Signed-in readers like, save, follow, submit repros, and add parameters. Only real engagement counts; bots and self-inflation are filtered with provenance checks.</p>
+        <div class="flow">index ─▶ love rank</div>
+      </div>
+      <div class="step">
+        <div class="n"><span>03</span><b>LAB</b></div>
+        <div class="icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M9 3v5l-5 10a3 3 0 003 3h10a3 3 0 003-3L15 8V3"/><path d="M8 3h8"/></svg>
+        </div>
+        <h3>Cross-model validation</h3>
+        <p>Top loved cases are re-run with the same normalized prompt across frontier models. Every run reports repro rate, consistency, visual drift, and $/clip.</p>
+        <div class="flow">prompt ─▶ N models</div>
+      </div>
+      <div class="step">
+        <div class="n"><span>04</span><b>SKILL</b></div>
+        <div class="icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/><path d="M10 7h4M7 10v4M17 10v4M10 17h4"/></svg>
+        </div>
+        <h3>Turn top creators into Skills</h3>
+        <p>When a creator's cases repeat a pattern with measurable stability, the platform promotes it into a reusable Skill — prompt scaffold, model stack, and steps — attributed back to them.</p>
+        <div class="flow">pattern ─▶ skill ↗</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSFORMATION -->
+<section class="section" id="transform">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono">§ 02 · TRANSFORMATION</div>
+      </div>
+      <div>
+        <h2 class="section-title">From viral post to reusable method.</h2>
+        <p class="section-sub">Scattered screenshots and vague captions on the left; a normalized case, reproducibility score, cost card, and Skill attribution on the right. Same raw input, structurally different output.</p>
+      </div>
+    </div>
+
+    <div class="transform-grid">
+      <!-- LEFT -->
+      <div class="tcol left">
+        <h4><span>A · RAW / SCATTERED</span><span class="state">INTERNET</span></h4>
+        <div class="scatter">
+          <div class="scrap scrap-post tilt-l">
+            <div class="handle">@linzi · X · 412K views</div>
+            <div class="body">"ok the paperfold city loop is finally working, 15s, mostly veo, some kling retries for the rain.. prompt below ↓"</div>
+          </div>
+          <div class="scrap scrap-thumb tilt-r">
+            <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+              <defs><pattern id="sp1" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+                <rect width="5" height="5" fill="#1a1a14"/><line x1="0" y1="0" x2="0" y2="5" stroke="#FF5733" stroke-width=".3"/>
+              </pattern></defs>
+              <rect width="100" height="133" fill="url(#sp1)"/>
+            </svg>
+          </div>
+          <div class="scrap scrap-prompt tilt-r2">
+            <div style="color:var(--mute);font-size:9px;margin-bottom:4px;">PROMPT FRAGMENT (screenshot)</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;">"a paper-folded city, camera<br/>slowly rotating, 15 seconds,<br/>warm grey light, ink rain…"<br/><span style="color:var(--mute)">+ 14 more tokens cropped</span></div>
+          </div>
+          <div class="scrap scrap-tags tilt-l">
+            <div style="color:var(--mute);font-size:9px;margin-bottom:4px;">HASHTAGS + CROSS-POSTS</div>
+            <span class="t">#AIvideo</span><span class="t">#veo3</span><span class="t">#纸城</span><span class="t">#15s</span><span class="t">XHS ↗</span><span class="t">WB ↗</span>
+          </div>
+          <div class="scrap scrap-note tilt-r">
+            <div style="color:var(--mute);font-size:9px;margin-bottom:4px;">COMMENT NOTE</div>
+            <div style="font-family:Inter,sans-serif;font-size:11px;line-height:1.4;">"tried on sora, looks totally different — anyone got the exact seed?"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARROW -->
+      <div class="arrow-col">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#0A0A0A" stroke-width="1">
+          <path d="M4 20h30"/><path d="M26 12l10 8-10 8"/>
+          <circle cx="4" cy="20" r="2" fill="#FF5733" stroke="none"/>
+        </svg>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="tcol">
+        <h4><span>B · NORMALIZED CASE PAGE</span><span class="state" style="color:var(--orange)">GOODCASEAI</span></h4>
+        <div class="normalized">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+            <div>
+              <div style="font-size:20px;font-weight:600;letter-spacing:-.015em;">Paperfold city loop</div>
+              <div class="mono" style="font-size:10.5px;color:var(--mute);letter-spacing:.06em;">CASE #0412 · 纸城循环 · AI-VIDEO / 15s</div>
+            </div>
+            <span class="mono" style="font-size:10px;padding:4px 7px;background:var(--orange);color:#fff;">#01 LOVE 24H</span>
+          </div>
+          <div class="norm-row"><span class="k">SOURCE</span><span class="v">X @linzi · WB ↗ · XHS ↗</span></div>
+          <div class="norm-row"><span class="k">PROMPT</span><span class="v">normalized · 64 tokens · <b>hash 0x8fA2</b></span></div>
+          <div class="norm-row"><span class="k">MODEL STACK</span><span class="v">veo-3 (primary) · kling-2 (rain)</span></div>
+          <div class="norm-row"><span class="k">CREATOR</span><span class="v">@linzi · SHANGHAI · claimed ✓</span></div>
+
+          <div class="norm-score">
+            <div class="s orange"><div class="k">REPRO</div><div class="v">74.2%</div></div>
+            <div class="s"><div class="k">CONSIST.</div><div class="v">8.6</div></div>
+            <div class="s"><div class="k">COST</div><div class="v">$0.43</div></div>
+          </div>
+
+          <div style="margin-top:14px;padding:12px;border:1px solid var(--hair);display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div class="mono" style="font-size:10px;color:var(--mute);letter-spacing:.08em;">PROMOTED SKILL</div>
+              <div style="font-size:14px;font-weight:600;margin-top:3px;">PAPERFOLD-LOOP · 纸城循环法</div>
+            </div>
+            <span class="mono" style="font-size:10.5px;color:var(--orange);">v0.3 ↗</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RANKINGS -->
+<section class="section" id="rankings">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono">§ 03 · RANKINGS</div>
+      </div>
+      <div>
+        <h2 class="section-title">Two rankings. One reads the crowd, the other reads the models.</h2>
+        <p class="section-sub">Love Ranking is purely human signal — saves, follows, reproduction attempts, parameter drops. Stability Ranking is what survives when the same prompt is run across a matrix of frontier models at our expense.</p>
+      </div>
+    </div>
+
+    <div class="rank-grid">
+      <!-- LOVE -->
+      <div class="rank-col">
+        <div class="rank-head">
+          <div class="t"><span class="dot"></span> Love Ranking · <span class="mono" style="font-weight:400;font-size:14px;color:var(--mute);">好评榜</span></div>
+          <div class="meta">UPDATED 04:12 · 24H</div>
+        </div>
+        <div class="rank-filters">
+          <span class="f on">AI VIDEO 15s</span>
+          <span class="f">CODING WF</span>
+          <span class="f">CHINA</span>
+          <span class="f">GLOBAL</span>
+          <span class="f">X / 𝕏</span>
+          <span class="f">BILIBILI</span>
+          <span class="f">XHS</span>
+        </div>
+        <div class="rank-table">
+          <div class="rrow">
+            <span class="idx top">01</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#16140f"/><path d="M20 100 L50 40 L80 100 Z" fill="none" stroke="#FF5733" stroke-width=".8"/><path d="M10 110 L90 110" stroke="#e6e6e1" stroke-width=".3"/></svg></div>
+            <div class="title">Paperfold city loop<small>CASE #0412 · 15s · VEO-3</small></div>
+            <div class="creator">@linzi · 上海</div>
+            <div class="k">♥ <b>9.4K</b></div>
+            <div class="arrow">↑ 412</div>
+          </div>
+          <div class="rrow">
+            <span class="idx top">02</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><defs><pattern id="m2" width="3" height="3" patternUnits="userSpaceOnUse"><rect width="3" height="3" fill="#0f1014"/><circle cx="1.5" cy="1.5" r=".4" fill="#aaa"/></pattern></defs><rect width="100" height="133" fill="url(#m2)"/></svg></div>
+            <div class="title">Ink rain in Chongqing<small>CASE #0407 · 15s · KLING-2</small></div>
+            <div class="creator">@monk.studio · 重庆</div>
+            <div class="k">♥ <b>7.8K</b></div>
+            <div class="arrow">↑ 88</div>
+          </div>
+          <div class="rrow">
+            <span class="idx top">03</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#1a120c"/><rect x="30" y="55" width="40" height="28" fill="none" stroke="#FF5733" stroke-width=".6"/><circle cx="50" cy="40" r="6" fill="#FF5733"/></svg></div>
+            <div class="title">Neon courier cat 15s<small>CASE #0401 · 15s · SORA-2</small></div>
+            <div class="creator">@neko_ops · TOKYO</div>
+            <div class="k">♥ <b>6.1K</b></div>
+            <div class="arrow">↑ 54</div>
+          </div>
+          <div class="rrow">
+            <span class="idx">04</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#0c0f0e"/><path d="M10 30 Q50 70 90 30" fill="none" stroke="#e6e6e1" stroke-width=".5"/><path d="M10 60 Q50 100 90 60" fill="none" stroke="#FF5733" stroke-width=".5"/></svg></div>
+            <div class="title">Claude MCP doc agent<small>CASE #0395 · CODING WF</small></div>
+            <div class="creator">@yuki.dev · SF</div>
+            <div class="k">♥ <b>4.9K</b></div>
+            <div class="arrow">↑ 32</div>
+          </div>
+          <div class="rrow">
+            <span class="idx">05</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#121014"/><circle cx="50" cy="66" r="28" fill="none" stroke="#e6e6e1" stroke-width=".4"/><circle cx="50" cy="66" r="14" fill="none" stroke="#FF5733" stroke-width=".4"/></svg></div>
+            <div class="title">Moth ritual portrait<small>CASE #0388 · 15s · HAILUO-02</small></div>
+            <div class="creator">@hana.sim · BERLIN</div>
+            <div class="k">♥ <b>4.2K</b></div>
+            <div class="arrow" style="color:var(--mute);">· —</div>
+          </div>
+          <div class="rrow">
+            <span class="idx">06</span>
+            <div class="mini"><svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice"><rect width="100" height="133" fill="#0f1014"/><g stroke="#FF5733" stroke-width=".4" fill="none"><path d="M10 30h80M10 50h80M10 70h80M10 90h80"/></g></svg></div>
+            <div class="title">Wuxia rooftops 15s<small>CASE #0382 · 15s · VEO-3</small></div>
+            <div class="creator">@jianghu · 成都</div>
+            <div class="k">♥ <b>3.7K</b></div>
+            <div class="arrow">↓ 12</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STABILITY -->
+      <div class="rank-col">
+        <div class="rank-head">
+          <div class="t"><span class="dot"></span> Stability Ranking · <span class="mono" style="font-weight:400;font-size:14px;color:var(--mute);">稳定性实验</span></div>
+          <div class="meta">LAB RUN 04·12 · N=24/CASE</div>
+        </div>
+        <div class="rank-filters">
+          <span class="f on">MODEL: ALL</span>
+          <span class="f">COST ↑</span>
+          <span class="f">REPRO ↑</span>
+          <span class="f">CONSIST.</span>
+          <span class="f">DRIFT ↓</span>
+          <span class="f">15s</span>
+          <span class="f">CODING WF</span>
+        </div>
+        <div class="rank-table">
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);font-weight:600;">01</span>
+            <div class="title">Paperfold city loop <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=24 · hash 0x8fA2 · 15s</small></div>
+            <div class="models">
+              <span class="mchip pass">veo-3</span>
+              <span class="mchip pass">kling-2</span>
+              <span class="mchip">sora-2</span>
+              <span class="mchip fail">hailuo</span>
+            </div>
+            <div class="repro"><b>74.2%</b></div>
+            <div class="cost">$0.43</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);font-weight:600;">02</span>
+            <div class="title">Claude MCP doc agent <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=32 · 7 STEPS · CODING WF</small></div>
+            <div class="models">
+              <span class="mchip pass">cld-s4</span>
+              <span class="mchip pass">gpt-5</span>
+              <span class="mchip pass">qwen-3</span>
+              <span class="mchip">glm-5</span>
+            </div>
+            <div class="repro"><b>91.0%</b></div>
+            <div class="cost">$0.11</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);">03</span>
+            <div class="title">Ink rain in Chongqing <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=24 · 15s · WEATHER</small></div>
+            <div class="models">
+              <span class="mchip pass">kling-2</span>
+              <span class="mchip">veo-3</span>
+              <span class="mchip fail">sora-2</span>
+              <span class="mchip fail">hailuo</span>
+            </div>
+            <div class="repro"><b>52.1%</b></div>
+            <div class="cost">$0.58</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);">04</span>
+            <div class="title">Neon courier cat 15s <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=24 · 15s · CHAR MOTION</small></div>
+            <div class="models">
+              <span class="mchip pass">sora-2</span>
+              <span class="mchip pass">veo-3</span>
+              <span class="mchip">kling-2</span>
+              <span class="mchip fail">hailuo</span>
+            </div>
+            <div class="repro"><b>66.7%</b></div>
+            <div class="cost">$0.49</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);">05</span>
+            <div class="title">OpenClaw content agent <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=18 · 12 STEPS · AUTOMATION</small></div>
+            <div class="models">
+              <span class="mchip pass">cld-s4</span>
+              <span class="mchip pass">gpt-5</span>
+              <span class="mchip">glm-5</span>
+              <span class="mchip fail">llama-4</span>
+            </div>
+            <div class="repro"><b>83.3%</b></div>
+            <div class="cost">$0.22</div>
+          </div>
+          <div class="srow">
+            <span class="idx" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mute);">06</span>
+            <div class="title">Wuxia rooftops 15s <small style="display:block;color:var(--mute);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;letter-spacing:.04em;">N=24 · 15s · ACTION</small></div>
+            <div class="models">
+              <span class="mchip pass">veo-3</span>
+              <span class="mchip">kling-2</span>
+              <span class="mchip fail">sora-2</span>
+              <span class="mchip fail">hailuo</span>
+            </div>
+            <div class="repro"><b>41.7%</b></div>
+            <div class="cost">$0.61</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED CASES -->
+<section class="section" id="cases">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono">§ 04 · FEATURED CASES</div>
+      </div>
+      <div>
+        <h2 class="section-title">Phase one leans into 15-second AI video, with coding workflows shipping alongside.</h2>
+        <p class="section-sub">Every card shows what actually produced it: model stack, toolchain, dollars per run, reproducibility, and who made it. No mood-board marketing — only cases with verifiable lab runs.</p>
+      </div>
+    </div>
+
+    <div class="cases">
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <defs><pattern id="c1p" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(22)"><rect width="8" height="8" fill="#14120e"/><line x1="0" y1="0" x2="0" y2="8" stroke="#FF5733" stroke-width=".3"/></pattern></defs>
+            <rect width="100" height="133" fill="url(#c1p)"/>
+            <path d="M20 80 L50 30 L80 80 M30 80 L50 50 L70 80" fill="none" stroke="#e6e6e1" stroke-width=".6"/>
+          </svg>
+          <span class="rank">#01</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4>Paperfold city loop</h4>
+          <div class="zh">纸城循环 · 15s · CASE #0412</div>
+          <div class="meta">
+            <span>MODEL · <b>veo-3</b></span>
+            <span>TOOL · <b>none</b></span>
+            <span>COST · <b>$0.43</b></span>
+            <span>REPRO · <b style="color:var(--orange)">74%</b></span>
+          </div>
+          <div class="by">BY · <b>@linzi</b> · 上海</div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#0f1014"/>
+            <g stroke="#e6e6e1" stroke-width=".3" opacity=".6"><path d="M0 40 Q50 20 100 40"/><path d="M0 55 Q50 35 100 55"/><path d="M0 70 Q50 50 100 70"/></g>
+            <circle cx="50" cy="85" r="10" fill="#FF5733" opacity=".9"/>
+          </svg>
+          <span class="rank">#02</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4>Ink rain in Chongqing</h4>
+          <div class="zh">重庆墨雨 · 15s · CASE #0407</div>
+          <div class="meta">
+            <span>MODEL · <b>kling-2</b></span>
+            <span>TOOL · <b>ae</b></span>
+            <span>COST · <b>$0.58</b></span>
+            <span>REPRO · <b style="color:var(--orange)">52%</b></span>
+          </div>
+          <div class="by">BY · <b>@monk.studio</b> · 重庆</div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#1a120c"/>
+            <rect x="25" y="50" width="50" height="32" fill="none" stroke="#FF5733" stroke-width=".6"/>
+            <path d="M50 50 L50 82 M25 66 L75 66" stroke="#e6e6e1" stroke-width=".3"/>
+            <circle cx="50" cy="34" r="8" fill="#e6e6e1"/>
+          </svg>
+          <span class="rank">#03</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4>Neon courier cat</h4>
+          <div class="zh">霓虹快递猫 · 15s · CASE #0401</div>
+          <div class="meta">
+            <span>MODEL · <b>sora-2</b></span>
+            <span>TOOL · <b>runway</b></span>
+            <span>COST · <b>$0.49</b></span>
+            <span>REPRO · <b style="color:var(--orange)">67%</b></span>
+          </div>
+          <div class="by">BY · <b>@neko_ops</b> · TOKYO</div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#0c0f0e"/>
+            <g fill="none" stroke="#e6e6e1" stroke-width=".4"><path d="M10 30 Q50 60 90 30"/><path d="M10 50 Q50 80 90 50"/><path d="M10 70 Q50 100 90 70"/></g>
+            <rect x="36" y="92" width="28" height="12" fill="none" stroke="#FF5733" stroke-width=".5"/>
+            <text x="50" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="5" fill="#FF5733">CLAUDE</text>
+          </svg>
+          <span class="rank">#04</span>
+          <span class="kind">CODING-WF</span>
+          <span class="timecode">7 STEPS</span>
+        </div>
+        <div class="body">
+          <h4>Claude MCP doc agent</h4>
+          <div class="zh">文档代理工作流 · CASE #0395</div>
+          <div class="meta">
+            <span>MODEL · <b>cld-s4</b></span>
+            <span>TOOL · <b>mcp+obs</b></span>
+            <span>COST · <b>$0.11</b></span>
+            <span>REPRO · <b style="color:var(--orange)">91%</b></span>
+          </div>
+          <div class="by">BY · <b>@yuki.dev</b> · SF</div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#121014"/>
+            <circle cx="50" cy="66" r="28" fill="none" stroke="#e6e6e1" stroke-width=".3"/>
+            <circle cx="50" cy="66" r="18" fill="none" stroke="#e6e6e1" stroke-width=".3"/>
+            <circle cx="50" cy="66" r="8" fill="#FF5733"/>
+          </svg>
+          <span class="rank">#05</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4>Moth ritual portrait</h4>
+          <div class="zh">蛾之仪式 · 15s · CASE #0388</div>
+          <div class="meta">
+            <span>MODEL · <b>hailuo-02</b></span>
+            <span>TOOL · <b>krea</b></span>
+            <span>COST · <b>$0.52</b></span>
+            <span>REPRO · <b style="color:var(--orange)">48%</b></span>
+          </div>
+          <div class="by">BY · <b>@hana.sim</b> · BERLIN</div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#0f1014"/>
+            <g stroke="#FF5733" stroke-width=".3" fill="none" opacity=".9"><path d="M10 30h80M10 50h80M10 70h80M10 90h80"/></g>
+            <path d="M15 40 L85 75 L15 95" fill="none" stroke="#e6e6e1" stroke-width=".4"/>
+          </svg>
+          <span class="rank">#06</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4>Wuxia rooftops</h4>
+          <div class="zh">武侠屋檐 · 15s · CASE #0382</div>
+          <div class="meta">
+            <span>MODEL · <b>veo-3</b></span>
+            <span>TOOL · <b>topaz</b></span>
+            <span>COST · <b>$0.61</b></span>
+            <span>REPRO · <b style="color:var(--orange)">42%</b></span>
+          </div>
+          <div class="by">BY · <b>@jianghu</b> · 成都</div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#0a0d0d"/>
+            <g fill="none" stroke="#e6e6e1" stroke-width=".3"><rect x="14" y="20" width="32" height="20"/><rect x="54" y="20" width="32" height="20"/><rect x="14" y="48" width="32" height="20"/><rect x="54" y="48" width="32" height="20"/><rect x="14" y="76" width="72" height="20"/></g>
+            <path d="M30 40 Q30 48 46 58 M70 40 Q70 48 54 58" stroke="#FF5733" stroke-width=".5" fill="none"/>
+            <path d="M50 68 L50 76" stroke="#FF5733" stroke-width=".5"/>
+          </svg>
+          <span class="rank">#07</span>
+          <span class="kind">CODING-WF</span>
+          <span class="timecode">12 STEPS</span>
+        </div>
+        <div class="body">
+          <h4>OpenClaw content agent</h4>
+          <div class="zh">OpenClaw 内容代理 · CASE #0376</div>
+          <div class="meta">
+            <span>MODEL · <b>cld+gpt5</b></span>
+            <span>TOOL · <b>openclaw</b></span>
+            <span>COST · <b>$0.22</b></span>
+            <span>REPRO · <b style="color:var(--orange)">83%</b></span>
+          </div>
+          <div class="by">BY · <b>@ops_lab</b> · SHENZHEN</div>
+        </div>
+      </div>
+
+      <div class="case">
+        <div class="media">
+          <svg viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+            <rect width="100" height="133" fill="#14120e"/>
+            <path d="M0 66 L100 66" stroke="#e6e6e1" stroke-width=".3"/>
+            <path d="M50 0 L50 133" stroke="#e6e6e1" stroke-width=".3"/>
+            <circle cx="50" cy="66" r="22" fill="none" stroke="#FF5733" stroke-width=".6"/>
+            <text x="50" y="120" text-anchor="middle" font-family="JetBrains Mono" font-size="5" fill="#e6e6e1">15s / loop</text>
+          </svg>
+          <span class="rank">#08</span>
+          <span class="kind">AI-VIDEO / 15s</span>
+          <span class="timecode">00:15:00</span>
+        </div>
+        <div class="body">
+          <h4>Taipei dumpling ballet</h4>
+          <div class="zh">台北饺子芭蕾 · 15s · CASE #0371</div>
+          <div class="meta">
+            <span>MODEL · <b>veo-3</b></span>
+            <span>TOOL · <b>none</b></span>
+            <span>COST · <b>$0.47</b></span>
+            <span>REPRO · <b style="color:var(--orange)">71%</b></span>
+          </div>
+          <div class="by">BY · <b>@dumpling.cam</b> · TPE</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CREATOR SHOWCASE -->
+<section class="section" id="creators">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono">§ 05 · CREATORS</div>
+      </div>
+      <div>
+        <h2 class="section-title">Built for creators who keep shipping — not one-off luck.</h2>
+        <p class="section-sub">Each card reads both as a person and as a body of work. Methodology maturity measures how consistently a creator's cases converge on the same reusable pattern.</p>
+      </div>
+    </div>
+
+    <div class="creators">
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">LZ</div>
+            <div>
+              <div class="name">林子 · Linzi</div>
+              <div class="sub">SHANGHAI · CN · FOLDS / 15s</div>
+              <div class="platforms"><span>X ↗</span><span>XHS ↗</span><span>WB ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--orange);border:1px solid var(--orange);padding:3px 6px;">CLAIMED ✓</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k">CASES</div><div class="v">12</div></div>
+          <div class="s"><div class="k">LOVE</div><div class="v orange">94</div></div>
+          <div class="s"><div class="k">STAB.</div><div class="v">81</div></div>
+        </div>
+        <div class="maturity">
+          METHOD MATURITY · 方法论成熟度
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#">Follow</a>
+          <a class="btn" href="#">View Profile <span class="arrow">→</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">MK</div>
+            <div>
+              <div class="name">Monk Studio</div>
+              <div class="sub">CHONGQING · CN · ATMOSPHERIC</div>
+              <div class="platforms"><span>XHS ↗</span><span>BILI ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--orange);border:1px solid var(--orange);padding:3px 6px;">CLAIMED ✓</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k">CASES</div><div class="v">9</div></div>
+          <div class="s"><div class="k">LOVE</div><div class="v orange">88</div></div>
+          <div class="s"><div class="k">STAB.</div><div class="v">66</div></div>
+        </div>
+        <div class="maturity">
+          METHOD MATURITY · 方法论成熟度
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#">Follow</a>
+          <a class="btn" href="#">View Profile <span class="arrow">→</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">YK</div>
+            <div>
+              <div class="name">Yuki Dev</div>
+              <div class="sub">SAN FRANCISCO · CODING WF</div>
+              <div class="platforms"><span>X ↗</span><span>GH ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--mute);border:1px solid var(--concrete-2);padding:3px 6px;">UNCLAIMED ◇</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k">CASES</div><div class="v">14</div></div>
+          <div class="s"><div class="k">LOVE</div><div class="v orange">79</div></div>
+          <div class="s"><div class="k">STAB.</div><div class="v">92</div></div>
+        </div>
+        <div class="maturity">
+          METHOD MATURITY · 方法论成熟度
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#">Claim Profile</a>
+          <a class="btn" href="#">View Profile <span class="arrow">→</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">NK</div>
+            <div>
+              <div class="name">neko_ops</div>
+              <div class="sub">TOKYO · JP · CHAR MOTION</div>
+              <div class="platforms"><span>X ↗</span><span>TT ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--mute);border:1px solid var(--concrete-2);padding:3px 6px;">UNCLAIMED ◇</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k">CASES</div><div class="v">7</div></div>
+          <div class="s"><div class="k">LOVE</div><div class="v orange">82</div></div>
+          <div class="s"><div class="k">STAB.</div><div class="v">71</div></div>
+        </div>
+        <div class="maturity">
+          METHOD MATURITY · 方法论成熟度
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#">Follow</a>
+          <a class="btn" href="#">View Profile <span class="arrow">→</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">HN</div>
+            <div>
+              <div class="name">hana.sim</div>
+              <div class="sub">BERLIN · DE · PORTRAIT / RITUAL</div>
+              <div class="platforms"><span>X ↗</span><span>IG ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--orange);border:1px solid var(--orange);padding:3px 6px;">CLAIMED ✓</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k">CASES</div><div class="v">6</div></div>
+          <div class="s"><div class="k">LOVE</div><div class="v orange">76</div></div>
+          <div class="s"><div class="k">STAB.</div><div class="v">58</div></div>
+        </div>
+        <div class="maturity">
+          METHOD MATURITY · 方法论成熟度
+          <span class="pips"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#">Follow</a>
+          <a class="btn" href="#">View Profile <span class="arrow">→</span></a>
+        </div>
+      </div>
+
+      <div class="creator-cell">
+        <div class="creator-top">
+          <div class="who">
+            <div class="avatar">OP</div>
+            <div>
+              <div class="name">ops_lab</div>
+              <div class="sub">SHENZHEN · CN · AUTOMATION</div>
+              <div class="platforms"><span>X ↗</span><span>GH ↗</span><span>WB ↗</span></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--orange);border:1px solid var(--orange);padding:3px 6px;">CLAIMED ✓</span>
+        </div>
+        <div class="creator-scores">
+          <div class="s"><div class="k">CASES</div><div class="v">18</div></div>
+          <div class="s"><div class="k">LOVE</div><div class="v orange">71</div></div>
+          <div class="s"><div class="k">STAB.</div><div class="v">88</div></div>
+        </div>
+        <div class="maturity">
+          METHOD MATURITY · 方法论成熟度
+          <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>
+        </div>
+        <div class="creator-actions">
+          <a class="btn btn-ghost" href="#">Follow</a>
+          <a class="btn" href="#">View Profile <span class="arrow">→</span></a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SKILL LIBRARY -->
+<section class="section" id="skills">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono">§ 06 · SKILLS</div>
+      </div>
+      <div>
+        <h2 class="section-title">When a pattern repeats, it becomes a Skill.</h2>
+        <p class="section-sub">Skills are distilled methodologies — prompt scaffolds, model stacks, step counts, output styles — attributed to the creator who proved the pattern works. Deeper methods unlock through contribution, not a paywall.</p>
+      </div>
+    </div>
+
+    <div class="skills">
+
+      <div class="skill-cell">
+        <div class="skill-head">
+          <span class="id">SKILL · 0012</span>
+          <span class="state open">OPEN</span>
+        </div>
+        <h4>Paperfold loop</h4>
+        <span class="zh">纸城循环法 · v0.3</span>
+        <div class="skill-row"><span class="k">USE CASE</span><span class="v">looping 15s city/arch scene</span></div>
+        <div class="skill-row"><span class="k">STACK</span><span class="v skill-stack"><span class="skill-chip">veo-3</span><span class="skill-chip">kling-2</span></span></div>
+        <div class="skill-row"><span class="k">STEPS</span><span class="v">4 · prompt → refine → rain pass → stitch</span></div>
+        <div class="skill-row"><span class="k">OUTPUT</span><span class="v">warm-grey, ink-rain, slow orbit</span></div>
+        <div class="skill-bottom"><span>BY <b>@linzi</b></span><span>12 RELATED CASES ↗</span></div>
+      </div>
+
+      <div class="skill-cell">
+        <div class="skill-head">
+          <span class="id">SKILL · 0009</span>
+          <span class="state open">OPEN</span>
+        </div>
+        <h4>MCP doc agent</h4>
+        <span class="zh">文档代理法 · v0.7</span>
+        <div class="skill-row"><span class="k">USE CASE</span><span class="v">auto knowledge base + recall</span></div>
+        <div class="skill-row"><span class="k">STACK</span><span class="v skill-stack"><span class="skill-chip">cld-s4</span><span class="skill-chip">mcp</span><span class="skill-chip">obsidian</span></span></div>
+        <div class="skill-row"><span class="k">STEPS</span><span class="v">7 · ingest → chunk → link → index → query → summarize → publish</span></div>
+        <div class="skill-row"><span class="k">OUTPUT</span><span class="v">graph-linked markdown, daily digest</span></div>
+        <div class="skill-bottom"><span>BY <b>@yuki.dev</b></span><span>9 RELATED CASES ↗</span></div>
+      </div>
+
+      <div class="skill-cell locked">
+        <div class="skill-head">
+          <span class="id">SKILL · 0017</span>
+          <span class="state locked">SIGN-IN</span>
+        </div>
+        <h4>OpenClaw content loop</h4>
+        <span class="zh">内容生产闭环 · v0.4</span>
+        <div class="skill-row"><span class="k">USE CASE</span><span class="v">daily content production, CN+EN</span></div>
+        <div class="skill-row"><span class="k">STACK</span><span class="v skill-stack"><span class="skill-chip">cld+gpt5</span><span class="skill-chip">openclaw</span><span class="skill-chip">notion</span></span></div>
+        <div class="skill-row"><span class="k">STEPS</span><span class="v">12 · <span style="color:var(--mute)">steps unlock with sign-in ◇</span></span></div>
+        <div class="skill-row"><span class="k">OUTPUT</span><span class="v">bilingual posts, scheduled</span></div>
+        <div class="skill-bottom"><span>BY <b>@ops_lab</b></span><span style="color:var(--orange)">UNLOCK ↗</span></div>
+      </div>
+
+      <div class="skill-cell">
+        <div class="skill-head">
+          <span class="id">SKILL · 0021</span>
+          <span class="state open">OPEN</span>
+        </div>
+        <h4>Ink-weather pass</h4>
+        <span class="zh">墨天气法 · v0.2</span>
+        <div class="skill-row"><span class="k">USE CASE</span><span class="v">atmosphere layer for 15s shots</span></div>
+        <div class="skill-row"><span class="k">STACK</span><span class="v skill-stack"><span class="skill-chip">kling-2</span><span class="skill-chip">ae</span></span></div>
+        <div class="skill-row"><span class="k">STEPS</span><span class="v">3 · base clip → rain pass → regrade</span></div>
+        <div class="skill-row"><span class="k">OUTPUT</span><span class="v">moody, sinogram-heavy, damp light</span></div>
+        <div class="skill-bottom"><span>BY <b>@monk.studio</b></span><span>5 RELATED CASES ↗</span></div>
+      </div>
+
+      <div class="skill-cell locked">
+        <div class="skill-head">
+          <span class="id">SKILL · 0024</span>
+          <span class="state locked">CONTRIBUTE</span>
+        </div>
+        <h4>Courier camera</h4>
+        <span class="zh">快递镜头法 · v0.1</span>
+        <div class="skill-row"><span class="k">USE CASE</span><span class="v">character-POV 15s action</span></div>
+        <div class="skill-row"><span class="k">STACK</span><span class="v skill-stack"><span class="skill-chip">sora-2</span><span class="skill-chip lock">◇ runway</span></span></div>
+        <div class="skill-row"><span class="k">STEPS</span><span class="v">5 · <span style="color:var(--mute)">submit a repro to unlock ◇</span></span></div>
+        <div class="skill-row"><span class="k">OUTPUT</span><span class="v">low-angle, motion-dense, neon</span></div>
+        <div class="skill-bottom"><span>BY <b>@neko_ops</b></span><span style="color:var(--orange)">CONTRIBUTE ↗</span></div>
+      </div>
+
+      <div class="skill-cell">
+        <div class="skill-head">
+          <span class="id">SKILL · 0006</span>
+          <span class="state open">OPEN</span>
+        </div>
+        <h4>CJK typo motion</h4>
+        <span class="zh">中日韩字体动效 · v0.5</span>
+        <div class="skill-row"><span class="k">USE CASE</span><span class="v">kinetic CJK title cards</span></div>
+        <div class="skill-row"><span class="k">STACK</span><span class="v skill-stack"><span class="skill-chip">veo-3</span><span class="skill-chip">ae</span></span></div>
+        <div class="skill-row"><span class="k">STEPS</span><span class="v">4 · grid → mask → stagger → finish</span></div>
+        <div class="skill-row"><span class="k">OUTPUT</span><span class="v">tight, editorial, monochrome</span></div>
+        <div class="skill-bottom"><span>BY <b>@linzi</b></span><span>6 RELATED CASES ↗</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- METHODOLOGY / TRUST -->
+<section class="section" id="methodology">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono">§ 07 · METHOD / TRUST</div>
+      </div>
+      <div>
+        <h2 class="section-title">How the signals work, and why they're worth trusting.</h2>
+        <p class="section-sub">Full transparency on where Love signals come from, how the Stability Lab spends its budget, and how creator work graduates into Skills. If we can't explain it, we don't ship it.</p>
+      </div>
+    </div>
+
+    <div class="meth">
+      <div class="col">
+        <span class="mnum">01 / LOVE</span>
+        <h3>Where Love Ranking comes from</h3>
+        <p>Love is not a like count. It's a weighted aggregate of signed-in actions with cost attached: saving, following, submitting a reproduction, dropping parameters, and adding notes. Bot farms and self-inflation are filtered with provenance checks.</p>
+        <ul>
+          <li><span><b>Save · 1.0×</b>Signed-in only. Expires after 90 days unless re-engaged.</span></li>
+          <li><span><b>Follow · 1.4×</b>Follow the creator, not the post. Costly to fake.</span></li>
+          <li><span><b>Repro attempt · 3.5×</b>Most expensive action — you actually ran it.</span></li>
+          <li><span><b>Parameter / note · 2.2×</b>You added knowledge for everyone.</span></li>
+        </ul>
+      </div>
+      <div class="col">
+        <span class="mnum">02 / LAB</span>
+        <h3>How the Stability Lab spends its budget</h3>
+        <p>Top-loved cases are re-run on our dime with a normalized prompt across a rotating model matrix (N≥18). Every run reports repro rate, consistency, visual drift, and cost-per-output. Costs and failed runs are public.</p>
+        <ul>
+          <li><span><b>Prompt hash</b>Every run references a signed, immutable prompt hash.</span></li>
+          <li><span><b>N ≥ 18 per case</b>Enough to call something stable without burning a month of API.</span></li>
+          <li><span><b>Failures published</b>Repro failures aren't hidden; they lower the score publicly.</span></li>
+          <li><span><b>$ per output</b>Dollars and API time are shown next to every score.</span></li>
+        </ul>
+      </div>
+      <div class="col" style="border-left:0;border-top:1px solid var(--hair);grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0;padding:0;">
+        <div style="padding:40px;border-right:1px solid var(--hair);">
+          <span class="mnum">03 / SKILL</span>
+          <h3>How creators become Skills</h3>
+          <p>A creator's cases are clustered in an embedding space. When ≥4 cases sit inside the same cluster and survive the Lab with average repro ≥ 60%, the pattern is proposed as a Skill — always attributed to the creator, versioned like software.</p>
+          <ul>
+            <li><span><b>≥ 4 clustered cases</b>Pattern has to repeat, not just work once.</span></li>
+            <li><span><b>≥ 60% average repro</b>Else it's an art piece, not a method.</span></li>
+            <li><span><b>Creator attribution</b>Skills carry the creator's name, forever.</span></li>
+          </ul>
+        </div>
+        <div style="padding:40px;">
+          <span class="mnum">04 / UPDATES</span>
+          <h3>How scores update over time</h3>
+          <p>Every score decays. Love decays over 30 days; Stability re-runs monthly or when a new frontier model drops. Nothing stays on the ranking forever just because it was great six months ago.</p>
+          <ul>
+            <li><span><b>Love half-life · 30d</b>Yesterday's virality doesn't dominate today.</span></li>
+            <li><span><b>Lab refresh · 30d</b>Plus immediate re-run on any frontier model release.</span></li>
+            <li><span><b>Open audit log</b>Every score change links to the run that caused it.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHANGELOG -->
+<section class="section" id="changelog">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono">§ 08 · CHANGELOG</div>
+      </div>
+      <div>
+        <h2 class="section-title">Built in public, by someone who ships.</h2>
+        <p class="section-sub">This is not a team blog. It's a working log from a founder who is both a creator and an independent developer — because taste has to be demonstrated, not claimed.</p>
+      </div>
+    </div>
+
+    <div class="changelog">
+      <div class="log-head"><span>DATE</span><span>VERSION</span><span style="text-align:right">AREA</span></div>
+
+      <div class="log-entry">
+        <span class="date">2026.04.18 · FRI</span>
+        <span class="ver">v0.14.3</span>
+        <div class="summary">
+          <h5>Stability Lab opened to public prompts</h5>
+          <p>Signed-in users can now submit a case with a prompt hash and request a Lab run. First 5/week are free; the rest burn creator budget.</p>
+        </div>
+        <span class="tag">LAB · QUOTA · API</span>
+      </div>
+
+      <div class="log-entry">
+        <span class="date">2026.04.11 · FRI</span>
+        <span class="ver">v0.14.0</span>
+        <div class="summary">
+          <h5>Skill promotion algorithm (v0.4)</h5>
+          <p>Creator cases now cluster in an embedding space before Skill promotion. Fewer false positives on one-off visuals; more reliable attribution.</p>
+        </div>
+        <span class="tag">SKILLS · EMBEDDING</span>
+      </div>
+
+      <div class="log-entry">
+        <span class="date">2026.04.02 · WED</span>
+        <span class="ver">v0.13.7</span>
+        <div class="summary">
+          <h5>Bilingual atmosphere pass — 中文 + EN</h5>
+          <p>Case pages, rankings, and Skill cards now render both scripts side by side. 中文 is no longer a translation afterthought; it's first-class in the data model.</p>
+        </div>
+        <span class="tag">I18N · CN</span>
+      </div>
+
+      <div class="log-entry">
+        <span class="date">2026.03.24 · MON</span>
+        <span class="ver">v0.13.0</span>
+        <div class="summary">
+          <h5>Creator profile claim flow</h5>
+          <p>Claim via DM, X OAuth, or WeChat signed post. Claim moves the creator from shadow profile to signed profile, with public audit on every edit.</p>
+        </div>
+        <span class="tag">CREATORS · AUTH</span>
+      </div>
+
+      <div class="log-entry">
+        <span class="date">2026.03.11 · TUE</span>
+        <span class="ver">v0.12.1</span>
+        <div class="summary">
+          <h5>Decay functions shipped</h5>
+          <p>Love now decays with a 30-day half-life. This single change dropped 41% of the 2025 carry-over from the top ranks. Bias toward what's alive now.</p>
+        </div>
+        <span class="tag">SCORING · DECAY</span>
+      </div>
+
+      <div class="log-founder">
+        <div class="avatar">GC</div>
+        <div class="who">
+          <b>谷凯 · Gu Kai — Founder, creator, solo developer</b>
+          <small>SHANGHAI · 2026 · BUILDING IN PUBLIC · NOT FUNDED</small>
+        </div>
+        <a class="btn btn-ghost" href="#">Read full log ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+<section class="section" id="social">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-id mono">§ 09 · FIELD NOTES</div>
+      </div>
+      <div>
+        <h2 class="section-title">Early signals from creators and builders.</h2>
+      </div>
+    </div>
+
+    <div class="quotes">
+      <blockquote class="quote">
+        <p class="q">It's the first ranking I actually believe. You can see which videos survive a cross-model rerun, and which were just a lucky seed.</p>
+        <div class="attr"><b>Linzi · 林子</b> · AI VIDEO CREATOR · X</div>
+      </blockquote>
+      <blockquote class="quote">
+        <p class="q">Half my coding-workflow posts get reposted without credit. Turning the pattern into a Skill with my name on it is the only attribution that travels.</p>
+        <div class="attr"><b>Yuki Dev</b> · INDIE BUILDER · GITHUB</div>
+      </blockquote>
+      <blockquote class="quote">
+        <p class="q">The stability tab is where I pick what to try next. If repro is under 50% I skip, no matter how pretty the hero clip was.</p>
+        <div class="attr"><b>hana.sim</b> · DIRECTOR · BERLIN · IG</div>
+      </blockquote>
+      <blockquote class="quote">
+        <p class="q">I've been posting on X for three years and Xiaohongshu for two. This is the first place treating the whole thing as one creator identity.</p>
+        <div class="attr"><b>Monk Studio</b> · STUDIO · 小红书 / XHS</div>
+      </blockquote>
+      <blockquote class="quote">
+        <p class="q">Reading the changelog is more useful than most AI newsletters. You can tell a real person is curating this.</p>
+        <div class="attr"><b>ops_lab</b> · AUTOMATION · SHENZHEN</div>
+      </blockquote>
+      <blockquote class="quote">
+        <p class="q">Finally a Chinese + global product that doesn't pick one side. The bilingual case page is small but it says everything about the taste.</p>
+        <div class="attr"><b>神奇AI · shenqi.ai</b> · COMMUNITY · WECHAT</div>
+      </blockquote>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="crosshair ch-tl"></div>
+  <div class="crosshair ch-tr"></div>
+  <div class="crosshair ch-bl"></div>
+  <div class="crosshair ch-br"></div>
+  <div class="wrap">
+    <span class="eyebrow mono">§ 10 · JOIN THE INDEX</span>
+    <h2>Rank what's <em>real</em>.<br/>Reuse what <em>works</em>.</h2>
+    <p>GoodCaseAI is open to read and open to contribute. Sign in to move the rankings, submit a case to get your run in the Lab, or claim your creator profile to own your work on the index.</p>
+    <div class="row">
+      <a class="btn btn-primary" href="#rankings">Explore Rankings <span class="arrow">→</span></a>
+      <a class="btn" href="#">Submit a Case</a>
+      <a class="btn" href="#">Claim Creator Profile</a>
+      <a class="btn btn-ghost" href="#">Join the Community</a>
+    </div>
+    <div style="margin-top:56px;display:flex;justify-content:center;gap:32px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);letter-spacing:.08em;">
+      <span>FREE TO READ</span><span>·</span><span>SIGNED-IN TO RANK</span><span>·</span><span>CREATOR-ATTRIBUTED SKILLS</span><span>·</span><span>NO PRICING YET</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="brand-big">Good<em>.</em><br/>Case<em>.</em>AI<em>.</em></div>
+        <p class="brand-note">A global index for AI creators and AI methods. Built in Shanghai. Shipped in public. Not funded — that's the point.</p>
+      </div>
+      <div>
+        <h6>PLATFORM</h6>
+        <ul>
+          <li><a href="#rankings">Love Ranking</a></li>
+          <li><a href="#lab">Stability Lab</a></li>
+          <li><a href="#cases">Cases</a></li>
+          <li><a href="#skills">Skills</a></li>
+        </ul>
+      </div>
+      <div>
+        <h6>CREATORS</h6>
+        <ul>
+          <li><a href="#">Claim profile</a></li>
+          <li><a href="#">Submit a case</a></li>
+          <li><a href="#">Attribution policy</a></li>
+          <li><a href="#">Creator grants</a></li>
+        </ul>
+      </div>
+      <div>
+        <h6>OPEN</h6>
+        <ul>
+          <li><a href="#methodology">Method</a></li>
+          <li><a href="#changelog">Changelog</a></li>
+          <li><a href="#">Prompt hash log</a></li>
+          <li><a href="#">Lab budget</a></li>
+        </ul>
+      </div>
+      <div>
+        <h6>ELSEWHERE</h6>
+        <ul>
+          <li><a href="#">X / 𝕏</a></li>
+          <li><a href="#">小红书 · XHS</a></li>
+          <li><a href="#">微博 · WB</a></li>
+          <li><a href="#">Discord</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>© 2026 GOODCASEAI · SHANGHAI + GLOBAL</span>
+      <span>v0.14.3 · UPDATED 2026.04.18 04:12 CST</span>
+      <span>BUILT IN PUBLIC · <span style="color:var(--orange)">● LIVE</span></span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

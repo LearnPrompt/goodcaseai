@@ -217,13 +217,10 @@ export default async function Home() {
             A · 喜爱榜
             <span className="mx-auto mt-1 block h-6 w-px bg-[var(--concrete-2)]" />
           </div>
-          <div className="pointer-events-none absolute -right-24 top-[38%] hidden w-20 font-mono text-[9px] uppercase tracking-[0.08em] text-[var(--mute)] xl:block">
-            <span className="mb-2 block h-10 w-px bg-[var(--concrete-2)]" />
+          <div className="pointer-events-none absolute right-4 top-[54%] z-10 hidden border-l border-[var(--concrete-2)] bg-white/85 py-1 pl-3 text-right font-mono text-[9px] uppercase tracking-[0.08em] text-[var(--mute)] shadow-[0_8px_24px_-20px_rgba(10,10,10,0.6)] backdrop-blur-sm xl:block">
             B · 稳定实验室
             <br />
-            cross-model
-            <br />
-            {featuredCase.stabilityScore}% / {costLabels[featuredCase.costBand]}
+            cross-model · {featuredCase.stabilityScore}% / {costLabels[featuredCase.costBand]}
           </div>
           <div className="pointer-events-none absolute -bottom-8 right-[14%] hidden text-right font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--mute)] lg:block">
             <span className="mx-auto mb-1 block h-6 w-px bg-[var(--concrete-2)]" />

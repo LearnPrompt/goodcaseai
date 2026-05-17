@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Local workspace artifacts:
     "tmp/**",
+    "claude-design-*/**",
   ]),
 ]);
 
