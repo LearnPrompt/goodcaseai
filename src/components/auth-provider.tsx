@@ -8,10 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { getBrowserSupabaseClient } from "@/lib/supabase/browser-client";
-import { buildAuthCallbackUrl } from "@/lib/auth/next-path";
-import { mapAuthUser, type AuthUser } from "@/lib/auth/auth-user";
+import type { AuthUser } from "@/lib/auth/auth-user";
 
 type AuthPayload = {
   email: string;
@@ -42,14 +39,6 @@ type AuthCore = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function buildEmailRedirect(nextUrl?: string) {
-  if (typeof window === "undefined") {
-    return undefined;
-  }
-
-  return buildAuthCallbackUrl(window.location.origin, nextUrl);
-}
-
 function getUnconfiguredAuthCore(setUser: (value: AuthUser | null) => void): AuthCore {
   return {
     async signIn() {
@@ -71,61 +60,68 @@ function getUnconfiguredAuthCore(setUser: (value: AuthUser | null) => void): Aut
   };
 }
 
+type AuthApiResponse = {
+  user?: AuthUser | null;
+  error?: string;
+  needsEmailConfirm?: boolean;
+};
+
+async function postAuth(path: string, body?: AuthPayload): Promise<AuthApiResponse> {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as AuthApiResponse;
+
+  if (!response.ok) {
+    return {
+      error: payload.error || "认证请求失败，请稍后重试。",
+    };
+  }
+
+  return payload;
+}
+
 function getConfiguredAuthCore({
-  supabase,
   setUser,
 }: {
-  supabase: SupabaseClient;
   setUser: (value: AuthUser | null) => void;
 }): AuthCore {
   return {
     async signIn(payload) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: payload.email,
-        password: payload.password,
-      });
+      const result = await postAuth("/api/auth/sign-in", payload);
 
-      if (error) {
-        return { error: error.message, needsEmailConfirm: false };
+      if (result.error) {
+        return { error: result.error, needsEmailConfirm: false };
       }
 
-      if (payload.name && data.user) {
-        const currentName =
-          typeof data.user.user_metadata?.display_name === "string"
-            ? data.user.user_metadata.display_name.trim()
-            : "";
-        if (!currentName || currentName !== payload.name.trim()) {
-          await supabase.auth.updateUser({
-            data: { display_name: payload.name.trim() },
-          });
-        }
-      }
+      setUser(result.user || null);
 
       return { error: null, needsEmailConfirm: false };
     },
     async signUp(payload) {
-      const { data, error } = await supabase.auth.signUp({
-        email: payload.email,
-        password: payload.password,
-        options: {
-          data: payload.name ? { display_name: payload.name.trim() } : undefined,
-          emailRedirectTo: buildEmailRedirect(payload.nextUrl),
-        },
-      });
+      const result = await postAuth("/api/auth/sign-up", payload);
 
-      if (error) {
-        return { error: error.message, needsEmailConfirm: false };
+      if (result.error) {
+        return { error: result.error, needsEmailConfirm: false };
+      }
+
+      if (result.user && !result.needsEmailConfirm) {
+        setUser(result.user);
       }
 
       return {
         error: null,
-        needsEmailConfirm: !data.session,
+        needsEmailConfirm: Boolean(result.needsEmailConfirm),
       };
     },
     async signOut() {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        return { error: error.message };
+      const result = await postAuth("/api/auth/sign-out");
+      if (result.error) {
+        return { error: result.error };
       }
 
       setUser(null);
@@ -135,25 +131,26 @@ function getConfiguredAuthCore({
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const supabase = getBrowserSupabaseClient();
-  const isConfigured = Boolean(supabase);
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isReady, setIsReady] = useState(!isConfigured);
+  const [isReady, setIsReady] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(true);
 
   useEffect(() => {
-    if (!supabase) {
-      return;
-    }
-
     let isActive = true;
 
-    void supabase.auth
-      .getSession()
-      .then(({ data }) => {
+    void fetch("/api/auth/session", { credentials: "same-origin" })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => ({}))) as {
+          isConfigured?: boolean;
+          user?: AuthUser | null;
+        };
+
         if (!isActive) {
           return;
         }
-        setUser(mapAuthUser(data.session?.user));
+
+        setIsConfigured(payload.isConfigured !== false);
+        setUser(payload.user || null);
         setIsReady(true);
       })
       .catch(() => {
@@ -164,28 +161,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsReady(true);
       });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!isActive) {
-        return;
-      }
-      setUser(mapAuthUser(session?.user));
-      setIsReady(true);
-    });
-
     return () => {
       isActive = false;
-      subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   const authCore = useMemo<AuthCore>(
     () =>
-      supabase
-        ? getConfiguredAuthCore({ supabase, setUser })
+      isConfigured
+        ? getConfiguredAuthCore({ setUser })
         : getUnconfiguredAuthCore(setUser),
-    [supabase]
+    [isConfigured]
   );
 
   const value = useMemo<AuthContextValue>(
