@@ -69,18 +69,17 @@ function applyCaseFilter(list: CaseItem[], filter: CaseFilter) {
   return list.filter((item) => item.category === filter);
 }
 
-export function filterCasesByQuery<T extends Pick<CaseItem, "title" | "summary" | "creator">>(
-  list: T[],
-  q: string
-): T[] {
+export function filterCasesByQuery<
+  T extends Pick<CaseItem, "title" | "summary" | "creator" | "recommendedModels">
+>(list: T[], q: string): T[] {
   const normalized = q.trim().toLowerCase();
   if (!normalized) {
     return list;
   }
 
   return list.filter((item) =>
-    [item.title, item.summary, item.creator].some((field) =>
-      field.toLowerCase().includes(normalized)
+    [item.title, item.summary, item.creator, ...item.recommendedModels].some(
+      (field) => field.toLowerCase().includes(normalized)
     )
   );
 }
