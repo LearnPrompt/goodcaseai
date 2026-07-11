@@ -5,6 +5,7 @@ const navItems = [
   { href: "/", label: "发现" },
   { href: "/cases", label: "榜单" },
   { href: "/creators", label: "创作者" },
+  { href: "/connect", label: "接入" },
 ];
 
 export function SiteHeader() {
