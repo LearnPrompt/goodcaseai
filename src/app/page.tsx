@@ -2,9 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { getHomeData, type DisplayCaseItem } from "@/lib/cases";
-import { getServerAuthUser } from "@/lib/supabase/server-auth";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 const categoryLabels: Record<DisplayCaseItem["category"], string> = {
   image: "AI-IMAGE",
@@ -46,7 +45,7 @@ function MediaTile({
   return (
     <div className={`relative overflow-hidden border border-[var(--hair)] bg-[var(--ink)] ${className}`}>
       {item.mediaType === "video" && item.posterUrl ? (
-        <Image src={item.posterUrl} alt={item.title} fill className="object-cover opacity-90 grayscale" unoptimized />
+        <Image src={item.posterUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className="object-cover opacity-90 grayscale" />
       ) : item.mediaType === "video" ? (
         <video
           muted
@@ -60,7 +59,7 @@ function MediaTile({
           <source src={item.mediaUrl} type="video/mp4" />
         </video>
       ) : (
-        <Image src={item.mediaUrl} alt={item.title} fill className="object-cover opacity-90 grayscale" unoptimized />
+        <Image src={item.mediaUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className="object-cover opacity-90 grayscale" />
       )}
       <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,87,51,0.32),transparent_46%,rgba(10,10,10,0.38))]" />
       {rank ? (
@@ -79,7 +78,7 @@ function EvidenceTile({ item }: { item: DisplayCaseItem }) {
   return (
     <div className="relative aspect-[4/3] overflow-hidden border border-[var(--hair)] bg-[var(--ink)]">
       {item.mediaType === "video" && item.posterUrl ? (
-        <Image src={item.posterUrl} alt={item.title} fill className="object-cover opacity-80 grayscale" unoptimized />
+        <Image src={item.posterUrl} alt={item.title} fill sizes="120px" className="object-cover opacity-80 grayscale" />
       ) : item.mediaType === "video" ? (
         <video
           muted
@@ -93,7 +92,7 @@ function EvidenceTile({ item }: { item: DisplayCaseItem }) {
           <source src={item.mediaUrl} type="video/mp4" />
         </video>
       ) : (
-        <Image src={item.mediaUrl} alt={item.title} fill className="object-cover opacity-80 grayscale" unoptimized />
+        <Image src={item.mediaUrl} alt={item.title} fill sizes="120px" className="object-cover opacity-80 grayscale" />
       )}
       <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,87,51,0.28),transparent_54%,rgba(0,0,0,0.46))]" />
       <span className="absolute bottom-0 right-0 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.05em] text-white">
@@ -138,7 +137,6 @@ function LabMetric({
 }
 
 export default async function Home() {
-  const user = await getServerAuthUser();
   const {
     featuredCase,
     totalCaseCount,
@@ -147,7 +145,7 @@ export default async function Home() {
     spreadLeaderboard,
     favoriteLeaderboard,
     stabilityLeaderboard,
-  } = await getHomeData(user?.id);
+  } = await getHomeData();
 
   const previewCases = uniqueCases([
     ...spreadLeaderboard,
@@ -195,7 +193,7 @@ export default async function Home() {
             <Link className="gc-btn" href="/creators">
               浏览创作者
             </Link>
-            <Link className="gc-btn gc-btn-ghost" href="/login">
+            <Link className="gc-btn gc-btn-ghost" href="/cases">
               提交案例
             </Link>
           </div>
@@ -372,7 +370,7 @@ export default async function Home() {
           </div>
           <div className="flex flex-wrap justify-between gap-3 border-t border-[var(--hair)] px-5 py-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
             <span>今日 · {spreadLeaderboard.length * 41} 已索引 · {spreadLeaderboard.length * 5} 已去重 · {spreadLeaderboard.length * 3} 进入榜单</span>
-            <Link href="/cases" className="border-b border-[var(--ink)] text-[var(--ink)]">
+            <Link href="/cases" className="inline-flex min-h-11 items-center border-b border-[var(--ink)] text-[var(--ink)]">
               打开完整 feed ↗
             </Link>
           </div>
@@ -621,7 +619,7 @@ export default async function Home() {
               <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
                 <span>Skill · {String(index + 1).padStart(4, "0")}</span>
                 <span className={index % 3 === 2 ? "text-[var(--mute)]" : "text-[var(--orange)]"}>
-                  {index % 3 === 2 ? "Sign-in" : "Open"}
+                  {index % 3 === 2 ? "Like-unlock" : "Open"}
                 </span>
               </div>
               <h3 className="mt-7 text-2xl font-semibold tracking-[-0.03em]">{item.title}</h3>
@@ -665,11 +663,9 @@ export default async function Home() {
             <Link href="/cases" className="gc-btn border-white text-white hover:bg-white hover:text-[var(--ink)]">
               进入案例库
             </Link>
-            {!user ? (
-              <Link href="/login" className="gc-btn bg-[var(--orange)] text-white hover:bg-white hover:text-[var(--ink)]">
-                登录查看更多
-              </Link>
-            ) : null}
+            <Link href="/creators" className="gc-btn bg-[var(--orange)] text-white hover:bg-white hover:text-[var(--ink)]">
+              浏览创作者
+            </Link>
           </div>
         </div>
       </section>

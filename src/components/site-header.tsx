@@ -1,10 +1,5 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { useAuth } from "@/components/auth-provider";
 
 const navItems = [
   { href: "/", label: "发现" },
@@ -13,17 +8,6 @@ const navItems = [
 ];
 
 export function SiteHeader() {
-  const pathname = usePathname();
-  const { user, signOut } = useAuth();
-  const [isPending, setIsPending] = useState(false);
-  const loginHref = pathname && pathname !== "/" ? `/login?next=${encodeURIComponent(pathname)}` : "/login";
-
-  async function handleSignOut() {
-    setIsPending(true);
-    await signOut();
-    setIsPending(false);
-  }
-
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--hair)] bg-[rgba(250,250,247,0.94)] backdrop-blur-xl">
       <div className="mx-auto flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-3 px-4 py-3 md:px-6">
@@ -42,7 +26,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="border-r border-[var(--hair)] px-3 py-2 text-[var(--muted)] transition last:border-r-0 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
+              className="inline-flex min-h-11 items-center border-r border-[var(--hair)] px-3 text-[var(--muted)] transition last:border-r-0 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
             >
               {item.label}
             </Link>
@@ -50,27 +34,13 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
-          {user ? (
-            <>
-              <div className="border border-[var(--hair)] bg-white px-3 py-2 font-mono text-[11px] uppercase tracking-[0.06em]">{user.name}</div>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                disabled={isPending}
-                className="border border-[var(--hair)] px-3 py-2 text-sm text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isPending ? "退出中..." : "退出"}
-              </button>
-            </>
-          ) : (
-            <Link
-              href={loginHref}
-              className="whitespace-nowrap border border-[var(--ink)] bg-[var(--ink)] px-3 py-2 text-xs text-[var(--paper)] transition hover:-translate-y-0.5 hover:bg-[var(--orange)] sm:px-4 sm:text-sm"
-            >
-              <span className="sm:hidden">登录</span>
-              <span className="hidden sm:inline">登录查看更多</span>
-            </Link>
-          )}
+          <Link
+            href="/cases"
+            className="inline-flex min-h-11 items-center whitespace-nowrap border border-[var(--ink)] bg-[var(--ink)] px-3 text-xs text-[var(--paper)] transition hover:-translate-y-0.5 hover:bg-[var(--orange)] sm:px-4 sm:text-sm"
+          >
+            <span className="sm:hidden">看案例</span>
+            <span className="hidden sm:inline">进入案例库</span>
+          </Link>
         </div>
       </div>
     </header>

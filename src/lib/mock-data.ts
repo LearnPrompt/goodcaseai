@@ -18,7 +18,6 @@ export type CaseItem = {
   favoriteScore: number;
   recommendedModels: string[];
   costBand: "low" | "medium" | "high";
-  viewerHasLiked?: boolean;
 };
 
 export const caseItems: CaseItem[] = [

@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
 import { getCaseListData, type CaseFilter } from "@/lib/cases";
-import { getServerAuthUser } from "@/lib/supabase/server-auth";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "案例库",
+  description:
+    "浏览正在传播的 AI 案例：AI 图像、AI 视频、AI 编程(UI) 与 AI 文案，点赞解锁完整 Prompt 与推荐模型。",
+  alternates: {
+    canonical: "/cases",
+  },
+};
 
 const FILTER_OPTIONS: Array<{ value: CaseFilter; label: string }> = [
   { value: "all", label: "全部" },
@@ -27,8 +36,7 @@ export default async function CasesPage({
 }) {
   const params = await searchParams;
   const activeFilter = normalizeFilter(params.filter);
-  const user = await getServerAuthUser();
-  const caseItems = await getCaseListData(activeFilter, user?.id);
+  const caseItems = await getCaseListData(activeFilter);
 
   return (
     <SiteShell footerNote="案例库是当前内容中台，点赞解锁、Prompt 复制和榜单都从这里生长出来。">
@@ -40,7 +48,7 @@ export default async function CasesPage({
           案例先吸引人，再让 Prompt 和榜单留下人。
         </h1>
         <p className="max-w-3xl text-sm leading-7 text-[var(--muted)] sm:text-base sm:leading-8">
-          第一版先聚焦图像、视频、网页和文案四类内容。真正的后端接上之后，这里会承接登录、点赞、收藏、Prompt
+          第一版先聚焦图像、视频、网页和文案四类内容。真正的后端接上之后，这里会承接点赞、收藏、Prompt
           解锁和稳定榜复测结果。
         </p>
       </section>
@@ -54,7 +62,7 @@ export default async function CasesPage({
             <Link
               key={option.value}
               href={href}
-              className={`inline-flex min-h-10 items-center rounded-full border px-4 text-sm font-semibold transition hover:-translate-y-0.5 ${
+              className={`inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold transition hover:-translate-y-0.5 ${
                 isActive
                   ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--bg-strong)]"
                   : "border-[var(--line)] bg-white/60 text-[var(--ink)]"
@@ -80,7 +88,6 @@ export default async function CasesPage({
                   fill
                   sizes="(min-width: 1536px) 31vw, (min-width: 768px) 48vw, 100vw"
                   className="object-cover"
-                  unoptimized
                 />
               ) : (
                 <video
@@ -122,8 +129,6 @@ export default async function CasesPage({
                 <LikeButton
                   caseSlug={item.slug}
                   initialCount={item.likedCount}
-                  initialHasLiked={Boolean(item.viewerHasLiked)}
-                  initialIsLoggedIn={Boolean(user)}
                 />
                 <Link
                   href={`/cases/${item.slug}`}

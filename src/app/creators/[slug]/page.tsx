@@ -1,10 +1,60 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteShell } from "@/components/site-shell";
-import { getCreatorDetailData } from "@/lib/cases";
-import { getServerAuthUser } from "@/lib/supabase/server-auth";
+import { getCreatorDetailData, getCreatorListData } from "@/lib/cases";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const creators = await getCreatorListData();
+  return creators.map((creator) => ({ slug: creator.slug }));
+}
+
+function truncateDescription(text: string, maxLength = 160) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const creator = await getCreatorDetailData(slug);
+
+  if (!creator) {
+    // 提前触发 404，避免流式渲染下先发 200 再渲染 not-found（软 404）。
+    notFound();
+  }
+
+  const description = truncateDescription(creator.bio);
+
+  return {
+    title: creator.name,
+    description,
+    alternates: {
+      canonical: `/creators/${slug}`,
+    },
+    openGraph: {
+      type: "profile",
+      locale: "zh_CN",
+      siteName: "GoodCase.ai",
+      url: `/creators/${slug}`,
+      title: creator.name,
+      description,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: creator.name,
+      description,
+    },
+  };
+}
 
 export default async function CreatorDetailPage({
   params,
@@ -12,8 +62,7 @@ export default async function CreatorDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const user = await getServerAuthUser();
-  const creator = await getCreatorDetailData(slug, user?.id);
+  const creator = await getCreatorDetailData(slug);
 
   if (!creator) {
     notFound();

@@ -1,13 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { getCreatorListData } from "@/lib/cases";
-import { getServerAuthUser } from "@/lib/supabase/server-auth";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "创作者",
+  description:
+    "先看值得长期跟的 AI 创作者，再从代表案例切进去，学习 Prompt、模型选择与可复用方法。",
+  alternates: {
+    canonical: "/creators",
+  },
+};
 
 export default async function CreatorsPage() {
-  const user = await getServerAuthUser();
-  const creators = await getCreatorListData(user?.id);
+  const creators = await getCreatorListData();
 
   return (
     <SiteShell footerNote="创作者页承接首页 creator-first 入口，并把代表案例继续导向详情与点赞解锁主链路。">

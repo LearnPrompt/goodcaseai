@@ -29,7 +29,7 @@ type DbCaseRow = {
   cost_band: string;
 };
 
-type ServerSupabase = Awaited<ReturnType<typeof getServerSupabaseClient>>;
+type ServerSupabase = ReturnType<typeof getServerSupabaseClient>;
 
 type DerivedCaseFields = {
   spreadScore: number;
@@ -181,15 +181,15 @@ function buildPromptLoginNotes(item: CaseItem) {
 
   return [
     `适用场景：${item.summary}`,
-    `登录后优先先试 ${models}，先判断它在 ${getLearningAngle(item.category)} 上是否成立。`,
+    `点赞解锁后优先先试 ${models}，先判断它在 ${getLearningAngle(item.category)} 上是否成立。`,
     `结构化拆解重点：先看 ${getLabFocus(item.category)}，不要一开始就只盯完整 Prompt。`,
   ];
 }
 
 function buildPromptContributionNotes(item: CaseItem) {
   return [
-    "贡献层会放出完整 Prompt、负向约束与更完整记录，方便你直接照着复测。",
-    "当前 Beta 期先把“已点赞”视作临时贡献信号，文案先把门槛表达搭起来，不假装已经有完整贡献体系。",
+    "点赞解锁层会放出完整 Prompt、负向约束与更完整记录，方便你直接照着复测。",
+    "当前 Beta 期把“点赞”当作解锁信号：点一下爱心，就能看到完整 Prompt 与更深材料。",
     `解锁后复看重点：确认 ${getPromptFocus(item.category)} 有没有在完整 Prompt 里被写清楚。`,
   ];
 }
@@ -225,59 +225,41 @@ function enrichCaseItem(item: CaseItem): DisplayCaseItem {
   };
 }
 
-async function getLikeCountByCaseId(supabase: ServerSupabase, caseId: string) {
-  if (!supabase) {
-    return 0;
+async function getLikeCountsByCaseId(supabase: ServerSupabase, caseIds: string[]) {
+  const counts = new Map<string, number>();
+
+  if (!supabase || caseIds.length === 0) {
+    return counts;
   }
 
-  const result = await supabase
-    .from("case_likes")
-    .select("case_id", { count: "exact", head: true })
-    .eq("case_id", caseId);
-
-  if (result.error || result.count === null) {
-    return 0;
-  }
-
-  return result.count;
-}
-
-async function getViewerLikedCaseIds(
-  supabase: ServerSupabase,
-  caseIds: string[],
-  viewerUserId?: string | null
-) {
-  if (!supabase || !viewerUserId || caseIds.length === 0) {
-    return new Set<string>();
-  }
-
+  // 数据量小，一次拉出相关点赞行在内存聚合，避免每个 case 各查一次的 N+1。
   const { data, error } = await supabase
     .from("case_likes")
     .select("case_id")
-    .eq("user_id", viewerUserId)
     .in("case_id", caseIds);
 
-  if (error || !data || data.length === 0) {
-    return new Set<string>();
+  if (error || !data) {
+    return counts;
   }
 
-  return new Set(
-    data
-      .map((item) => item.case_id)
-      .filter((caseId): caseId is string => typeof caseId === "string" && caseId.length > 0)
-  );
+  for (const row of data) {
+    const caseId = row.case_id;
+    if (typeof caseId === "string" && caseId.length > 0) {
+      counts.set(caseId, (counts.get(caseId) || 0) + 1);
+    }
+  }
+
+  return counts;
 }
 
 async function mapDbCaseRowToCaseItem(
-  supabase: ServerSupabase,
   row: DbCaseRow,
-  viewerLikedCaseIds: Set<string>
+  likeCounts: Map<string, number>
 ): Promise<CaseItem> {
-  const likedCount = await getLikeCountByCaseId(supabase, row.id);
+  const likedCount = likeCounts.get(row.id) || 0;
   const mediaUrl = await resolveUsableMediaPath(row.media_url);
   const posterUrl = await resolveUsableMediaPath(row.poster_url);
   const mediaType = normalizeMediaType(row.media_kind, row.media_url);
-  const viewerHasLiked = viewerLikedCaseIds.has(row.id);
 
   return {
     slug: row.slug,
@@ -300,15 +282,11 @@ async function mapDbCaseRowToCaseItem(
         ? row.recommended_models
         : ["待补充模型"],
     costBand: normalizeCostBand(row.cost_band),
-    viewerHasLiked,
   };
 }
 
-async function fetchPublishedCases(
-  filter: CaseFilter = "all",
-  viewerUserId?: string | null
-): Promise<DisplayCaseItem[] | null> {
-  const supabase = await getServerSupabaseClient();
+async function fetchPublishedCases(filter: CaseFilter = "all"): Promise<DisplayCaseItem[] | null> {
+  const supabase = getServerSupabaseClient();
   if (!supabase) {
     return null;
   }
@@ -332,18 +310,17 @@ async function fetchPublishedCases(
   }
 
   const rows = data as DbCaseRow[];
-  const viewerLikedCaseIds = await getViewerLikedCaseIds(
+  const likeCounts = await getLikeCountsByCaseId(
     supabase,
-    rows.map((item) => item.id),
-    viewerUserId
+    rows.map((item) => item.id)
   );
 
-  const items = await Promise.all(rows.map((item) => mapDbCaseRowToCaseItem(supabase, item, viewerLikedCaseIds)));
+  const items = await Promise.all(rows.map((item) => mapDbCaseRowToCaseItem(item, likeCounts)));
   return items.map(enrichCaseItem);
 }
 
-export async function getCaseListData(filter: CaseFilter = "all", viewerUserId?: string | null) {
-  const fromDb = await fetchPublishedCases(filter, viewerUserId);
+export async function getCaseListData(filter: CaseFilter = "all") {
+  const fromDb = await fetchPublishedCases(filter);
   if (fromDb) {
     return fromDb;
   }
@@ -351,8 +328,8 @@ export async function getCaseListData(filter: CaseFilter = "all", viewerUserId?:
   return applyCaseFilter(caseItems, filter).map(enrichCaseItem);
 }
 
-export async function getCaseDetailData(slug: string, viewerUserId?: string | null) {
-  const supabase = await getServerSupabaseClient();
+export async function getCaseDetailData(slug: string) {
+  const supabase = getServerSupabaseClient();
   if (supabase) {
     const { data, error } = await supabase
       .from("cases")
@@ -364,8 +341,8 @@ export async function getCaseDetailData(slug: string, viewerUserId?: string | nu
       .maybeSingle();
 
     if (!error && data) {
-      const viewerLikedCaseIds = await getViewerLikedCaseIds(supabase, [data.id], viewerUserId);
-      const item = await mapDbCaseRowToCaseItem(supabase, data as DbCaseRow, viewerLikedCaseIds);
+      const likeCounts = await getLikeCountsByCaseId(supabase, [data.id]);
+      const item = await mapDbCaseRowToCaseItem(data as DbCaseRow, likeCounts);
       return enrichCaseItem(item);
     }
   }
@@ -375,7 +352,7 @@ export async function getCaseDetailData(slug: string, viewerUserId?: string | nu
 }
 
 export async function getCaseSlugs() {
-  const supabase = await getServerSupabaseClient();
+  const supabase = getServerSupabaseClient();
   if (!supabase) {
     return caseItems.map((item) => item.slug);
   }
@@ -391,8 +368,8 @@ export async function getCaseSlugs() {
     .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
 }
 
-export async function getHomeData(viewerUserId?: string | null) {
-  const list = await getCaseListData("all", viewerUserId);
+export async function getHomeData() {
+  const list = await getCaseListData("all");
   const creators = deriveCreatorsFromCases(list);
 
   const featuredCase = list[0] || enrichCaseItem(caseItems[0]);
@@ -411,20 +388,20 @@ export async function getHomeData(viewerUserId?: string | null) {
   };
 }
 
-export async function getCreatorListData(viewerUserId?: string | null) {
-  const list = await getCaseListData("all", viewerUserId);
+export async function getCreatorListData() {
+  const list = await getCaseListData("all");
   return deriveCreatorsFromCases(list);
 }
 
-export async function getCreatorDetailData(slug: string, viewerUserId?: string | null) {
-  const creators = await getCreatorListData(viewerUserId);
+export async function getCreatorDetailData(slug: string) {
+  const creators = await getCreatorListData();
   return findCreatorBySlug(creators, slug);
 }
 
-export async function getCreatorForCase(slug: string, viewerUserId?: string | null) {
+export async function getCreatorForCase(slug: string) {
   const [item, creators] = await Promise.all([
-    getCaseDetailData(slug, viewerUserId),
-    getCreatorListData(viewerUserId),
+    getCaseDetailData(slug),
+    getCreatorListData(),
   ]);
 
   if (!item) {

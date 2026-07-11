@@ -1,11 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
 import { PromptPanel } from "@/components/prompt-panel";
 import { CaseMedia } from "@/components/case-media";
-import { getCaseDetailData, getCreatorForCase } from "@/lib/cases";
-import { getServerAuthUser } from "@/lib/supabase/server-auth";
+import { getCaseDetailData, getCaseSlugs, getCreatorForCase } from "@/lib/cases";
 
 function modelCardTone(index: number) {
   if (index === 0) return "border-[rgba(203,92,47,0.38)] bg-[rgba(203,92,47,0.08)]";
@@ -35,7 +35,57 @@ function costBandLabel(costBand: "low" | "medium" | "high") {
   return "高";
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const slugs = await getCaseSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
+
+function truncateDescription(text: string, maxLength = 160) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const item = await getCaseDetailData(slug);
+
+  if (!item) {
+    // 提前触发 404，避免流式渲染下先发 200 再渲染 not-found（软 404）。
+    notFound();
+  }
+
+  const description = truncateDescription(item.summary);
+
+  return {
+    title: item.title,
+    description,
+    alternates: {
+      canonical: `/cases/${slug}`,
+    },
+    openGraph: {
+      type: "article",
+      locale: "zh_CN",
+      siteName: "GoodCase.ai",
+      url: `/cases/${slug}`,
+      title: item.title,
+      description,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: item.title,
+      description,
+    },
+  };
+}
 
 export default async function CaseDetailPage({
   params,
@@ -43,18 +93,34 @@ export default async function CaseDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const user = await getServerAuthUser();
   const [item, creator] = await Promise.all([
-    getCaseDetailData(slug, user?.id),
-    getCreatorForCase(slug, user?.id),
+    getCaseDetailData(slug),
+    getCreatorForCase(slug),
   ]);
 
   if (!item) {
     notFound();
   }
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: item.title,
+    description: item.summary,
+    url: `https://goodcase.ai/cases/${item.slug}`,
+    inLanguage: "zh-CN",
+    creator: {
+      "@type": "Person",
+      name: item.creator,
+    },
+  };
+
   return (
     <SiteShell footerNote="Case 详情页现在同时承接分层解锁、编辑判断与稳定复测阅读路径。">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-start">
         <article className="flex min-w-0 flex-col gap-5 self-start">
           <div className="flex flex-wrap items-center gap-2">
@@ -75,8 +141,6 @@ export default async function CaseDetailPage({
             <LikeButton
               caseSlug={item.slug}
               initialCount={item.likedCount}
-              initialHasLiked={Boolean(item.viewerHasLiked)}
-              initialIsLoggedIn={Boolean(user)}
             />
             <div className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] bg-white/60 px-4 text-sm">
               复刻 {item.remakeCount}
@@ -104,8 +168,6 @@ export default async function CaseDetailPage({
             promptPublicNote={item.promptPublicNote}
             promptLoginNotes={item.promptLoginNotes}
             promptContributionNotes={item.promptContributionNotes}
-            initialIsLoggedIn={Boolean(user)}
-            initialHasLiked={Boolean(item.viewerHasLiked)}
           />
 
           <article className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)] sm:p-6">

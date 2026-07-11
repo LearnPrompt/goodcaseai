@@ -18,12 +18,12 @@ const statusItems = [
   {
     title: "当前状态",
     description:
-      "首页、案例库、详情页、登录页已可用；AI 喜爱榜与 AI 稳定榜第一版已完成。",
+      "首页、案例库、详情页已可用，全站免登录访问；AI 喜爱榜与 AI 稳定榜第一版已完成。",
   },
   {
-    title: "认证状态",
+    title: "解锁状态",
     description:
-      "Supabase 客户端注册、登录、退出、会话监听已接通；auth/callback 的 code exchange 与基础 SSR Auth 已接通。",
+      "已切换为免登录方案：点赞状态存浏览器本地（localStorage），点赞即解锁完整 Prompt，无需注册账号。",
   },
   {
     title: "数据状态",
@@ -49,9 +49,9 @@ const coreFeatures = [
       "首页会输出两类 Top 10 榜单，分别帮助用户看喜欢度与稳定性，降低模型选择成本。",
   },
   {
-    title: "登录后点赞，解锁完整 Prompt",
+    title: "点赞解锁完整 Prompt",
     description:
-      "未登录用户点赞会跳转登录；已登录用户点赞后，案例详情页的 Prompt 面板会从预览态切到完整态。",
+      "点一下爱心即视为解锁：案例详情页的 Prompt 面板会从预览态切到完整态，状态存在浏览器本地，无需登录。",
   },
   {
     title: "案例详情承载媒体、Prompt 与模型建议",
@@ -59,9 +59,9 @@ const coreFeatures = [
       "详情页同时展示媒体内容、点赞数、复刻数、稳定分、推荐模型与成本档位，方便复盘与复用。",
   },
   {
-    title: "服务端首屏用户态 + 客户端实时同步",
+    title: "服务端首屏数据 + 客户端本地解锁",
     description:
-      "首页、案例列表、案例详情已读取服务端用户态初值，点赞后的解锁与计数会在客户端实时同步。",
+      "首页、案例列表、案例详情由服务端静态生成并定期再生（ISR），点赞后的解锁与计数在客户端本地实时同步。",
   },
   {
     title: "候选导入与发布链路已有雏形",
@@ -102,7 +102,7 @@ const activeStack = [
   {
     title: "认证与数据",
     description:
-      "@supabase/ssr + @supabase/supabase-js，承接 Auth、Postgres 读取、点赞写入与服务端用户态读取。",
+      "@supabase/supabase-js 服务端匿名读取，承接 Postgres 案例与点赞计数读取；无登录态。",
   },
   {
     title: "数据库约束",
@@ -125,12 +125,12 @@ const structureHighlights = [
   {
     title: "src/app 负责页面入口",
     description:
-      "已包含首页、案例列表、案例详情、登录页与 auth/callback 路由，产品主链路集中在这里。",
+      "已包含首页、案例列表、案例详情与创作者页面，产品主链路集中在这里，全部免登录可访问。",
   },
   {
     title: "src/components 负责交互组件",
     description:
-      "站点外壳、登录表单、点赞按钮、Prompt 面板、媒体展示与 Auth Provider 都拆成了独立组件。",
+      "站点外壳、点赞按钮、Prompt 面板与媒体展示都拆成了独立组件。",
   },
   {
     title: "src/lib/cases.ts 是数据装配层",
@@ -138,14 +138,9 @@ const structureHighlights = [
       "统一处理案例读取、分类过滤、榜单数据与媒体路径兜底，并保留数据库优先 / mock 数据兜底逻辑。",
   },
   {
-    title: "src/lib/supabase/* 分离浏览器端与服务端能力",
+    title: "src/lib/supabase/server-client.ts 提供服务端匿名读取",
     description:
-      "浏览器 client、服务端 client 与服务端用户态读取拆开维护，认证边界更清楚。",
-  },
-  {
-    title: "src/proxy.ts + auth/callback 形成 SSR Auth 基础设施",
-    description:
-      "一个负责会话刷新与 cookie 回写，一个负责邮箱确认后的 code exchange for session。",
+      "只保留服务端匿名 Supabase client，用于读取案例与点赞计数；点赞解锁状态由 src/lib/local-likes.ts 存在浏览器本地。",
   },
   {
     title: "scripts/ 与 supabase/ 为内容流转预留后手",
@@ -163,12 +158,12 @@ const usageSteps = [
   {
     title: "配置环境变量",
     description:
-      "参考仓库中的 .env.example；如果要跑通真实登录与数据写入，至少需要配置 Supabase 公共 URL 与匿名 Key。",
+      "参考仓库中的 .env.example；如果要读取真实数据库内容，至少需要配置 Supabase 公共 URL 与匿名 Key，缺省时走 mock 数据兜底。",
   },
   {
     title: "按页面主链路体验",
     description:
-      "访问 / 看首页与双榜单，访问 /cases 看案例库，进入详情页后登录并点赞，可验证 Prompt 解锁逻辑。",
+      "访问 / 看首页与双榜单，访问 /cases 看案例库，进入详情页后点赞，可验证 Prompt 解锁逻辑，全程无需登录。",
   },
   {
     title: "查看数据结构与策略",
@@ -222,19 +217,19 @@ export default function ProjectIntroPage() {
             </div>
 
             <nav className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
-              <a className="rounded-full px-3 py-2 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#overview">
+              <a className="inline-flex min-h-11 items-center rounded-full px-3 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#overview">
                 项目概览
               </a>
-              <a className="rounded-full px-3 py-2 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#features">
+              <a className="inline-flex min-h-11 items-center rounded-full px-3 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#features">
                 核心功能
               </a>
-              <a className="rounded-full px-3 py-2 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#stack">
+              <a className="inline-flex min-h-11 items-center rounded-full px-3 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#stack">
                 技术栈
               </a>
-              <a className="rounded-full px-3 py-2 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#structure">
+              <a className="inline-flex min-h-11 items-center rounded-full px-3 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#structure">
                 项目结构
               </a>
-              <a className="rounded-full px-3 py-2 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#usage">
+              <a className="inline-flex min-h-11 items-center rounded-full px-3 transition hover:bg-black/5 hover:text-[var(--ink)]" href="#usage">
                 使用方式
               </a>
             </nav>
@@ -252,11 +247,11 @@ export default function ProjectIntroPage() {
                 <span className="block text-[var(--accent)]">项目介绍</span>
               </h1>
               <p className="mt-5 max-w-3xl text-base leading-8 text-[var(--muted)] sm:text-lg sm:leading-9">
-                一个 creator-first 的 AI 案例学习平台：先看真实 Case，再决定用哪个模型；登录后点赞可解锁完整 Prompt。
+                一个 creator-first 的 AI 案例学习平台：先看真实 Case，再决定用哪个模型；点赞即可解锁完整 Prompt，无需登录。
               </p>
               <div className="mt-6 rounded-[20px] border border-[var(--line)] bg-white/60 p-4 text-sm leading-7 text-[var(--muted)] sm:p-5 sm:text-base">
                 <strong className="mr-2 text-[var(--ink)]">一句话介绍</strong>
-                仓库当前围绕“真实案例浏览 + 双榜单判断 + 登录点赞解锁 Prompt”这条主链路，已经做出可操作的 MVP。
+                仓库当前围绕“真实案例浏览 + 双榜单判断 + 点赞解锁 Prompt”这条主链路，已经做出可操作的 MVP。
               </div>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link

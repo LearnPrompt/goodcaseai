@@ -21,7 +21,6 @@ export function CaseMedia({
             fill
             sizes="(min-width: 1280px) 38vw, 100vw"
             className="object-cover"
-            unoptimized
           />
         ) : (
           <video
