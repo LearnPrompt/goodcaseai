@@ -87,7 +87,8 @@ export async function GET(
   const caseUrl = `https://goodcase.ai/cases/${slug}`;
 
   const categoryKey = item.category;
-  const summary = truncate(item.summary, 40);
+  // 非 BMP 花体字符（如 𝕏 U+1D54F）不在中文字体子集内，会渲染成豆腐块
+  const summary = truncate(item.summary.replace(/𝕏/g, "X"), 40);
   const models = item.recommendedModels.slice(0, 2);
   const costLabel = COST_BAND_LABELS[item.costBand] || "成本中";
 
