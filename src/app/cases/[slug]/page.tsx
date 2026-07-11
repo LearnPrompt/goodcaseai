@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
+import { ShareButton } from "@/components/share-button";
 import { PromptPanel } from "@/components/prompt-panel";
 import { CaseMedia } from "@/components/case-media";
 import { getCaseDetailData, getCaseSlugs, getCreatorForCase } from "@/lib/cases";
@@ -142,6 +143,7 @@ export default async function CaseDetailPage({
               caseSlug={item.slug}
               initialCount={item.likedCount}
             />
+            <ShareButton caseSlug={item.slug} title={item.title} />
             <div className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] bg-white/60 px-4 text-sm">
               复刻 {item.remakeCount}
             </div>
