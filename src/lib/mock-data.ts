@@ -18,6 +18,7 @@ export type CaseItem = {
   favoriteScore: number;
   recommendedModels: string[];
   costBand: "low" | "medium" | "high";
+  createdAt?: string;
 };
 
 export const caseItems: CaseItem[] = [

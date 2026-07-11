@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getCaseListData } from "@/lib/cases";
+import { filterCasesByQuery, getCaseListData } from "@/lib/cases";
 import type { CaseCategory } from "@/lib/mock-data";
 import { PUBLIC_API_HEADERS, toPublicListItem } from "../_lib/public-case";
 
@@ -44,11 +44,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (q) {
-    list = list.filter((item) =>
-      [item.title, item.summary, item.creator].some((field) =>
-        field.toLowerCase().includes(q)
-      )
-    );
+    list = filterCasesByQuery(list, q);
   }
 
   const items = list.slice(0, take).map(toPublicListItem);

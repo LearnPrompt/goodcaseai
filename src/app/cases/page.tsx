@@ -3,7 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
-import { getCaseListData, type CaseFilter } from "@/lib/cases";
+import { SearchBox } from "@/components/search-box";
+import { filterCasesByQuery, getCaseListData, type CaseFilter } from "@/lib/cases";
 
 export const revalidate = 300;
 
@@ -32,11 +33,12 @@ function normalizeFilter(value?: string): CaseFilter {
 export default async function CasesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const activeFilter = normalizeFilter(params.filter);
-  const caseItems = await getCaseListData(activeFilter);
+  const query = params.q?.trim() || "";
+  const caseItems = filterCasesByQuery(await getCaseListData(activeFilter), query);
 
   return (
     <SiteShell footerNote="案例库是当前内容中台，点赞解锁、Prompt 复制和榜单都从这里生长出来。">
@@ -53,27 +55,52 @@ export default async function CasesPage({
         </p>
       </section>
 
-      <section className="mb-6 flex flex-wrap gap-2">
-        {FILTER_OPTIONS.map((option) => {
-          const isActive = option.value === activeFilter;
-          const href = option.value === "all" ? "/cases" : `/cases?filter=${option.value}`;
+      <section className="mb-6 grid gap-4">
+        <SearchBox defaultQuery={query} filter={activeFilter} />
 
-          return (
-            <Link
-              key={option.value}
-              href={href}
-              className={`inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold transition hover:-translate-y-0.5 ${
-                isActive
-                  ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--bg-strong)]"
-                  : "border-[var(--line)] bg-white/60 text-[var(--ink)]"
-              }`}
-            >
-              {option.label}
-            </Link>
-          );
-        })}
+        <div className="flex flex-wrap gap-2">
+          {FILTER_OPTIONS.map((option) => {
+            const isActive = option.value === activeFilter;
+            const searchSuffix = query ? `q=${encodeURIComponent(query)}` : "";
+            const filterParam = option.value === "all" ? "" : `filter=${option.value}`;
+            const queryString = [filterParam, searchSuffix].filter(Boolean).join("&");
+            const href = queryString ? `/cases?${queryString}` : "/cases";
+
+            return (
+              <Link
+                key={option.value}
+                href={href}
+                className={`inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold transition hover:-translate-y-0.5 ${
+                  isActive
+                    ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--bg-strong)]"
+                    : "border-[var(--line)] bg-white/60 text-[var(--ink)]"
+                }`}
+              >
+                {option.label}
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
+      {caseItems.length === 0 ? (
+        <section className="grid gap-4 rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-8 text-center sm:p-12">
+          <p className="text-lg font-semibold text-[var(--ink)]">
+            没有找到{query ? `与「${query}」相关的` : ""}案例。
+          </p>
+          <p className="text-sm leading-7 text-[var(--muted)]">
+            换个关键词试试，或者去提交你见过的好案例。
+          </p>
+          <div>
+            <Link
+              href="/submit"
+              className="inline-flex min-h-11 items-center rounded-full border border-[var(--ink)] bg-[var(--ink)] px-5 text-sm font-semibold text-[var(--bg-strong)] transition hover:-translate-y-0.5"
+            >
+              提交好案例
+            </Link>
+          </div>
+        </section>
+      ) : (
       <section className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
         {caseItems.map((item) => (
           <article
@@ -141,6 +168,7 @@ export default async function CasesPage({
           </article>
         ))}
       </section>
+      )}
     </SiteShell>
   );
 }

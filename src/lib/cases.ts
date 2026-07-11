@@ -27,6 +27,7 @@ type DbCaseRow = {
   favorite_score: number;
   recommended_models: string[] | null;
   cost_band: string;
+  created_at: string | null;
 };
 
 type ServerSupabase = ReturnType<typeof getServerSupabaseClient>;
@@ -66,6 +67,22 @@ function applyCaseFilter(list: CaseItem[], filter: CaseFilter) {
   }
 
   return list.filter((item) => item.category === filter);
+}
+
+export function filterCasesByQuery<T extends Pick<CaseItem, "title" | "summary" | "creator">>(
+  list: T[],
+  q: string
+): T[] {
+  const normalized = q.trim().toLowerCase();
+  if (!normalized) {
+    return list;
+  }
+
+  return list.filter((item) =>
+    [item.title, item.summary, item.creator].some((field) =>
+      field.toLowerCase().includes(normalized)
+    )
+  );
 }
 
 function normalizeCategory(value: string): CaseItem["category"] {
@@ -282,6 +299,7 @@ async function mapDbCaseRowToCaseItem(
         ? row.recommended_models
         : ["待补充模型"],
     costBand: normalizeCostBand(row.cost_band),
+    createdAt: row.created_at || undefined,
   };
 }
 
@@ -294,7 +312,7 @@ async function fetchPublishedCases(filter: CaseFilter = "all"): Promise<DisplayC
   let query = supabase
     .from("cases")
     .select(
-      "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band"
+      "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, created_at"
     )
     .eq("is_published", true)
     .order("created_at", { ascending: false });
@@ -334,7 +352,7 @@ export async function getCaseDetailData(slug: string) {
     const { data, error } = await supabase
       .from("cases")
       .select(
-        "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band"
+        "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, created_at"
       )
       .eq("slug", slug)
       .eq("is_published", true)
