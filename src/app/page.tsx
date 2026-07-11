@@ -193,7 +193,7 @@ export default async function Home() {
             <Link className="gc-btn" href="/creators">
               浏览创作者
             </Link>
-            <Link className="gc-btn gc-btn-ghost" href="/cases">
+            <Link className="gc-btn gc-btn-ghost" href="/submit">
               提交案例
             </Link>
           </div>

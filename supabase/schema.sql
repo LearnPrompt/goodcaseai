@@ -103,7 +103,10 @@ alter table public.case_candidates
   add column if not exists published_case_id uuid references public.cases(id) on delete set null,
   add column if not exists reviewed_at timestamptz,
   add column if not exists published_at timestamptz,
-  add column if not exists updated_at timestamptz not null default now();
+  add column if not exists updated_at timestamptz not null default now(),
+  add column if not exists submitted_via text,
+  add column if not exists contact text,
+  add column if not exists ip_hash text;
 
 do $$
 begin
@@ -139,6 +142,7 @@ create table if not exists public.case_likes (
 create index if not exists idx_case_likes_case_id on public.case_likes(case_id);
 create unique index if not exists idx_case_candidates_dedupe_key on public.case_candidates(dedupe_key);
 create index if not exists idx_case_candidates_status_created_at on public.case_candidates(status, created_at desc);
+create index if not exists idx_case_candidates_ip_hash_created on public.case_candidates (ip_hash, created_at desc);
 
 alter table public.profiles enable row level security;
 alter table public.cases enable row level security;
