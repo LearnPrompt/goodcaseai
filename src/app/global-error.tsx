@@ -1,0 +1,71 @@
+"use client";
+
+export default function GlobalError({
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <html lang="zh-CN">
+      <body
+        style={{
+          margin: 0,
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#fafaf7",
+          color: "#0a0a0a",
+          fontFamily:
+            '"Avenir Next", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif',
+        }}
+      >
+        <div style={{ textAlign: "center", padding: "24px" }}>
+          <p
+            style={{
+              fontSize: "12px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.18em",
+              color: "#ff5733",
+            }}
+          >
+            GoodCase.ai
+          </p>
+          <h1
+            style={{
+              marginTop: "16px",
+              fontSize: "40px",
+              lineHeight: 1.05,
+              letterSpacing: "-0.04em",
+            }}
+          >
+            站点遇到了一个全局错误。
+          </h1>
+          <p style={{ marginTop: "16px", color: "#6b6b66", lineHeight: 1.8 }}>
+            请点击下方按钮重试，如果问题持续，请稍后再访问。
+          </p>
+          <button
+            type="button"
+            onClick={() => reset()}
+            style={{
+              marginTop: "24px",
+              minHeight: "44px",
+              padding: "0 24px",
+              borderRadius: "9999px",
+              border: "1px solid #0a0a0a",
+              backgroundColor: "#0a0a0a",
+              color: "#fafaf7",
+              fontSize: "14px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            重试
+          </button>
+        </div>
+      </body>
+    </html>
+  );
+}
