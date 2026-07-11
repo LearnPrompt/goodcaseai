@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoodCase.ai 项目介绍</title>
+    <meta
+      name="description"
+      content="GoodCase.ai 项目介绍页：基于当前仓库真实信息整理的 creator-first AI 案例学习平台说明。"
+    />
+    <style>
+      :root {
+        --bg: #f4efe8;
+        --bg-strong: rgba(255, 250, 241, 0.88);
+        --panel: rgba(255, 252, 246, 0.86);
+        --ink: #17130f;
+        --muted: #62564d;
+        --line: rgba(23, 19, 15, 0.12);
+        --line-strong: rgba(23, 19, 15, 0.22);
+        --accent: #bf5a32;
+        --accent-2: #245e94;
+        --shadow: 0 24px 80px rgba(47, 31, 20, 0.12);
+        --radius-xl: 28px;
+        --radius-lg: 22px;
+        --radius-md: 16px;
+        --content-width: 1180px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
+          "Microsoft YaHei", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.78), transparent 32%),
+          linear-gradient(135deg, #f5f0e7 0%, #ebe2d6 46%, #f3ede5 100%);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.38;
+        background-image:
+          linear-gradient(rgba(23, 19, 15, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(23, 19, 15, 0.04) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 88%);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      code {
+        padding: 0.16rem 0.44rem;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.68);
+        font-family: "SFMono-Regular", "Menlo", "Monaco", "Consolas", monospace;
+        font-size: 0.92em;
+      }
+
+      pre {
+        margin: 0;
+        overflow-x: auto;
+        padding: 1rem 1.1rem;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--ink);
+        font-family: "SFMono-Regular", "Menlo", "Monaco", "Consolas", monospace;
+        font-size: 0.93rem;
+        line-height: 1.7;
+      }
+
+      .page {
+        width: min(calc(100% - 24px), var(--content-width));
+        margin: 14px auto;
+        border: 1px solid var(--line);
+        background: rgba(255, 250, 241, 0.72);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 250, 241, 0.9);
+        backdrop-filter: blur(18px);
+      }
+
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .brand-name {
+        font-size: 0.82rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .nav a {
+        padding: 0.62rem 0.92rem;
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 0.93rem;
+        transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+      }
+
+      .nav a:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--ink);
+        transform: translateY(-1px);
+      }
+
+      main {
+        padding: 28px 20px 24px;
+      }
+
+      section + section {
+        margin-top: 18px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+        align-items: stretch;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .hero-main {
+        padding: 26px;
+      }
+
+      .eyebrow,
+      .section-eyebrow {
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .hero-title,
+      .section-title {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        letter-spacing: -0.045em;
+        line-height: 0.95;
+      }
+
+      .hero-title {
+        margin-top: 16px;
+        max-width: 10ch;
+        font-size: clamp(3rem, 7vw, 5.8rem);
+      }
+
+      .hero-title span {
+        color: var(--accent);
+      }
+
+      .hero-subtitle {
+        margin: 18px 0 0;
+        max-width: 46rem;
+        color: var(--muted);
+        font-size: 1.02rem;
+        line-height: 1.9;
+      }
+
+      .hero-note {
+        margin-top: 20px;
+        display: inline-flex;
+        gap: 10px;
+        align-items: center;
+        padding: 0.84rem 1rem;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.54);
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.7;
+      }
+
+      .hero-side {
+        display: grid;
+        gap: 14px;
+        padding: 22px;
+        background:
+          radial-gradient(circle at top right, rgba(191, 90, 50, 0.14), transparent 34%),
+          radial-gradient(circle at bottom left, rgba(36, 94, 148, 0.12), transparent 28%),
+          var(--panel);
+      }
+
+      .chip-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 38px;
+        padding: 0.38rem 0.78rem;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.66);
+        font-size: 0.84rem;
+        line-height: 1.4;
+      }
+
+      .status-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .status-item {
+        padding: 14px 15px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.64);
+      }
+
+      .status-item strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.98rem;
+      }
+
+      .status-item p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.93rem;
+        line-height: 1.8;
+      }
+
+      .grid-two {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .section-card {
+        padding: 24px;
+      }
+
+      .section-title {
+        margin-top: 12px;
+        font-size: clamp(2rem, 4.2vw, 3.1rem);
+      }
+
+      .section-desc {
+        margin: 14px 0 0;
+        color: var(--muted);
+        line-height: 1.9;
+      }
+
+      .feature-list,
+      .people-list,
+      .stack-list,
+      .structure-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .feature,
+      .people,
+      .stack,
+      .structure {
+        padding: 16px 16px 15px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.62);
+      }
+
+      .feature strong,
+      .people strong,
+      .stack strong,
+      .structure strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 1rem;
+      }
+
+      .feature p,
+      .people p,
+      .stack p,
+      .structure p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .stack {
+        border-color: rgba(36, 94, 148, 0.18);
+      }
+
+      .structure {
+        border-color: rgba(191, 90, 50, 0.2);
+      }
+
+      .usage-panel {
+        display: grid;
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .usage-step {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.62);
+      }
+
+      .usage-step strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .usage-step p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .footnote {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid var(--line-strong);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.68);
+      }
+
+      .footnote p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.85;
+      }
+
+      footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 20px 22px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      @media (max-width: 980px) {
+        .hero,
+        .grid-two {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          width: min(calc(100% - 12px), var(--content-width));
+          margin: 6px auto;
+        }
+
+        .topbar {
+          padding: 16px;
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .nav {
+          justify-content: flex-start;
+        }
+
+        main {
+          padding: 18px 14px 16px;
+        }
+
+        .hero-main,
+        .hero-side,
+        .section-card {
+          padding: 18px;
+        }
+
+        footer {
+          padding: 16px 14px 18px;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">GoodCase</span>
+          <span class="brand-name">GOODCASE.AI</span>
+        </div>
+        <nav class="nav">
+          <a href="#overview">项目概览</a>
+          <a href="#features">核心功能</a>
+          <a href="#stack">技术栈</a>
+          <a href="#structure">项目结构</a>
+          <a href="#usage">使用方式</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero" id="overview">
+          <article class="card hero-main">
+            <div class="eyebrow">Creator-first AI case learning platform</div>
+            <h1 class="hero-title">
+              GoodCase.ai
+              <span>项目介绍</span>
+            </h1>
+            <p class="hero-subtitle">
+              一个 <strong>creator-first</strong> 的 AI 案例学习平台：先看真实
+              Case，再决定用哪个模型；登录后点赞可解锁完整 Prompt。
+            </p>
+            <div class="hero-note">
+              <strong>一句话介绍</strong>
+              <span>
+                仓库当前围绕“真实案例浏览 + 双榜单判断 + 登录点赞解锁 Prompt”
+                这条主链路，已经做出可操作的 MVP。
+              </span>
+            </div>
+          </article>
+
+          <aside class="card hero-side">
+            <div class="chip-wrap">
+              <span class="chip">正式品牌：GoodCase.ai</span>
+              <span class="chip">正式域名：goodcase.ai</span>
+              <span class="chip">当前阶段：MVP 已可操作</span>
+              <span class="chip">定位：creator-first</span>
+            </div>
+
+            <div class="status-list">
+              <div class="status-item">
+                <strong>当前状态</strong>
+                <p>
+                  首页、案例库、详情页、登录页已可用；AI 喜爱榜与 AI 稳定榜第一版已完成。
+                </p>
+              </div>
+              <div class="status-item">
+                <strong>认证状态</strong>
+                <p>
+                  Supabase 客户端注册、登录、退出、会话监听已接通；<code>/auth/callback</code>
+                  与基础 SSR Auth 已接通。
+                </p>
+              </div>
+              <div class="status-item">
+                <strong>数据状态</strong>
+                <p>
+                  点赞已接入 <code>public.case_likes</code>；候选池到审核再到发布的数据库与脚本流程已有雏形。
+                </p>
+              </div>
+              <div class="status-item">
+                <strong>未完成部分</strong>
+                <p>
+                  供给与审核后台仍待补齐，全站服务端用户态还没有系统性覆盖到所有页面与接口。
+                </p>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="grid-two" id="features">
+          <article class="card section-card">
+            <div class="section-eyebrow">Core Features</div>
+            <h2 class="section-title">核心功能</h2>
+            <p class="section-desc">
+              以下功能均可在当前仓库中找到直接对应的页面、组件、数据层或 Supabase
+              结构，不含推测性描述。
+            </p>
+            <div class="feature-list">
+              <div class="feature">
+                <strong>真实案例浏览与分类筛选</strong>
+                <p>
+                  首页与 <code>/cases</code> 已可浏览案例；列表支持
+                  <code>全部 / AI 视频 / AI 编程(UI) / AI 图像</code> 筛选。
+                </p>
+              </div>
+              <div class="feature">
+                <strong>AI 喜爱榜 + AI 稳定榜</strong>
+                <p>
+                  首页基于案例数据生成两类 Top 10 榜单，分别帮助用户看“喜欢度”和“稳定性”。
+                </p>
+              </div>
+              <div class="feature">
+                <strong>登录后点赞，解锁完整 Prompt</strong>
+                <p>
+                  未登录用户点击点赞会跳转登录；已登录用户点赞后，详情页 Prompt
+                  面板会从预览态切换为完整显示。
+                </p>
+              </div>
+              <div class="feature">
+                <strong>案例详情承载媒体、Prompt 与模型建议</strong>
+                <p>
+                  <code>/cases/[slug]</code> 同时展示媒体内容、点赞数、复刻数、稳定分、推荐模型与成本档位。
+                </p>
+              </div>
+              <div class="feature">
+                <strong>服务端首屏用户态 + 客户端实时同步</strong>
+                <p>
+                  首页、案例列表、案例详情已读取服务端用户态初值，点赞后客户端会实时同步解锁与计数状态。
+                </p>
+              </div>
+              <div class="feature">
+                <strong>候选导入与发布链路已有雏形</strong>
+                <p>
+                  仓库包含 <code>import:candidates</code> 与 <code>publish:cases</code>
+                  脚本，对应候选池、审核状态与发布入库流程。
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <article class="card section-card">
+            <div class="section-eyebrow">Audience</div>
+            <h2 class="section-title">适用人群</h2>
+            <p class="section-desc">
+              仓库当前产品定位是 creator-first，因此更适合围绕“案例学习、模型选择、Prompt
+              复用”这几类场景使用。
+            </p>
+            <div class="people-list">
+              <div class="people">
+                <strong>内容创作者与 AI 实践者</strong>
+                <p>
+                  适合先看真实输出结果，再回到 Prompt 与模型组合做复刻或二次创作。
+                </p>
+              </div>
+              <div class="people">
+                <strong>需要做模型选型的人</strong>
+                <p>
+                  适合通过喜爱榜、稳定榜和详情页推荐模型，快速判断“先用哪个模型开跑”。
+                </p>
+              </div>
+              <div class="people">
+                <strong>需要沉淀案例库的小团队</strong>
+                <p>
+                  当前仓库已经有案例数据表、点赞表、候选池与发布脚本，适合继续向内容中台演进。
+                </p>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="grid-two" id="stack">
+          <article class="card section-card">
+            <div class="section-eyebrow">Tech Stack</div>
+            <h2 class="section-title">技术栈</h2>
+            <p class="section-desc">
+              以下以当前依赖与仓库文档为准，优先展示已经出现在代码或官方说明中的技术选型。
+            </p>
+            <div class="stack-list">
+              <div class="stack">
+                <strong>前端框架</strong>
+                <p>
+                  <code>Next.js 16.2.2</code> + <code>React 19.2.4</code> +
+                  <code>TypeScript</code>，采用 App Router 目录结构。
+                </p>
+              </div>
+              <div class="stack">
+                <strong>样式体系</strong>
+                <p>
+                  <code>Tailwind CSS 4</code> +
+                  全局 CSS 变量，当前站点视觉基调集中在暖色纸感与大标题排版。
+                </p>
+              </div>
+              <div class="stack">
+                <strong>认证与数据</strong>
+                <p>
+                  <code>@supabase/ssr</code> +
+                  <code>@supabase/supabase-js</code>，承接 Auth、Postgres 数据读取与点赞状态写入。
+                </p>
+              </div>
+              <div class="stack">
+                <strong>数据库约束</strong>
+                <p>
+                  <code>supabase/schema.sql</code> 中定义了
+                  <code>profiles</code>、<code>cases</code>、<code>case_candidates</code>、
+                  <code>case_likes</code> 以及对应 RLS 策略。
+                </p>
+              </div>
+              <div class="stack">
+                <strong>工程校验</strong>
+                <p>
+                  使用 <code>ESLint 9</code> 与 <code>eslint-config-next</code>
+                  进行基础代码校验。
+                </p>
+              </div>
+              <div class="stack">
+                <strong>文档中的推荐正式栈</strong>
+                <p>
+                  README 中写明推荐部署为 <code>Vercel</code>，媒体存储建议使用
+                  <code>Cloudflare R2</code>，长视频阶段建议接入 <code>Cloudflare Stream</code>。
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <article class="card section-card" id="structure">
+            <div class="section-eyebrow">Structure Highlights</div>
+            <h2 class="section-title">项目结构亮点</h2>
+            <p class="section-desc">
+              当前仓库规模不大，但边界已经比较清晰，后续继续扩展供给后台和服务端接口时不会从零开始。
+            </p>
+            <div class="structure-list">
+              <div class="structure">
+                <strong><code>src/app</code> 负责页面入口</strong>
+                <p>
+                  已包含首页、案例列表、案例详情、登录页与
+                  <code>auth/callback</code> 路由，产品主链路集中在这里。
+                </p>
+              </div>
+              <div class="structure">
+                <strong><code>src/components</code> 负责交互组件</strong>
+                <p>
+                  站点外壳、登录表单、点赞按钮、Prompt 面板、媒体展示与 Auth Provider
+                  都被拆成独立组件。
+                </p>
+              </div>
+              <div class="structure">
+                <strong><code>src/lib/cases.ts</code> 是数据装配层</strong>
+                <p>
+                  统一处理案例读取、分类过滤、榜单生成、媒体路径兜底，以及
+                  “数据库优先 / mock 数据兜底”的回退逻辑。
+                </p>
+              </div>
+              <div class="structure">
+                <strong><code>src/lib/supabase/*</code> 分离浏览器端与服务端能力</strong>
+                <p>
+                  浏览器 client、服务端 client 与服务端用户态读取拆开维护，认证边界更清楚。
+                </p>
+              </div>
+              <div class="structure">
+                <strong><code>src/proxy.ts</code> + <code>auth/callback</code> 形成 SSR Auth 基础设施</strong>
+                <p>
+                  一个负责会话刷新与 cookie 回写，一个负责邮箱确认后的
+                  code exchange for session。
+                </p>
+              </div>
+              <div class="structure">
+                <strong><code>scripts/</code> 与 <code>supabase/</code> 为内容流转预留了后手</strong>
+                <p>
+                  导入候选、发布 approved 案例、表结构与 RLS
+                  规则已经在仓库内，对后续审核后台接入比较友好。
+                </p>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="card section-card" id="usage">
+          <div class="section-eyebrow">How To Use</div>
+          <h2 class="section-title">使用方式</h2>
+          <p class="section-desc">
+            下面的方式完全对应当前仓库已有脚本与文件，不要求额外依赖未知工具。
+          </p>
+
+          <div class="usage-panel">
+            <div class="usage-step">
+              <strong>1. 本地启动项目</strong>
+              <p>先安装依赖，再启动开发环境。</p>
+              <pre><code>npm install
+npm run dev</code></pre>
+            </div>
+
+            <div class="usage-step">
+              <strong>2. 配置环境变量</strong>
+              <p>
+                参考仓库中的 <code>.env.example</code> 与现有 Supabase
+                代码路径，至少需要配置公共 URL 与匿名 Key 才能跑通真实登录。
+              </p>
+            </div>
+
+            <div class="usage-step">
+              <strong>3. 按页面主链路体验</strong>
+              <p>
+                访问 <code>/</code> 看首页与双榜单，访问 <code>/cases</code>
+                看案例库，进入任意详情页后登录并点赞，可验证 Prompt 解锁逻辑。
+              </p>
+            </div>
+
+            <div class="usage-step">
+              <strong>4. 查看数据结构与策略</strong>
+              <p>
+                如果要继续开发内容流转或权限规则，优先读
+                <code>supabase/schema.sql</code>。
+              </p>
+            </div>
+
+            <div class="usage-step">
+              <strong>5. 执行内容导入与发布脚本</strong>
+              <p>
+                仓库已有两条脚本：一条导入候选案例，一条发布审核通过的案例；这两条脚本都需要 Supabase
+                服务端密钥环境变量。
+              </p>
+              <pre><code>npm run import:candidates -- --file=tmp/case-candidates.json
+npm run publish:cases -- --batch=&lt;batch-id&gt;</code></pre>
+            </div>
+          </div>
+
+          <div class="footnote">
+            <p>
+              <strong>当前口径提醒：</strong>
+              这个项目已经不是纯 Demo，但也还不是正式规模化上线版本。最准确的阶段描述仍然是
+              <code>MVP 已可操作，供给与审核后台待补齐</code>。
+            </p>
+            <p>
+              <strong>共享真相源：</strong>
+              仓库协作以 <code>../docs/PROJECT_STATE.md</code> 和
+              <code>../docs/WORKLOG.md</code> 为准；如果 README、历史日志与它们冲突，应以后两者为准。
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>GoodCase.ai · 仓库单文件项目介绍页</span>
+        <span>内容依据当前代码、文档、脚本与 Supabase schema 整理</span>
+      </footer>
+    </div>
+  </body>
+</html>
