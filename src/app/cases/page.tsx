@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
+import { FavoriteButton } from "@/components/favorite-button";
 import { SearchBox } from "@/components/search-box";
 import { filterCasesByQuery, getCaseListData, type CaseFilter } from "@/lib/cases";
 
@@ -153,10 +154,13 @@ export default async function CasesPage({
               </div>
 
               <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
-                <LikeButton
-                  caseSlug={item.slug}
-                  initialCount={item.likedCount}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <LikeButton
+                    caseSlug={item.slug}
+                    initialCount={item.likedCount}
+                  />
+                  <FavoriteButton caseSlug={item.slug} />
+                </div>
                 <Link
                   href={`/cases/${item.slug}`}
                   className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] px-4 text-sm font-semibold transition hover:-translate-y-0.5"
