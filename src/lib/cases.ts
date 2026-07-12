@@ -6,7 +6,7 @@ import {
   findCreatorBySlug,
   type CreatorItem,
 } from "@/lib/creators";
-import { getServerSupabaseClient } from "@/lib/supabase/server-client";
+import { getServerSupabaseClient, withTimeout } from "@/lib/supabase/server-client";
 import { caseItems, type CaseItem } from "@/lib/mock-data";
 
 type DbCaseRow = {
@@ -248,21 +248,27 @@ async function getLikeCountsByCaseId(supabase: ServerSupabase, caseIds: string[]
     return counts;
   }
 
-  // 数据量小，一次拉出相关点赞行在内存聚合，避免每个 case 各查一次的 N+1。
-  const { data, error } = await supabase
-    .from("case_likes")
-    .select("case_id")
-    .in("case_id", caseIds);
+  try {
+    // 数据量小，一次拉出相关点赞行在内存聚合，避免每个 case 各查一次的 N+1。
+    const { data, error } = await withTimeout(
+      supabase
+        .from("case_likes")
+        .select("case_id")
+        .in("case_id", caseIds)
+    );
 
-  if (error || !data) {
-    return counts;
-  }
-
-  for (const row of data) {
-    const caseId = row.case_id;
-    if (typeof caseId === "string" && caseId.length > 0) {
-      counts.set(caseId, (counts.get(caseId) || 0) + 1);
+    if (error || !data) {
+      return counts;
     }
+
+    for (const row of data) {
+      const caseId = row.case_id;
+      if (typeof caseId === "string" && caseId.length > 0) {
+        counts.set(caseId, (counts.get(caseId) || 0) + 1);
+      }
+    }
+  } catch {
+    // Supabase timeout — return empty counts, caller uses 0
   }
 
   return counts;
@@ -308,32 +314,37 @@ async function fetchPublishedCases(filter: CaseFilter = "all"): Promise<DisplayC
     return null;
   }
 
-  let query = supabase
-    .from("cases")
-    .select(
-      "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, created_at"
-    )
-    .eq("is_published", true)
-    .order("created_at", { ascending: false });
+  try {
+    let query = supabase
+      .from("cases")
+      .select(
+        "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, created_at"
+      )
+      .eq("is_published", true)
+      .order("created_at", { ascending: false });
 
-  if (filter !== "all") {
-    query = query.eq("category", filter);
-  }
+    if (filter !== "all") {
+      query = query.eq("category", filter);
+    }
 
-  const { data, error } = await query;
+    const { data, error } = await withTimeout(query);
 
-  if (error || !data || data.length === 0) {
+    if (error || !data || data.length === 0) {
+      return null;
+    }
+
+    const rows = data as DbCaseRow[];
+    const likeCounts = await getLikeCountsByCaseId(
+      supabase,
+      rows.map((item) => item.id)
+    );
+
+    const items = await Promise.all(rows.map((item) => mapDbCaseRowToCaseItem(item, likeCounts)));
+    return items.map(enrichCaseItem);
+  } catch {
+    // Supabase timeout — fall through to return null (caller uses mock data)
     return null;
   }
-
-  const rows = data as DbCaseRow[];
-  const likeCounts = await getLikeCountsByCaseId(
-    supabase,
-    rows.map((item) => item.id)
-  );
-
-  const items = await Promise.all(rows.map((item) => mapDbCaseRowToCaseItem(item, likeCounts)));
-  return items.map(enrichCaseItem);
 }
 
 export async function getCaseListData(filter: CaseFilter = "all") {
@@ -348,19 +359,25 @@ export async function getCaseListData(filter: CaseFilter = "all") {
 export async function getCaseDetailData(slug: string) {
   const supabase = getServerSupabaseClient();
   if (supabase) {
-    const { data, error } = await supabase
-      .from("cases")
-      .select(
-        "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, created_at"
-      )
-      .eq("slug", slug)
-      .eq("is_published", true)
-      .maybeSingle();
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("cases")
+          .select(
+            "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, created_at"
+          )
+          .eq("slug", slug)
+          .eq("is_published", true)
+          .maybeSingle()
+      );
 
-    if (!error && data) {
-      const likeCounts = await getLikeCountsByCaseId(supabase, [data.id]);
-      const item = await mapDbCaseRowToCaseItem(data as DbCaseRow, likeCounts);
-      return enrichCaseItem(item);
+      if (!error && data) {
+        const likeCounts = await getLikeCountsByCaseId(supabase, [data.id]);
+        const item = await mapDbCaseRowToCaseItem(data as DbCaseRow, likeCounts);
+        return enrichCaseItem(item);
+      }
+    } catch {
+      // Supabase timeout — fall through to mock data
     }
   }
 
@@ -368,21 +385,27 @@ export async function getCaseDetailData(slug: string) {
   return fallback ? enrichCaseItem(fallback) : null;
 }
 
-export async function getCaseSlugs() {
+export async function getCaseSlugs(): Promise<string[]> {
   const supabase = getServerSupabaseClient();
   if (!supabase) {
     return caseItems.map((item) => item.slug);
   }
 
-  const { data, error } = await supabase.from("cases").select("slug").eq("is_published", true);
+  try {
+    const { data, error } = await withTimeout(
+      supabase.from("cases").select("slug").eq("is_published", true)
+    );
 
-  if (error || !data || data.length === 0) {
-    return caseItems.map((item) => item.slug);
+    if (!error && data && data.length > 0) {
+      return data
+        .map((item) => item.slug)
+        .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
+    }
+  } catch {
+    // Supabase timeout — fall through to mock data
   }
 
-  return data
-    .map((item) => item.slug)
-    .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
+  return caseItems.map((item) => item.slug);
 }
 
 export async function getHomeData() {
