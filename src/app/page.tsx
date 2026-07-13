@@ -7,8 +7,8 @@ import { getHomeData, type DisplayCaseItem } from "@/lib/cases";
 export const revalidate = 300;
 
 const categoryLabels: Record<DisplayCaseItem["category"], string> = {
-  image: "AI-IMAGE",
-  video: "AI-VIDEO",
+  image: "AI 生图",
+  video: "AI 视频",
   web: "CODING-WF",
   copy: "COPY-WF",
 };
@@ -200,17 +200,17 @@ export default async function Home() {
     ...favoriteLeaderboard,
     ...stabilityLeaderboard,
   ]);
-  const heroThumbs = previewCases.slice(0, 3);
   const skillCases = previewCases.slice(0, 6);
+
+  const heroTopCases = favoriteLeaderboard.slice(0, 3);
+  const heroTopCreator = featuredCreators[0];
+  const heroTopSkill = skillCases[0];
 
   return (
     <SiteShell footerNote="GoodCase.ai · Case / Creator / Lab / Skill 持续更新。">
-      <section className="grid min-w-0 gap-10 py-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(560px,1fr)] lg:items-end lg:py-16">
+      <section className="grid min-w-0 gap-10 py-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(560px,1fr)] lg:items-end lg:py-8">
         <article className="min-w-0">
-          <p className="font-mono text-xs uppercase tracking-[0.14em] text-[var(--mute)]">
-            平台 · 不只看案例，也要顺着创作者继续学。
-          </p>
-          <h1 className="mt-6 max-w-full text-[3.45rem] font-medium leading-[0.92] tracking-normal text-[var(--ink)] sm:text-6xl md:max-w-[10ch] md:text-8xl">
+          <h1 className="mt-4 max-w-full text-5xl font-medium leading-[0.92] tracking-normal text-[var(--ink)] sm:text-5xl md:max-w-[10ch] md:text-7xl">
             <span className="block md:inline">看清什么</span>
             <span className="block md:inline">
               <span className="text-[var(--orange)]">真有效</span>，
@@ -218,10 +218,10 @@ export default async function Home() {
             <span className="block md:inline">关注持续</span>
             <span className="block md:inline">产出的人。</span>
           </h1>
-          <p className="mt-7 max-w-xl break-words text-base leading-8 text-[var(--mute)]">
+          <p className="mt-5 max-w-xl break-words text-base leading-8 text-[var(--mute)]">
             GoodCase.ai 追踪正在传播的 AI case，用同提示复现实验验证稳定性，再把反复成立的创作者模式沉淀成可复用方法包。
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap gap-3">
             <Link className="gc-btn gc-btn-primary" href="/cases">
               查看榜单 <span>→</span>
             </Link>
@@ -232,7 +232,7 @@ export default async function Home() {
               提交案例
             </Link>
           </div>
-          <div className="mt-8 flex flex-wrap gap-5 font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--mute)]">
+          <div className="mt-6 flex flex-wrap gap-5 font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--mute)]">
             <span>
               <b className="text-[var(--ink)]">{totalCaseCount}</b> cases
             </span>
@@ -251,48 +251,46 @@ export default async function Home() {
             <span className="text-[var(--orange)]">● 实时</span>
           </div>
 
-          <div className="border-b border-[var(--hair)] bg-[var(--paper-2)] p-4">
-            <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
-              <span>方法论 · Skill</span>
-              <span className="text-[var(--orange)]">Open</span>
+          <div className="border-b border-[var(--hair)] p-4">
+            <div className="mb-3 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
+              <span>最厉害的 Case · Top3</span>
+              <span className="text-[var(--orange)]">● 实时</span>
             </div>
-            <h3 className="mt-3 text-lg font-semibold tracking-[-0.02em]">{skillCases[0].title}</h3>
-            <p className="mt-2 text-sm leading-6 text-[var(--mute)]">{skillCases[0].summary.slice(0, 60)}...</p>
-            <Link href={`/cases/${skillCases[0].slug}`} className="mt-4 inline-flex items-center gap-1 font-mono text-xs text-[var(--orange)]">
-              查看方法包 <span>→</span>
+            <div className="grid grid-cols-3 gap-px border border-[var(--hair)] bg-[var(--hair)]">
+              {heroTopCases.map((item, index) => (
+                <Link key={item.slug} href={`/cases/${item.slug}`} className="block bg-white">
+                  <MediaTile item={item} rank={`#0${index + 1}`} className="aspect-[3/4] w-full" />
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-b border-[var(--hair)] p-4">
+            <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">最厉害的人 · Creator</div>
+            <Link href={`/creators/${heroTopCreator.slug}`} className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center border border-[var(--hair)] bg-[var(--paper-2)] font-mono text-xs">
+                  {heroTopCreator.name.slice(0, 2).toUpperCase()}
+                </span>
+                <span>
+                  <span className="block font-semibold leading-tight">{heroTopCreator.name}</span>
+                  <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--mute)]">
+                    {heroTopCreator.highlightedLabel}
+                  </span>
+                </span>
+              </span>
+              <span className="font-mono text-xs text-[var(--orange)]">→</span>
             </Link>
           </div>
 
-          <div className="grid gap-px bg-[var(--hair)] md:grid-cols-2">
-            <div className="min-w-0 bg-white p-4">
-              <div className="mb-2 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
-                <span>Love Ranking · 喜爱榜</span>
-                <span>Top 1</span>
-              </div>
-              <RankingList items={favoriteLeaderboard.slice(0, 1)} renderRow={renderFavoriteRow} scrollable={false} />
-            </div>
-            <div className="min-w-0 bg-white p-4">
-              <div className="mb-2 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
-                <span>Stability Ranking · 稳定榜</span>
-                <span>Top 1</span>
-              </div>
-              <RankingList items={stabilityLeaderboard.slice(0, 1)} renderRow={renderStabilityRow} scrollable={false} />
-            </div>
-          </div>
-
-          <div className="bg-white p-4">
+          <div className="p-4">
             <div className="mb-3 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
-              <span>正在传播 · 24h</span>
-              <span className="text-[var(--orange)]">● 实时</span>
+              <span>最厉害的 Skill · 方法包</span>
+              <span className="text-[var(--orange)]">Open</span>
             </div>
-            <Link href={`/cases/${heroThumbs[0].slug}`} className="flex items-center gap-3">
-              <MediaTile item={heroThumbs[0]} rank="#01" className="aspect-[3/4] w-20 shrink-0" />
-              <div>
-                <div className="font-semibold leading-tight">{heroThumbs[0].title}</div>
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--mute)]">
-                  {heroThumbs[0].creator} · {categoryLabels[heroThumbs[0].category]}
-                </div>
-              </div>
+            <Link href={`/cases/${heroTopSkill.slug}`} className="flex items-center justify-between gap-3">
+              <span className="font-semibold leading-tight">{heroTopSkill.title}</span>
+              <span className="shrink-0 font-mono text-xs text-[var(--orange)]">查看方法包 →</span>
             </Link>
           </div>
         </article>
@@ -301,9 +299,6 @@ export default async function Home() {
       <section className="gc-section">
         <div className="gc-section-head">
           <div className="gc-section-id">§ 01 · 榜单</div>
-          <div>
-            <h2 className="gc-section-title">一个读人群偏好，一个读模型稳定性。</h2>
-          </div>
         </div>
         <div className="grid border-t border-[var(--hair)] lg:grid-cols-2">
           <article className="border border-t-0 border-[var(--hair)] bg-white">
@@ -334,7 +329,7 @@ export default async function Home() {
         <div className="gc-section-head">
           <div className="gc-section-id">§ 02 · 方法包</div>
           <div>
-            <h2 className="gc-section-title">当模式反复出现，就升级成 Skill。</h2>
+            <h2 className="gc-section-title whitespace-nowrap text-4xl">当模式反复出现，就升级成 Skill。</h2>
           </div>
         </div>
         <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
@@ -348,24 +343,24 @@ export default async function Home() {
               </div>
               <h3 className="mt-7 text-2xl font-semibold tracking-[-0.03em]">{item.title}</h3>
               <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--mute)]">
-                {categoryLabels[item.category]} · Beta 方法种子
+                {categoryLabels[item.category]}
               </p>
               <div className="mt-6 grid gap-3 font-mono text-[11px]">
-                <div className="grid grid-cols-[76px_1fr] gap-3 border-b border-dashed border-[var(--concrete)] pb-3">
-                  <span className="text-[var(--mute)]">Stack</span>
+                <div className="grid grid-cols-[92px_1fr] gap-3 border-b border-dashed border-[var(--concrete)] pb-3">
+                  <span className="text-[var(--mute)]">运行过的模型</span>
                   <span>{item.recommendedModels.slice(0, 2).join(" / ")}</span>
                 </div>
-                <div className="grid grid-cols-[76px_1fr] gap-3 border-b border-dashed border-[var(--concrete)] pb-3">
-                  <span className="text-[var(--mute)]">Output</span>
+                <div className="grid grid-cols-[92px_1fr] gap-3 border-b border-dashed border-[var(--concrete)] pb-3">
+                  <span className="text-[var(--mute)]">输出概要</span>
                   <span>{item.summary.slice(0, 58)}...</span>
                 </div>
-                <div className="grid grid-cols-[76px_1fr] gap-3">
+                <div className="grid grid-cols-[92px_1fr] gap-3">
                   <span className="text-[var(--mute)]">By</span>
                   <span>{item.creator}</span>
                 </div>
               </div>
               <div className="mt-7 flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
-                <span>{item.remakeCount} related runs</span>
+                <span>{item.remakeCount} 次运行</span>
                 <Link href={`/cases/${item.slug}`} className="text-[var(--orange)]">
                   View ↗
                 </Link>
@@ -379,12 +374,12 @@ export default async function Home() {
         <div className="gc-section-head">
           <div className="gc-section-id">§ 03 · 创作者</div>
           <div>
-            <h2 className="gc-section-title">为持续交付的创作者设计，而不是为一次性爆款设计。</h2>
+            <h2 className="gc-section-title">为持续交付的创作者设计。</h2>
           </div>
         </div>
         <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-4">
           {featuredCreators.map((creator) => (
-            <Link key={creator.slug} href={`/creators/${creator.slug}`} className="min-h-80 border-b border-r border-[var(--hair)] bg-white p-6 transition hover:bg-[var(--paper-2)]">
+            <Link key={creator.slug} href={`/creators/${creator.slug}`} className="flex h-full min-h-80 flex-col border-b border-r border-[var(--hair)] bg-white p-6 transition hover:bg-[var(--paper-2)]">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex gap-3">
                   <span className="flex size-12 items-center justify-center border border-[var(--hair)] bg-[var(--paper-2)] font-mono text-sm font-semibold">
@@ -398,17 +393,14 @@ export default async function Home() {
                   </span>
                 </div>
                 <span className="border border-[var(--orange)] px-2 py-1 font-mono text-[10px] text-[var(--orange)]">
-                  {creator.highlightedLabel}
+                  🌟 编辑精选
                 </span>
               </div>
               <p className="mt-6 text-sm leading-7 text-[var(--mute)]">{creator.bio}</p>
-              <div className="mt-6 grid grid-cols-3 gap-2">
+              <div className="mt-auto grid grid-cols-3 gap-2 pt-6">
                 <MiniMetric label="Cases" value={creator.representativeCases.length} />
                 <MiniMetric label="Love" value={creator.averageFavoriteScore} />
                 <MiniMetric label="Stab." value={creator.averageStabilityScore} />
-              </div>
-              <div className="mt-6 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
-                Method maturity · {Math.min(5, Math.max(2, Math.round(creator.averageStabilityScore / 20)))}/5
               </div>
             </Link>
           ))}
@@ -417,41 +409,12 @@ export default async function Home() {
 
       <section className="gc-section">
         <div className="gc-section-head">
-          <div className="gc-section-id">§ 04 · 流程</div>
+          <div className="gc-section-id">§ 04 · 方法</div>
           <div>
-            <h2 className="gc-section-title">Case, Creator, Lab, Skill：让爆款不只是刷过去。</h2>
+            <h2 className="gc-section-title whitespace-nowrap text-4xl">从碎片化爆款，到可复用方法。</h2>
           </div>
         </div>
-        <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-4">
-          {[
-            ["01", "CASE", "发现可学习案例", "从 X、小红书、B 站、GitHub 等入口抓住正在传播的案例。"],
-            ["02", "CREATOR", "看谁持续产出", "把单条案例回挂到创作者，判断是不是一次性运气。"],
-            ["03", "LAB", "跨模型复现实验", "用同提示、同变量复跑，记录稳定分、漂移和成本。"],
-            ["04", "SKILL", "沉淀方法包", "当同一创作者反复跑出同类模式，就升级为可复用 Skill。"],
-          ].map(([num, label, title, copy]) => (
-            <article key={label} className="min-h-64 border-b border-r border-[var(--hair)] bg-white p-7">
-              <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--mute)]">
-                <span>{num}</span>
-                <b className="font-medium text-[var(--orange)]">{label}</b>
-              </div>
-              <div className="mt-8 flex size-12 items-center justify-center border border-[var(--hair)] font-mono text-lg">
-                {label.slice(0, 1)}
-              </div>
-              <h3 className="mt-6 text-xl font-semibold tracking-[-0.02em]">{title}</h3>
-              <p className="mt-4 text-sm leading-7 text-[var(--mute)]">{copy}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="gc-section">
-        <div className="gc-section-head">
-          <div className="gc-section-id">§ 05 · 转换</div>
-          <div>
-            <h2 className="gc-section-title">从碎片化爆款，到可复用方法。</h2>
-          </div>
-        </div>
-        <div className="grid gap-0 lg:grid-cols-[1fr_48px_1fr]">
+        <div className="grid gap-0 border-t border-[var(--hair)] lg:grid-cols-[1fr_48px_1fr]">
           <article className="min-h-[520px] border border-[var(--hair)] bg-[var(--paper-2)] p-7">
             <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--mute)]">
               <span>A · 原始 / 分散</span>
@@ -466,7 +429,7 @@ export default async function Home() {
                 <MediaTile item={featuredCase} className="h-full" />
               </div>
               <div className="absolute left-[8%] top-[48%] w-[70%] rotate-1 border border-[var(--hair)] bg-white p-4 font-mono text-[11px] leading-6">
-                <span className="text-[var(--mute)]">PROMPT FRAGMENT</span>
+                <span className="text-[var(--mute)]">提示词片段</span>
                 <br />
                 {featuredCase.promptPreview.slice(0, 120)}...
               </div>
@@ -496,10 +459,10 @@ export default async function Home() {
                 </span>
               </div>
               {[
-                ["SOURCE", `${featuredCase.source} · ${featuredCase.creator}`],
-                ["PROMPT", `${featuredCase.promptPreview.length} chars · normalized preview`],
-                ["MODEL STACK", featuredCase.recommendedModels.join(" · ")],
-                ["CREATOR", `${featuredCase.creator} · pattern owner`],
+                ["来源", `${featuredCase.source} · ${featuredCase.creator}`],
+                ["提示词", `${featuredCase.promptPreview.length} 字 · 标准化预览`],
+                ["运行过的模型", featuredCase.recommendedModels.join(" · ")],
+                ["创作者", `${featuredCase.creator} · 模式持有者`],
               ].map(([key, value]) => (
                 <div key={key} className="grid grid-cols-[116px_1fr] gap-4 border-b border-dashed border-[var(--concrete)] py-4 font-mono text-[11px]">
                   <span className="text-[var(--mute)]">{key}</span>
@@ -507,12 +470,12 @@ export default async function Home() {
                 </div>
               ))}
               <div className="mt-5 grid grid-cols-3 gap-3">
-                <MiniMetric label="Spread" value={featuredCase.spreadScore} />
-                <MiniMetric label="Stability" value={featuredCase.stabilityScore} />
-                <MiniMetric label="Cost" value={costLabels[featuredCase.costBand]} />
+                <MiniMetric label="传播" value={featuredCase.spreadScore} />
+                <MiniMetric label="稳定" value={featuredCase.stabilityScore} />
+                <MiniMetric label="成本" value={costLabels[featuredCase.costBand]} />
               </div>
               <div className="mt-6 border border-[var(--hair)] p-4">
-                <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">Promoted skill seed</div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">已升级方法包</div>
                 <div className="mt-2 text-base font-semibold">{featuredCase.title} 方法包 · Beta</div>
               </div>
             </div>

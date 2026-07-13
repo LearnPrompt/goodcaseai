@@ -32,9 +32,28 @@ function slugifyCreatorName(name: string) {
     .replace(/-{2,}/g, "-");
 }
 
-function buildCreatorBio(name: string, category: CaseItem["category"], sources: string[]) {
-  const sourceText = sources.slice(0, 2).join("、");
-  return `${name} 的代表内容主要分布在${CATEGORY_LABELS[category]}方向，近期高频出现在 ${sourceText}，适合拿来观察创作者方法论与模型选择。`;
+function buildCreatorBio(name: string, category: CaseItem["category"], sources: string[], heroCase: CaseItem) {
+  const primarySource = sources[0] || "多个平台";
+  const secondSource = sources[1];
+  const leadModel = heroCase.recommendedModels[0] || "主力模型";
+
+  if (category === "image") {
+    return secondSource
+      ? `${name} 主攻 AI 生图，${primarySource}和${secondSource}都在稳定更新，惯用 ${leadModel} 出图，布光和质感控制是长项。`
+      : `${name} 主攻 AI 生图，${primarySource}更新很勤，惯用 ${leadModel} 出图，布光和质感控制是长项。`;
+  }
+
+  if (category === "video") {
+    return secondSource
+      ? `${name} 短视频节奏抓得准，${primarySource}和${secondSource}两头都在发，${leadModel} 转场用得顺手。`
+      : `${name} 短视频节奏抓得准，长期扎根${primarySource}，${leadModel} 转场用得顺手。`;
+  }
+
+  if (category === "web") {
+    return `${name} 在${primarySource}上持续输出 UI 工程化实践，常搭 ${leadModel} 出方案，方法都带可复现代码。`;
+  }
+
+  return `${name} 文案功夫扎实，长期活跃在${primarySource}，惯用 ${leadModel} 打底稿，开场钩子和结尾行动指令都抓得住人。`;
 }
 
 function buildCreatorTags(cases: CaseItem[], category: CaseItem["category"]) {
@@ -91,7 +110,7 @@ export function deriveCreatorsFromCases(caseList: CaseItem[]): CreatorItem[] {
       return {
         slug: slugifyCreatorName(name),
         name,
-        bio: buildCreatorBio(name, primaryCategory, sourceFootprint),
+        bio: buildCreatorBio(name, primaryCategory, sourceFootprint, heroCase),
         primaryCategory,
         sourceFootprint,
         totalLikes,

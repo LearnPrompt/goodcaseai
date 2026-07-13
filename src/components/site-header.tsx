@@ -34,16 +34,6 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/cases"
-            className="inline-flex min-h-11 items-center whitespace-nowrap border border-[var(--ink)] bg-[var(--ink)] px-3 text-xs text-[var(--paper)] transition hover:-translate-y-0.5 hover:bg-[var(--orange)] sm:px-4 sm:text-sm"
-          >
-            <span className="sm:hidden">看案例</span>
-            <span className="hidden sm:inline">进入案例库</span>
-          </Link>
-        </div>
       </div>
     </header>
   );
