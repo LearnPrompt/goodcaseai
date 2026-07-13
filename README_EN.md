@@ -13,6 +13,12 @@ GoodCase.ai turns this into a complete pipeline: track AI cases while they are s
 
 **See what actually works. Follow the people who keep shipping.**
 
+## Showcase
+
+![GoodCase.ai homepage](public/readme/home.png)
+
+![Love Ranking and Stability Ranking](public/readme/rankings.png)
+
 ## Four Layers
 
 **Case** is the entry point. Every case ships with the full prompt, model stack and media assets, captured from X, Xiaohongshu, Bilibili and wherever things are spreading right now.

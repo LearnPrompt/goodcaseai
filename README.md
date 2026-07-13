@@ -13,6 +13,12 @@ GoodCase.ai 把这件事接成一条完整的链路：追踪正在传播的 AI c
 
 **看清什么真有效，关注持续产出的人。**
 
+## Showcase
+
+![GoodCase.ai 首页](public/readme/home.png)
+
+![喜爱榜与稳定榜](public/readme/rankings.png)
+
 ## 四层结构
 
 **Case** 是入口。每条案例带完整提示词、模型组合和媒体素材，来自 X、小红书、B 站这些正在传播的现场。
