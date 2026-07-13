@@ -29,6 +29,10 @@ GoodCase.ai turns this into a complete pipeline: track AI cases while they are s
 
 **Skill** is the distillation. When the same creator keeps producing the same class of pattern, it gets promoted into a skill pack you can use directly.
 
+![Skill packs](public/readme/skill.png)
+
+![Creators](public/readme/creator.png)
+
 ## Run Locally
 
 ```bash

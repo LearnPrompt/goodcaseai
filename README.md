@@ -29,6 +29,10 @@ GoodCase.ai 把这件事接成一条完整的链路：追踪正在传播的 AI c
 
 **Skill** 是沉淀。当同一创作者反复跑出同类模式，它就升级成一个可以直接拿去用的方法包。
 
+![方法包](public/readme/skill.png)
+
+![创作者](public/readme/creator.png)
+
 ## 本地运行
 
 ```bash
