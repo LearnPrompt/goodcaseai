@@ -32,28 +32,53 @@ function slugifyCreatorName(name: string) {
     .replace(/-{2,}/g, "-");
 }
 
-function buildCreatorBio(name: string, category: CaseItem["category"], sources: string[], heroCase: CaseItem) {
+function pickVariant(seed: string, count: number) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 997;
+  }
+  return hash % count;
+}
+
+function buildCreatorBio(
+  name: string,
+  category: CaseItem["category"],
+  sources: string[],
+  heroCase: CaseItem,
+  stabilityScore: number,
+  favoriteScore: number
+) {
   const primarySource = sources[0] || "多个平台";
   const secondSource = sources[1];
   const leadModel = heroCase.recommendedModels[0] || "主力模型";
+  const heroTitle = heroCase.title.replace(/[（(].*?[）)]\s*$/, "").trim();
+  const footprint = secondSource ? `${primarySource}和${secondSource}两头都在更新` : `长期扎根${primarySource}`;
+  const costPhrase =
+    heroCase.costBand === "low" ? "成本压得低" : heroCase.costBand === "high" ? "愿意为质感砸成本" : "成本控制在中等区间";
 
-  if (category === "image") {
-    return secondSource
-      ? `${name} 主攻 AI 生图，${primarySource}和${secondSource}都在稳定更新，惯用 ${leadModel} 出图，布光和质感控制是长项。`
-      : `${name} 主攻 AI 生图，${primarySource}更新很勤，惯用 ${leadModel} 出图，布光和质感控制是长项。`;
-  }
+  const templatesByCategory: Record<CaseItem["category"], Array<(n: string) => string>> = {
+    image: [
+      (n) => `${n} 主攻 AI 生图，代表作《${heroTitle}》拿下 ${favoriteScore} 分喜爱度，${footprint}，惯用 ${leadModel} 出图。`,
+      (n) => `${n} 的图不追求花哨，靠 ${leadModel} 把布光和质感做扎实，《${heroTitle}》复现稳定分 ${stabilityScore}%。`,
+      (n) => `${n} ${footprint}，出图节奏很稳，《${heroTitle}》是目前的代表作，${costPhrase}。`,
+    ],
+    video: [
+      (n) => `${n} 短视频节奏抓得准，《${heroTitle}》靠 ${leadModel} 转场拿下 ${favoriteScore} 分喜爱度，${footprint}。`,
+      (n) => `${n} ${footprint}，镜头语言干净，代表作《${heroTitle}》复现稳定分 ${stabilityScore}%。`,
+      (n) => `${n} 的视频胜在节奏感，《${heroTitle}》用 ${leadModel} 跑出来的，${costPhrase}。`,
+    ],
+    web: [
+      (n) => `${n} 在${primarySource}上持续输出 UI 工程化实践，《${heroTitle}》常搭 ${leadModel} 出方案，方法都带可复现代码。`,
+      (n) => `${n} ${footprint}，写的是能跑起来的界面而不是截图，《${heroTitle}》配了完整实现思路。`,
+    ],
+    copy: [
+      (n) => `${n} 文案功夫扎实，${footprint}，《${heroTitle}》的开场钩子和结尾行动指令都抓得住人。`,
+      (n) => `${n} 惯用 ${leadModel} 打底稿再手调语感，《${heroTitle}》是这套打法里最有代表性的一条。`,
+    ],
+  };
 
-  if (category === "video") {
-    return secondSource
-      ? `${name} 短视频节奏抓得准，${primarySource}和${secondSource}两头都在发，${leadModel} 转场用得顺手。`
-      : `${name} 短视频节奏抓得准，长期扎根${primarySource}，${leadModel} 转场用得顺手。`;
-  }
-
-  if (category === "web") {
-    return `${name} 在${primarySource}上持续输出 UI 工程化实践，常搭 ${leadModel} 出方案，方法都带可复现代码。`;
-  }
-
-  return `${name} 文案功夫扎实，长期活跃在${primarySource}，惯用 ${leadModel} 打底稿，开场钩子和结尾行动指令都抓得住人。`;
+  const templates = templatesByCategory[category];
+  return templates[pickVariant(name, templates.length)](name);
 }
 
 function buildCreatorTags(cases: CaseItem[], category: CaseItem["category"]) {
@@ -110,7 +135,7 @@ export function deriveCreatorsFromCases(caseList: CaseItem[]): CreatorItem[] {
       return {
         slug: slugifyCreatorName(name),
         name,
-        bio: buildCreatorBio(name, primaryCategory, sourceFootprint, heroCase),
+        bio: buildCreatorBio(name, primaryCategory, sourceFootprint, heroCase, averageStabilityScore, averageFavoriteScore),
         primaryCategory,
         sourceFootprint,
         totalLikes,
