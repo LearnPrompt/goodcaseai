@@ -9,6 +9,10 @@ import {
 import { scoreSourceHeat, type SourceHeatFields } from "@/lib/source-heat";
 import { getServerSupabaseClient, withTimeout } from "@/lib/supabase/server-client";
 import { caseItems, creatorAvatarUrls, type CaseItem } from "@/lib/mock-data";
+import {
+  formatStabilityScore,
+  hasMeasuredStability,
+} from "@/lib/stability";
 
 type DbCaseRow = {
   id: string;
@@ -258,7 +262,7 @@ function buildEditorNote(item: CaseItem) {
   const leadModel = item.recommendedModels[0] || "当前推荐模型";
   const evidenceLevel = item.evidenceLevel || "L0";
 
-  return `这是一个适合从 ${getLearningAngle(item.category)} 切进去的 case。当前证据等级为 ${evidenceLevel}，稳定性参考为 ${item.stabilityScore}；来源互动热度单独按原帖快照计算，不和编辑判断混在一起。更建议你把它当成“结构样本”来看，而不只是抄一段 Prompt；先理解它为什么在 ${leadModel} 上容易出结果，再决定要不要投入更高成本继续打磨。`;
+  return `这是一个适合从 ${getLearningAngle(item.category)} 切进去的 case。当前证据等级为 ${evidenceLevel}，稳定性参考为 ${formatStabilityScore(item.stabilityScore)}；来源互动热度单独按原帖快照计算，不和编辑判断混在一起。更建议你把它当成“结构样本”来看，而不只是抄一段 Prompt；先理解它为什么在 ${leadModel} 上容易出结果，再决定要不要投入更高成本继续打磨。`;
 }
 
 function buildLabNote(item: CaseItem) {
@@ -267,7 +271,7 @@ function buildLabNote(item: CaseItem) {
 
   return [
     `第一轮先用 ${leadModel} 建基准版本，再用 ${backupModel} 对照；不要一开始就同时改太多参数。`,
-    `这条 case 的稳定分是 ${item.stabilityScore}，更建议你优先盯 ${getLabFocus(item.category)} 这些变量，看输出是否还能保持同一方向。`,
+    `这条 case 的稳定参考是 ${formatStabilityScore(item.stabilityScore)}，更建议你优先盯 ${getLabFocus(item.category)} 这些变量，看输出是否还能保持同一方向。`,
     `当前成本档位是 ${COST_BAND_LABELS[item.costBand]}，适合先做小步复测，再决定要不要放大生成次数。`,
   ];
 }
@@ -438,7 +442,10 @@ export async function getHomeData() {
           (a.sourceWeightedInteractionCount ?? -1)
     )
     .slice(0, 10);
-  const stability = [...list].sort((a, b) => b.stabilityScore - a.stabilityScore).slice(0, 10);
+  const stability = [...list]
+    .filter((item) => hasMeasuredStability(item.stabilityScore))
+    .sort((a, b) => b.stabilityScore - a.stabilityScore)
+    .slice(0, 10);
 
   return {
     featuredCase,

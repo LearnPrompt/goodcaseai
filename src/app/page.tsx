@@ -4,6 +4,10 @@ import type { ReactNode } from "react";
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { SiteShell } from "@/components/site-shell";
 import { getHomeData, type DisplayCaseItem } from "@/lib/cases";
+import {
+  formatStabilityScore,
+  hasMeasuredStability,
+} from "@/lib/stability";
 
 export const revalidate = 300;
 
@@ -187,7 +191,10 @@ function renderStabilityRow(item: DisplayCaseItem, index: number) {
         ))}
       </div>
       <div className="text-right font-mono text-xs">
-        <b className="text-[var(--orange)]">{item.stabilityScore}%</b>
+        <b className="text-[var(--orange)]">
+          {formatStabilityScore(item.stabilityScore)}
+          {hasMeasuredStability(item.stabilityScore) ? "%" : ""}
+        </b>
       </div>
     </div>
   );
@@ -361,7 +368,9 @@ export default async function Home() {
                   {item.summary}
                 </p>
                 <div className="mt-auto flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
-                  <span>稳定参考 {item.stabilityScore}</span>
+                  <span>
+                    稳定参考 {formatStabilityScore(item.stabilityScore)}
+                  </span>
                   <Link href={`/cases/${item.slug}`} className="text-[var(--orange)]">
                     查看提示语 ↗
                   </Link>
@@ -404,7 +413,10 @@ export default async function Home() {
               <div className="mt-auto grid grid-cols-3 gap-2 pt-6">
                 <MiniMetric label="Cases" value={creator.representativeCases.length} />
                 <MiniMetric label="Heat" value={creator.averageSourceHeatScore ?? "—"} />
-                <MiniMetric label="Stab." value={creator.averageStabilityScore} />
+                <MiniMetric
+                  label="Stab."
+                  value={formatStabilityScore(creator.averageStabilityScore)}
+                />
               </div>
             </Link>
           ))}
@@ -475,7 +487,10 @@ export default async function Home() {
               ))}
               <div className="mt-5 grid grid-cols-3 gap-3">
                 <MiniMetric label="传播" value={featuredCase.spreadScore ?? "—"} />
-                <MiniMetric label="稳定" value={featuredCase.stabilityScore} />
+                <MiniMetric
+                  label="稳定"
+                  value={formatStabilityScore(featuredCase.stabilityScore)}
+                />
                 <MiniMetric label="成本" value={costLabels[featuredCase.costBand]} />
               </div>
               <div className="mt-6 border border-[var(--hair)] p-4">

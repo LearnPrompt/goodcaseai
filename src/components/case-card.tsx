@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { formatStabilityScore } from "@/lib/stability";
 
 const categoryLabels: Record<string, string> = {
   image: "AI 图像",
@@ -85,7 +86,9 @@ export function CaseCard({
           </div>
           <div className="gc-stat">
             <div className="gc-stat-label">Stability</div>
-            <div className="gc-stat-value">{item.stabilityScore}</div>
+            <div className="gc-stat-value">
+              {formatStabilityScore(item.stabilityScore)}
+            </div>
           </div>
         </div>
 
