@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 
 import { createClient } from "@supabase/supabase-js";
+import {
+  buildCasePayload,
+  decidePublish,
+} from "./review/lib/publish-candidate.mjs";
 
 function getArg(name) {
   const match = process.argv.find((arg) => arg.startsWith(`${name}=`));
   return match ? match.split("=").slice(1).join("=") : null;
+}
+
+function hasFlag(name) {
+  return process.argv.includes(name);
 }
 
 async function main() {
@@ -16,6 +24,7 @@ async function main() {
   }
 
   const batch = getArg("--batch");
+  const allowUpdate = hasFlag("--allow-update");
 
   const supabase = createClient(url, serviceRole, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -24,7 +33,7 @@ async function main() {
   let query = supabase
     .from("case_candidates")
     .select(
-      "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, import_batch_id"
+      "id, slug, title, category, source_platform, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, evidence_level, tags, import_batch_id"
     )
     .eq("status", "approved")
     .order("created_at", { ascending: true });
@@ -44,57 +53,106 @@ async function main() {
     return;
   }
 
-  const upsertPayload = approvedRows.map((item) => ({
-    slug: item.slug,
-    title: item.title,
-    category: item.category,
-    source_platform: item.source_platform,
-    creator_name: item.creator_name,
-    summary: item.summary,
-    prompt_preview: item.prompt_preview,
-    prompt_full: item.prompt_full,
-    media_kind: item.media_kind,
-    media_url: item.media_url,
-    poster_url: item.poster_url,
-    remake_count: item.remake_count,
-    stability_score: item.stability_score,
-    favorite_score: item.favorite_score,
-    recommended_models: item.recommended_models || [],
-    cost_band: item.cost_band,
-    is_published: true,
-  }));
-
-  const { data: publishedCases, error: upsertError } = await supabase
-    .from("cases")
-    .upsert(upsertPayload, { onConflict: "slug" })
-    .select("id, slug");
-
-  if (upsertError) {
-    throw new Error(`发布到 cases 失败：${upsertError.message}`);
-  }
-
-  const idBySlug = new Map((publishedCases || []).map((item) => [item.slug, item.id]));
-  const now = new Date().toISOString();
-
+  const counters = {
+    inserted: 0,
+    updated: 0,
+    resumed: 0,
+  };
   for (const item of approvedRows) {
-    const publishedCaseId = idBySlug.get(item.slug) || null;
-    const { error: updateError } = await supabase
+    const [{ data: existingByCandidate, error: candidateLookupError }, {
+      data: existingBySlug,
+      error: slugLookupError,
+    }] = await Promise.all([
+      supabase
+        .from("cases")
+        .select("id, slug, source_candidate_id")
+        .eq("source_candidate_id", item.id)
+        .maybeSingle(),
+      supabase
+        .from("cases")
+        .select("id, slug, source_candidate_id")
+        .eq("slug", item.slug)
+        .maybeSingle(),
+    ]);
+
+    if (candidateLookupError || slugLookupError) {
+      throw new Error(
+        `检查已发布 Case 失败（${item.slug}）：${
+          candidateLookupError?.message || slugLookupError?.message
+        }`
+      );
+    }
+
+    const decision = decidePublish({
+      candidateId: item.id,
+      existingByCandidate,
+      existingBySlug,
+      allowUpdate,
+    });
+    if (decision.action === "conflict") {
+      throw new Error(
+        `发布冲突（${item.slug}）：${decision.reason}。${
+          allowUpdate ? "" : "确认要更新未绑定的同 slug Case 时显式加 --allow-update。"
+        }`
+      );
+    }
+
+    const payload = buildCasePayload(item);
+    let publishedCase;
+    if (decision.action === "insert") {
+      const { data, error } = await supabase
+        .from("cases")
+        .insert(payload)
+        .select("id, slug")
+        .single();
+      if (error) {
+        throw new Error(`发布到 cases 失败（${item.slug}）：${error.message}`);
+      }
+      publishedCase = data;
+      counters.inserted += 1;
+    } else {
+      const { data, error } = await supabase
+        .from("cases")
+        .update(payload)
+        .eq("id", decision.caseId)
+        .select("id, slug")
+        .single();
+      if (error) {
+        throw new Error(`恢复或更新 Case 失败（${item.slug}）：${error.message}`);
+      }
+      publishedCase = data;
+      counters[decision.action === "resume" ? "resumed" : "updated"] += 1;
+    }
+
+    const now = new Date().toISOString();
+    const { data: updatedCandidate, error: updateError } = await supabase
       .from("case_candidates")
       .update({
         status: "published",
-        published_case_id: publishedCaseId,
+        published_case_id: publishedCase.id,
         published_at: now,
-        reviewed_at: now,
         updated_at: now,
       })
-      .eq("id", item.id);
+      .eq("id", item.id)
+      .eq("status", "approved")
+      .select("id")
+      .maybeSingle();
 
     if (updateError) {
       throw new Error(`更新候选状态失败（${item.slug}）：${updateError.message}`);
     }
+    if (!updatedCandidate) {
+      throw new Error(
+        `候选状态已变化（${item.slug}）；Case 已绑定 source_candidate_id，可重新运行安全收尾。`
+      );
+    }
   }
 
-  console.log(`已发布 ${approvedRows.length} 条案例到 cases。`);
+  console.log(
+    `候选发布完成：inserted=${counters.inserted}, updated=${counters.updated}, resumed=${counters.resumed}。模式=${
+      allowUpdate ? "显式允许更新" : "只追加"
+    }`
+  );
 }
 
 main().catch((error) => {

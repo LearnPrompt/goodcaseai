@@ -1,17 +1,18 @@
 import { ImageResponse } from "next/og";
 import { loadChineseFont } from "@/lib/og-font";
+import { SITE_HOST } from "@/lib/site";
 
 export const revalidate = 300;
 
-export const alt = "GoodCase.ai — creator-first 的 AI 案例学习平台";
+export const alt = "GoodCase.ai 中文 AI Case 证据库";
 export const size = {
   width: 1200,
   height: 630,
 };
 export const contentType = "image/png";
 
-const TAGLINE_ZH = "先看真实 Case，再决定用哪个模型";
-const TAGLINE_EN = "Creator-first AI case learning platform";
+const TAGLINE_ZH = "从真实作品，回到作者与方法";
+const TAGLINE_EN = "Evidence-first AI case library";
 
 export default async function Image() {
   const fontData = await loadChineseFont(TAGLINE_ZH);
@@ -49,7 +50,7 @@ export default async function Image() {
               style={{
                 width: "20px",
                 height: "20px",
-                backgroundColor: "#ff5733",
+                backgroundColor: "#c2410c",
               }}
             />
             <div
@@ -71,7 +72,7 @@ export default async function Image() {
               letterSpacing: "0.14em",
             }}
           >
-            Case / Creator / Lab / Skill
+            Case / Creator / Evidence
           </div>
         </div>
 
@@ -98,10 +99,10 @@ export default async function Image() {
               style={{
                 width: "56px",
                 height: "3px",
-                backgroundColor: "#ff5733",
+                backgroundColor: "#c2410c",
               }}
             />
-            <div style={{ fontSize: "26px", color: "#a3a39e" }}>goodcase.ai</div>
+            <div style={{ fontSize: "26px", color: "#a3a39e" }}>{SITE_HOST}</div>
           </div>
         </div>
       </div>

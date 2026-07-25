@@ -18,6 +18,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## 当前项目口径
 - 当前正式品牌名：`GoodCase.ai`
-- 当前项目阶段：`MVP 已可操作，供给与审核后台待补齐`
-- 当前认证状态：`Supabase 客户端 Auth 已接通，SSR Auth / callback exchange 未完成`
-- 当前点赞状态：`已接入 Supabase case_likes 表，不再使用 localStorage`
+- 当前项目阶段：`GoodCase.ai 统一版已部署到生产；运营闭环与中文域名迁移继续收敛`
+- 当前一级内容对象：`Case`；Creator、Lab、Skill 只作为派生视图
+- 当前认证状态：`本月明确不建设账号体系；完整 Prompt 公开`
+- 当前互动状态：`收藏和点赞使用 localStorage，不承诺跨设备同步`
+- 当前审核状态：`候选通过 review:candidates 人工决策，再由 publish:cases 发布`
+- 当前部署状态：`goodcase.ai 已指向统一版生产；常规 Git Preview 仍受 Vercel Git 作者访问校验阻断；goodcase.carlwow.com 尚未解析或上线`

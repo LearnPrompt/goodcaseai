@@ -7,7 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --test scripts/supply/lib/*.test.mjs scripts/review/lib/*.test.mjs",
+    "supply:shadow": "node scripts/supply/shadow-run.mjs",
+    "supply:youmind": "node scripts/supply/shadow-run.mjs --source=youmind --max-items=8",
+    "analyze:local-media": "node scripts/supply/enrich-local-media.mjs",
+    "ops:inbox": "node --env-file=.env.local scripts/operator-inbox.mjs",
+    "ops:reconcile": "node --env-file=.env.local scripts/ops/reconcile-production-data.mjs",
     "import:candidates": "node scripts/ingest-candidates.mjs",
+    "review:candidates": "node scripts/review-candidates.mjs",
     "publish:cases": "node scripts/publish-approved-cases.mjs"
   },
   "dependencies": {

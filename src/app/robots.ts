@@ -1,12 +1,13 @@
 import type { MetadataRoute } from "next";
+import { absoluteUrl } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: "/api/",
+      disallow: ["/api/", "/operator", "/auth/"],
     },
-    sitemap: "https://goodcase.ai/sitemap.xml",
+    sitemap: absoluteUrl("/sitemap.xml"),
   };
 }

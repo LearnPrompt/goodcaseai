@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CaseCard } from "@/components/case-card";
+import { CreatorAvatar } from "@/components/creator-avatar";
+import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
 import { getCreatorDetailData, getCreatorListData } from "@/lib/cases";
 
@@ -69,106 +72,79 @@ export default async function CreatorDetailPage({
   }
 
   return (
-    <SiteShell footerNote="creator 详情页把方法论、代表案例与原有 case 详情链路串成同一条学习路径。">
-      <section className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
-        <article className="grid gap-4 self-start">
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-[rgba(203,92,47,0.14)] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">
-              {creator.highlightedLabel}
-            </span>
-            {creator.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-black/5 px-3 py-1 text-xs text-[var(--muted)]">
-                {tag}
-              </span>
-            ))}
-          </div>
-          <h1 className="max-w-[10ch] font-[family-name:var(--font-display)] text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl lg:text-6xl">
-            {creator.name}
-          </h1>
-          <p className="max-w-3xl text-sm leading-7 text-[var(--muted)] sm:text-base sm:leading-8">{creator.bio}</p>
-          <div className="flex flex-wrap gap-3 text-sm text-[var(--muted)]">
-            <span>来源：{creator.sourceFootprint.join(" / ")}</span>
-            <span>点赞 {creator.totalLikes}</span>
-            <span>复刻 {creator.totalRemakes}</span>
-            <span>稳定 {creator.averageStabilityScore}</span>
-          </div>
-        </article>
-
-        <article className="rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)] sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            学习切入点
-          </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl leading-[0.95] tracking-[-0.04em]">
-            先从这位 creator 的代表作切进去。
-          </h2>
-          <div className="mt-5 rounded-[18px] border border-[var(--line)] bg-white/50 p-4">
-            <p className="text-sm text-[var(--muted)]">当前主案例</p>
-            <h3 className="mt-2 text-2xl font-semibold text-[var(--ink)]">{creator.heroCase.title}</h3>
-            <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{creator.heroCase.summary}</p>
-            <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--muted)]">
-              <span>{creator.heroCase.category}</span>
-              <span>{creator.heroCase.source}</span>
-              <span>稳定 {creator.heroCase.stabilityScore}</span>
-            </div>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link
-                href={`/cases/${creator.heroCase.slug}`}
-                className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] px-4 text-sm font-semibold transition hover:-translate-y-0.5"
-              >
-                查看代表案例详情
-              </Link>
-              <Link
-                href="/cases"
-                className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] bg-white/50 px-4 text-sm font-semibold transition hover:-translate-y-0.5"
-              >
-                返回案例库
-              </Link>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section className="mt-8 rounded-[22px] border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_60px_rgba(43,28,18,0.12)] sm:p-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+    <SiteShell footerNote="Creator 页只聚合已有 Case，所有判断都能回到作品证据。">
+      <PageHero
+        eyebrow={`Creator · ${creator.highlightedLabel}`}
+        title={creator.name}
+        description={creator.bio}
+      >
+        <div className="col-span-2 flex items-center gap-4">
+          <CreatorAvatar
+            name={creator.name}
+            avatarUrl={creator.avatarUrl}
+            size={72}
+          />
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+            <div className="gc-stat-label">Creator profile</div>
+            <div className="mt-1 text-lg font-semibold">{creator.name}</div>
+          </div>
+        </div>
+        <div>
+          <div className="gc-stat-label">Cases</div>
+          <div className="gc-stat-value">{creator.representativeCases.length}</div>
+          <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
+            {creator.sourceFootprint.join(" / ")}
+          </div>
+        </div>
+        <div>
+          <div className="gc-stat-label">Average</div>
+          <div className="gc-stat-value">{creator.averageStabilityScore}</div>
+          <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
+            Stability
+          </div>
+        </div>
+        <div>
+          <div className="gc-stat-label">Source interactions</div>
+          <div className="gc-stat-value">{creator.totalSourceInteractions || "—"}</div>
+          <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
+            Total
+          </div>
+        </div>
+        <div>
+          <div className="gc-stat-label">Evidence</div>
+          <div className="gc-stat-value">
+            {
+              creator.representativeCases.filter(
+                (item) => item.evidenceLevel === "L1" || item.evidenceLevel === "L2"
+              ).length
+            }
+          </div>
+          <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
+            L1 / L2 Cases
+          </div>
+        </div>
+      </PageHero>
+
+      <section className="gc-section">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--hair)] pb-6">
+          <div>
+            <p className="gc-eyebrow">
               Representative cases
             </p>
-            <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl leading-[0.95] tracking-[-0.04em]">
-              代表案例
+            <h2 className="mt-3 text-4xl font-medium leading-[0.95] tracking-[-0.04em]">
+              从代表 Case 开始判断。
             </h2>
           </div>
           <Link
             href="/creators"
-            className="inline-flex min-h-11 items-center rounded-full border border-[var(--line)] px-4 text-sm font-semibold transition hover:-translate-y-0.5"
+            className="gc-action"
           >
-            查看更多 creator
+            返回创作者索引
           </Link>
         </div>
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
           {creator.representativeCases.map((item) => (
-            <article key={item.slug} className="rounded-[20px] border border-[var(--line)] bg-white/50 p-4">
-              <div className="flex flex-wrap gap-2">
-                <span className="rounded-full bg-[rgba(203,92,47,0.14)] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">
-                  {item.category}
-                </span>
-                <span className="rounded-full bg-black/5 px-3 py-1 text-xs text-[var(--muted)]">
-                  {item.source}
-                </span>
-              </div>
-              <h3 className="mt-4 text-2xl font-semibold leading-tight text-[var(--ink)]">{item.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{item.summary}</p>
-              <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--muted)]">
-                <span>点赞 {item.likedCount}</span>
-                <span>稳定 {item.stabilityScore}</span>
-              </div>
-              <Link
-                href={`/cases/${item.slug}`}
-                className="mt-5 inline-flex min-h-11 items-center rounded-full border border-[var(--line)] px-4 text-sm font-semibold transition hover:-translate-y-0.5"
-              >
-                进入案例详情
-              </Link>
-            </article>
+            <CaseCard key={item.slug} item={item} />
           ))}
         </div>
       </section>

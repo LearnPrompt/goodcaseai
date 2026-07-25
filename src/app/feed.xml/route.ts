@@ -1,8 +1,8 @@
 import { getCaseListData } from "@/lib/cases";
+import { SITE_ORIGIN } from "@/lib/site";
 
 export const revalidate = 300;
 
-const SITE_ORIGIN = "https://goodcase.ai";
 const MAX_ITEMS = 50;
 
 function escapeXml(value: string): string {
@@ -67,7 +67,7 @@ export async function GET() {
     <title>GoodCase.ai</title>
     <link>${SITE_ORIGIN}</link>
     <description>${escapeXml(
-      "creator-first 的 AI 案例学习平台：真实出处、创作者署名、Prompt 预览与推荐模型。"
+      "中文 AI Case 证据库：真实出处、创作者署名、方法与复测证据。"
     )}</description>
     <language>zh-cn</language>
 ${itemsXml}

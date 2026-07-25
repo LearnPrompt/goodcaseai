@@ -6,8 +6,9 @@ import {
   findCreatorBySlug,
   type CreatorItem,
 } from "@/lib/creators";
+import { scoreSourceHeat, type SourceHeatFields } from "@/lib/source-heat";
 import { getServerSupabaseClient, withTimeout } from "@/lib/supabase/server-client";
-import { caseItems, type CaseItem } from "@/lib/mock-data";
+import { caseItems, creatorAvatarUrls, type CaseItem } from "@/lib/mock-data";
 
 type DbCaseRow = {
   id: string;
@@ -15,6 +16,13 @@ type DbCaseRow = {
   title: string;
   category: string;
   source_platform: string | null;
+  source_url: string | null;
+  source_like_count: number | null;
+  source_comment_count: number | null;
+  source_share_count: number | null;
+  source_save_count: number | null;
+  source_published_at: string | null;
+  source_metrics_captured_at: string | null;
   creator_name: string | null;
   summary: string;
   prompt_preview: string | null;
@@ -27,20 +35,24 @@ type DbCaseRow = {
   favorite_score: number;
   recommended_models: string[] | null;
   cost_band: string;
+  evidence_level: string | null;
+  tags: string[] | null;
   created_at: string | null;
 };
 
-type ServerSupabase = ReturnType<typeof getServerSupabaseClient>;
-
-type DerivedCaseFields = {
-  spreadScore: number;
-  spreadScoreNote: string;
+type BaseDerivedCaseFields = {
   promptPublicNote: string;
   promptLoginNotes: string[];
   promptContributionNotes: string[];
   editorNote: string;
   labNote: string[];
 };
+
+type DerivedCaseFields = BaseDerivedCaseFields &
+  SourceHeatFields & {
+    spreadScore: number | null;
+    spreadScoreNote: string;
+  };
 
 export type DisplayCaseItem = CaseItem & DerivedCaseFields;
 
@@ -51,6 +63,7 @@ const CATEGORY_LABELS: Record<CaseItem["category"], string> = {
   video: "AI 视频",
   web: "AI 编程(UI)",
   copy: "AI 文案",
+  hardware: "AI 硬件",
 };
 
 const COST_BAND_LABELS: Record<CaseItem["costBand"], string> = {
@@ -59,9 +72,9 @@ const COST_BAND_LABELS: Record<CaseItem["costBand"], string> = {
   high: "高",
 };
 
-export type CaseFilter = "all" | "video" | "web" | "image";
+export type CaseFilter = "all" | "video" | "web" | "image" | "hardware";
 
-function applyCaseFilter(list: CaseItem[], filter: CaseFilter) {
+function applyCaseFilter<T extends CaseItem>(list: T[], filter: CaseFilter): T[] {
   if (filter === "all") {
     return list;
   }
@@ -85,7 +98,11 @@ export function filterCasesByQuery<
 }
 
 function normalizeCategory(value: string): CaseItem["category"] {
-  return value === "image" || value === "video" || value === "web" || value === "copy"
+  return value === "image" ||
+    value === "video" ||
+    value === "web" ||
+    value === "copy" ||
+    value === "hardware"
     ? value
     : "image";
 }
@@ -144,6 +161,10 @@ function getPromptFocus(category: CaseItem["category"]) {
     return "前三秒钩子、证据段和结尾行动指令能不能稳定复用";
   }
 
+  if (category === "hardware") {
+    return "按下动作、软件反馈、隐私边界与真实设备链路是否同时成立";
+  }
+
   return "主体、风格和材质约束能不能一起站住";
 }
 
@@ -158,6 +179,10 @@ function getLabFocus(category: CaseItem["category"]) {
 
   if (category === "copy") {
     return "开场句式、证据数量与行动指令强度";
+  }
+
+  if (category === "hardware") {
+    return "按键动作、端到端延迟、误触处理与隐私降级";
   }
 
   return "主体描述、风格词强度与布光/材质约束";
@@ -176,45 +201,64 @@ function getLearningAngle(category: CaseItem["category"]) {
     return "结构化叙事与口播节奏";
   }
 
+  if (category === "hardware") {
+    return "实体交互、软件闭环与隐私设计";
+  }
+
   return "视觉结构与风格控制";
 }
 
-function getSpreadScore(item: Pick<CaseItem, "remakeCount" | "favoriteScore" | "likedCount">) {
-  // Beta 阶段还没有独立传播数据源，先用复刻数、喜爱分、点赞数做清晰可解释的临时传播势能信号。
-  return Math.round(item.remakeCount / 25 + item.favoriteScore * 0.35 + item.likedCount / 240);
-}
+function getEditableVariables(category: CaseItem["category"]) {
+  if (category === "video") {
+    return "主体、场景、镜头运动和结尾动作";
+  }
 
-function buildSpreadScoreNote(item: CaseItem) {
-  return `Beta 阶段暂用复刻数 ${item.remakeCount}、喜爱分 ${item.favoriteScore} 与点赞 ${item.likedCount} 派生传播势能，更适合快速发现正在被带着学的内容，不等于真实平台曝光。`;
+  if (category === "web") {
+    return "产品名称、目标用户、页面模块和主按钮";
+  }
+
+  if (category === "copy") {
+    return "受众、痛点、证据和行动指令";
+  }
+
+  if (category === "hardware") {
+    return "触发动作、软件反馈、失败降级和隐私提示";
+  }
+
+  return "主体、场景、材质和配色";
 }
 
 function buildPromptPublicNote(item: CaseItem) {
-  return `公开层先给你看预览，并告诉你为什么值得继续看：这条 ${CATEGORY_LABELS[item.category]} case 更适合观察 ${getPromptFocus(item.category)}。`;
+  return `这条 ${CATEGORY_LABELS[item.category]} Case 值得学的不是某一句“魔法词”，而是它怎样把 ${getPromptFocus(item.category)} 写成一组可以反复调整的约束。`;
 }
 
 function buildPromptLoginNotes(item: CaseItem) {
   const models = item.recommendedModels.slice(0, 2).join(" / ");
 
   return [
-    `适用场景：${item.summary}`,
-    `点赞解锁后优先先试 ${models}，先判断它在 ${getLearningAngle(item.category)} 上是否成立。`,
-    `结构化拆解重点：先看 ${getLabFocus(item.category)}，不要一开始就只盯完整 Prompt。`,
+    "先不改：完整复制提示语，生成一版基线结果。",
+    `只替换：先改 ${getEditableVariables(item.category)}，其余结构保持不动。`,
+    `再对比：优先用 ${models} 起步，每次只改一个变量。`,
   ];
 }
 
 function buildPromptContributionNotes(item: CaseItem) {
+  if (item.resultBreakdown) {
+    return item.resultBreakdown;
+  }
+
   return [
-    "点赞解锁层会放出完整 Prompt、负向约束与更完整记录，方便你直接照着复测。",
-    "当前 Beta 期把“点赞”当作解锁信号：点一下爱心，就能看到完整 Prompt 与更深材料。",
-    `解锁后复看重点：确认 ${getPromptFocus(item.category)} 有没有在完整 Prompt 里被写清楚。`,
+    `观察最终结果里，${getPromptFocus(item.category)} 是否同时成立。`,
+    `把“目标结果 → ${getEditableVariables(item.category)} → 约束条件”抽成模板，后续可复用到同类任务。`,
+    `围绕 ${getLabFocus(item.category)} 做单变量对照，并记录模型、成本和失败结果；重复成立后再沉淀为 Skill。`,
   ];
 }
 
 function buildEditorNote(item: CaseItem) {
-  const strongerSignal = item.favoriteScore >= item.stabilityScore ? "喜爱信号更强" : "稳定信号更强";
   const leadModel = item.recommendedModels[0] || "当前推荐模型";
+  const evidenceLevel = item.evidenceLevel || "L0";
 
-  return `这是一个适合从 ${getLearningAngle(item.category)} 切进去的 case。当前站内信号里，${strongerSignal}：它拿到了 ${item.favoriteScore} 的喜爱分、${item.stabilityScore} 的稳定分，以及 ${item.remakeCount} 次复刻。Beta 版编辑判断会更建议你把它当成“结构样本”来看，而不只是抄一段 Prompt；先理解它为什么在 ${leadModel} 上容易出结果，再决定要不要投入更高成本继续打磨。`;
+  return `这是一个适合从 ${getLearningAngle(item.category)} 切进去的 case。当前证据等级为 ${evidenceLevel}，稳定性参考为 ${item.stabilityScore}；来源互动热度单独按原帖快照计算，不和编辑判断混在一起。更建议你把它当成“结构样本”来看，而不只是抄一段 Prompt；先理解它为什么在 ${leadModel} 上容易出结果，再决定要不要投入更高成本继续打磨。`;
 }
 
 function buildLabNote(item: CaseItem) {
@@ -228,11 +272,11 @@ function buildLabNote(item: CaseItem) {
   ];
 }
 
-function enrichCaseItem(item: CaseItem): DisplayCaseItem {
+function enrichCaseItemBase(item: CaseItem): CaseItem & BaseDerivedCaseFields {
   return {
     ...item,
-    spreadScore: getSpreadScore(item),
-    spreadScoreNote: buildSpreadScoreNote(item),
+    creatorAvatarUrl: item.creatorAvatarUrl || creatorAvatarUrls[item.creator],
+    likedCount: 0,
     promptPublicNote: buildPromptPublicNote(item),
     promptLoginNotes: buildPromptLoginNotes(item),
     promptContributionNotes: buildPromptContributionNotes(item),
@@ -241,44 +285,25 @@ function enrichCaseItem(item: CaseItem): DisplayCaseItem {
   };
 }
 
-async function getLikeCountsByCaseId(supabase: ServerSupabase, caseIds: string[]) {
-  const counts = new Map<string, number>();
+function enrichCaseItems(items: CaseItem[]): DisplayCaseItem[] {
+  return scoreSourceHeat(items.map(enrichCaseItemBase)).map((item) => ({
+    ...item,
+    spreadScore: item.sourceHeatScore,
+    spreadScoreNote:
+      item.sourceHeatScore === null
+        ? "尚无可核验的来源互动快照，传播势能暂不评分。"
+        : "传播势能当前沿用来源热度：先按平台内互动与互动速度归一，再跨平台比较。",
+  }));
+}
 
-  if (!supabase || caseIds.length === 0) {
-    return counts;
-  }
-
-  try {
-    // 数据量小，一次拉出相关点赞行在内存聚合，避免每个 case 各查一次的 N+1。
-    const { data, error } = await withTimeout(
-      supabase
-        .from("case_likes")
-        .select("case_id")
-        .in("case_id", caseIds)
-    );
-
-    if (error || !data) {
-      return counts;
-    }
-
-    for (const row of data) {
-      const caseId = row.case_id;
-      if (typeof caseId === "string" && caseId.length > 0) {
-        counts.set(caseId, (counts.get(caseId) || 0) + 1);
-      }
-    }
-  } catch {
-    // Supabase timeout — return empty counts, caller uses 0
-  }
-
-  return counts;
+function enrichCaseItem(item: CaseItem): DisplayCaseItem {
+  return enrichCaseItems([item])[0];
 }
 
 async function mapDbCaseRowToCaseItem(
-  row: DbCaseRow,
-  likeCounts: Map<string, number>
+  row: DbCaseRow
 ): Promise<CaseItem> {
-  const likedCount = likeCounts.get(row.id) || 0;
+  const fallbackEditorial = caseItems.find((item) => item.slug === row.slug);
   const mediaUrl = await resolveUsableMediaPath(row.media_url);
   const posterUrl = await resolveUsableMediaPath(row.poster_url);
   const mediaType = normalizeMediaType(row.media_kind, row.media_url);
@@ -288,14 +313,27 @@ async function mapDbCaseRowToCaseItem(
     title: row.title,
     category: normalizeCategory(row.category),
     source: row.source_platform || "未知来源",
+    sourceUrl: row.source_url || undefined,
+    sourceLikeCount: row.source_like_count ?? undefined,
+    sourceCommentCount: row.source_comment_count ?? undefined,
+    sourceShareCount: row.source_share_count ?? undefined,
+    sourceSaveCount: row.source_save_count ?? undefined,
+    sourcePublishedAt: row.source_published_at || undefined,
+    sourceMetricsCapturedAt: row.source_metrics_captured_at || undefined,
     creator: row.creator_name || "匿名作者",
+    creatorAvatarUrl:
+      fallbackEditorial?.creatorAvatarUrl ||
+      creatorAvatarUrls[row.creator_name || ""] ||
+      undefined,
     summary: row.summary,
     promptPreview: row.prompt_preview || "该案例暂未提供 Prompt 预览。",
     promptFull: row.prompt_full || row.prompt_preview || "该案例暂未提供完整 Prompt。",
+    promptTranslationZh: fallbackEditorial?.promptTranslationZh,
+    resultBreakdown: fallbackEditorial?.resultBreakdown,
     mediaType,
     mediaUrl,
     posterUrl: mediaType === "video" ? posterUrl : undefined,
-    likedCount,
+    likedCount: 0,
     remakeCount: row.remake_count,
     stabilityScore: row.stability_score,
     favoriteScore: row.favorite_score,
@@ -304,28 +342,27 @@ async function mapDbCaseRowToCaseItem(
         ? row.recommended_models
         : ["待补充模型"],
     costBand: normalizeCostBand(row.cost_band),
+    evidenceLevel:
+      row.evidence_level === "L1" || row.evidence_level === "L2" ? row.evidence_level : "L0",
+    tags: row.tags || [],
     createdAt: row.created_at || undefined,
   };
 }
 
-async function fetchPublishedCases(filter: CaseFilter = "all"): Promise<DisplayCaseItem[] | null> {
+async function fetchPublishedCases(): Promise<DisplayCaseItem[] | null> {
   const supabase = getServerSupabaseClient();
   if (!supabase) {
     return null;
   }
 
   try {
-    let query = supabase
+    const query = supabase
       .from("cases")
       .select(
-        "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, created_at"
+        "id, slug, title, category, source_platform, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, evidence_level, tags, created_at"
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false });
-
-    if (filter !== "all") {
-      query = query.eq("category", filter);
-    }
 
     const { data, error } = await withTimeout(query);
 
@@ -334,13 +371,8 @@ async function fetchPublishedCases(filter: CaseFilter = "all"): Promise<DisplayC
     }
 
     const rows = data as DbCaseRow[];
-    const likeCounts = await getLikeCountsByCaseId(
-      supabase,
-      rows.map((item) => item.id)
-    );
-
-    const items = await Promise.all(rows.map((item) => mapDbCaseRowToCaseItem(item, likeCounts)));
-    return items.map(enrichCaseItem);
+    const items = await Promise.all(rows.map((item) => mapDbCaseRowToCaseItem(item)));
+    return enrichCaseItems(items);
   } catch {
     // Supabase timeout — fall through to return null (caller uses mock data)
     return null;
@@ -348,41 +380,21 @@ async function fetchPublishedCases(filter: CaseFilter = "all"): Promise<DisplayC
 }
 
 export async function getCaseListData(filter: CaseFilter = "all") {
-  const fromDb = await fetchPublishedCases(filter);
+  const fromDb = await fetchPublishedCases();
   if (fromDb) {
-    return fromDb;
+    return applyCaseFilter(fromDb, filter);
   }
 
-  return applyCaseFilter(caseItems, filter).map(enrichCaseItem);
+  return applyCaseFilter(enrichCaseItems(caseItems), filter);
 }
 
 export async function getCaseDetailData(slug: string) {
-  const supabase = getServerSupabaseClient();
-  if (supabase) {
-    try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from("cases")
-          .select(
-            "id, slug, title, category, source_platform, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, created_at"
-          )
-          .eq("slug", slug)
-          .eq("is_published", true)
-          .maybeSingle()
-      );
-
-      if (!error && data) {
-        const likeCounts = await getLikeCountsByCaseId(supabase, [data.id]);
-        const item = await mapDbCaseRowToCaseItem(data as DbCaseRow, likeCounts);
-        return enrichCaseItem(item);
-      }
-    } catch {
-      // Supabase timeout — fall through to mock data
-    }
+  const fromDb = await fetchPublishedCases();
+  if (fromDb) {
+    return fromDb.find((item) => item.slug === slug) || null;
   }
 
-  const fallback = caseItems.find((item) => item.slug === slug);
-  return fallback ? enrichCaseItem(fallback) : null;
+  return enrichCaseItems(caseItems).find((item) => item.slug === slug) || null;
 }
 
 export async function getCaseSlugs(): Promise<string[]> {
@@ -413,8 +425,19 @@ export async function getHomeData() {
   const creators = deriveCreatorsFromCases(list);
 
   const featuredCase = list[0] || enrichCaseItem(caseItems[0]);
-  const spread = [...list].sort((a, b) => b.spreadScore - a.spreadScore).slice(0, 10);
-  const favorite = [...list].sort((a, b) => b.favoriteScore - a.favoriteScore).slice(0, 10);
+  const spread = [...list]
+    .filter((item) => item.spreadScore !== null)
+    .sort((a, b) => (b.spreadScore ?? -1) - (a.spreadScore ?? -1))
+    .slice(0, 10);
+  const sourceHeat = [...list]
+    .filter((item) => item.sourceHeatScore !== null)
+    .sort(
+      (a, b) =>
+        (b.sourceHeatScore ?? -1) - (a.sourceHeatScore ?? -1) ||
+        (b.sourceWeightedInteractionCount ?? -1) -
+          (a.sourceWeightedInteractionCount ?? -1)
+    )
+    .slice(0, 10);
   const stability = [...list].sort((a, b) => b.stabilityScore - a.stabilityScore).slice(0, 10);
 
   return {
@@ -423,7 +446,7 @@ export async function getHomeData() {
     totalCreatorCount: creators.length,
     featuredCreators: creators.slice(0, 4),
     spreadLeaderboard: spread,
-    favoriteLeaderboard: favorite,
+    sourceHeatLeaderboard: sourceHeat,
     stabilityLeaderboard: stability,
   };
 }

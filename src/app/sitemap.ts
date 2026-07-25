@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getCaseSlugs, getCreatorListData } from "@/lib/cases";
-
-const BASE_URL = "https://goodcase.ai";
+import { SITE_ORIGIN } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [caseSlugs, creators] = await Promise.all([
@@ -10,24 +9,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: `${BASE_URL}/`, changeFrequency: "daily", priority: 1 },
-    { url: `${BASE_URL}/cases`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${BASE_URL}/creators`, changeFrequency: "daily", priority: 0.8 },
-    { url: `${BASE_URL}/project-intro`, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${BASE_URL}/changelog`, changeFrequency: "weekly", priority: 0.5 },
-    { url: `${BASE_URL}/connect`, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${BASE_URL}/favorites`, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${BASE_URL}/submit`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${SITE_ORIGIN}/`, changeFrequency: "daily", priority: 1 },
+    { url: `${SITE_ORIGIN}/cases`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_ORIGIN}/creators`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${SITE_ORIGIN}/changelog`, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${SITE_ORIGIN}/connect`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${SITE_ORIGIN}/favorites`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${SITE_ORIGIN}/submit`, changeFrequency: "monthly", priority: 0.4 },
   ];
 
   const caseRoutes: MetadataRoute.Sitemap = caseSlugs.map((slug) => ({
-    url: `${BASE_URL}/cases/${encodeURIComponent(slug)}`,
+    url: `${SITE_ORIGIN}/cases/${encodeURIComponent(slug)}`,
     changeFrequency: "weekly",
     priority: 0.7,
   }));
 
   const creatorRoutes: MetadataRoute.Sitemap = creators.map((creator) => ({
-    url: `${BASE_URL}/creators/${encodeURIComponent(creator.slug)}`,
+    url: `${SITE_ORIGIN}/creators/${encodeURIComponent(creator.slug)}`,
     changeFrequency: "weekly",
     priority: 0.6,
   }));

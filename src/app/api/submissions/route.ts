@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { getAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { buildDedupeKey, normalizeCategory, slugify } from "@/lib/candidate-dedupe";
+import { sendOwnerNotification } from "@/lib/owner-notification";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 5;
@@ -104,18 +105,35 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "too many submissions, try again later" }, { status: 429 });
     }
 
-    // case_candidates 没有 source_url 列，url 落到 media_url（同时参与 dedupe_key）；
-    // source_platform 记来源域名，summary/media_kind 为 not null 列需兜底。
+    const [
+      { data: candidateMatches, error: candidateLookupError },
+      { data: publishedMatches, error: publishedLookupError },
+    ] = await Promise.all([
+      supabase.from("case_candidates").select("id").eq("source_url", url).limit(1),
+      supabase.from("cases").select("id").eq("source_url", url).limit(1),
+    ]);
+
+    if (candidateLookupError || publishedLookupError) {
+      return Response.json({ error: "internal error" }, { status: 500 });
+    }
+
+    if ((candidateMatches?.length ?? 0) > 0 || (publishedMatches?.length ?? 0) > 0) {
+      return Response.json({ ok: true, duplicate: true }, { status: 200 });
+    }
+
     const candidate = {
-      slug: slugify(title),
+      slug: slugify(title, url),
       title,
       category,
       source_platform: parsedUrl.hostname || null,
+      source_url: url,
       creator_name: creatorName || null,
       summary: summary || "暂无摘要",
       prompt_full: prompt || null,
       media_kind: category === "video" ? "video" : "image",
-      media_url: url,
+      media_url: "/media/placeholder.png",
+      evidence_level: "L0",
+      tags: [],
       status: "pending",
       import_batch_id: "web-submit",
       submitted_via: "web",
@@ -127,18 +145,51 @@ export async function POST(request: NextRequest) {
       title: candidate.title,
       creator_name: candidate.creator_name,
       source_platform: candidate.source_platform,
+      source_url: candidate.source_url,
       media_url: candidate.media_url,
     });
 
-    const { error: upsertError } = await supabase
+    const { data: inserted, error: insertError } = await supabase
       .from("case_candidates")
-      .upsert({ ...candidate, dedupe_key: dedupeKey }, { onConflict: "dedupe_key" });
+      .insert({ ...candidate, dedupe_key: dedupeKey })
+      .select("id, created_at")
+      .single();
 
-    if (upsertError) {
+    if (insertError?.code === "23505") {
+      return Response.json({ ok: true, duplicate: true }, { status: 200 });
+    }
+
+    if (
+      insertError ||
+      !inserted ||
+      typeof inserted.id !== "string" ||
+      typeof inserted.created_at !== "string"
+    ) {
       return Response.json({ error: "internal error" }, { status: 500 });
     }
 
-    return Response.json({ ok: true }, { status: 200 });
+    const notification = await sendOwnerNotification({
+      kind: "case_submission",
+      receiptId: inserted.id,
+      title,
+      lines: [
+        `分类：${category}`,
+        `作者：${creatorName || "未填写"}`,
+        `原始链接：${url}`,
+        `联系方式：${contact || "未填写"}`,
+        `Prompt：${prompt ? "已提供" : "未提供"}`,
+      ],
+      createdAt: inserted.created_at,
+    });
+
+    return Response.json(
+      {
+        ok: true,
+        receiptId: inserted.id,
+        ownerNotification: notification.status,
+      },
+      { status: 200 }
+    );
   } catch {
     return Response.json({ error: "internal error" }, { status: 500 });
   }

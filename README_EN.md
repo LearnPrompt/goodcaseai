@@ -9,7 +9,7 @@ Website: [goodcase.ai](https://goodcase.ai)
 
 The problem with viral AI cases is that they scroll past and disappear. You see a stunning AI video on X, hit like, and three days later you want to reproduce it — no prompt to be found, no idea which model was used, no clue what else the creator has made.
 
-GoodCase.ai turns this into a complete pipeline: track AI cases while they are spreading, verify stability by re-running the same prompt across models, see who keeps delivering, and distill recurring creative patterns into reusable skill packs.
+GoodCase.ai puts the work, creator, method, original source, and reproduction evidence back into one Case. Full prompts are public and no account is required.
 
 **See what actually works. Follow the people who keep shipping.**
 
@@ -17,19 +17,17 @@ GoodCase.ai turns this into a complete pipeline: track AI cases while they are s
 
 ![GoodCase.ai homepage](public/readme/home.png)
 
-![Love Ranking and Stability Ranking](public/readme/rankings.png)
+![Source Heat Ranking and Stability Ranking](public/readme/rankings.png)
 
-## Four Layers
+## One object, three derived views
 
 **Case** is the entry point. Every case ships with the full prompt, model stack and media assets, captured from X, Xiaohongshu, Bilibili and wherever things are spreading right now.
 
 **Creator** links each case back to a person. One viral hit can be luck; a creator who consistently ships good work is worth following long term.
 
-**Lab** does the verification. Same prompt, same variables, re-run across different models, logging stability scores, drift and cost. The Love Ranking reads audience preference; the Stability Ranking reads model reliability.
+**Lab** is not a separate product. Reproduction notes, stability, drift, and cost stay on the relevant Case page.
 
-**Skill** is the distillation. When the same creator keeps producing the same class of pattern, it gets promoted into a skill pack you can use directly.
-
-![Skill packs](public/readme/skill.png)
+**Skill** is only distilled after a pattern holds across multiple Cases. It is not a separate content product or top-level page this month.
 
 ![Creators](public/readme/creator.png)
 
@@ -44,18 +42,28 @@ npm run dev
 
 Open http://localhost:3000.
 
-The data layer runs on Supabase. Copy `.env.example` to `.env.local` and fill in the three variables; the schema lives in `supabase/schema.sql`. It also runs without Supabase — pages fall back to built-in sample cases, so you can look around before wiring up a database.
+The data layer runs on Supabase. Copy `.env.example` to `.env.local`, then configure Supabase and the public site origin. The schema lives in `supabase/schema.sql`. Without Supabase, pages fall back to built-in cases.
 
 ## Content Pipeline
 
-A Feishu (Lark) Base serves as the editorial backend. Cases marked as approved get synced into Supabase by a script:
+Automated discovery and human publishing stay separate. The shadow supply run only writes local reports:
 
 ```bash
-node scripts/sync-feishu-cases.mjs --dry-run   # preview
-node scripts/sync-feishu-cases.mjs             # sync
+npm run supply:shadow
 ```
 
-The homepage revalidates every 5 minutes. Put the sync script on a daily cron and the whole loop runs itself.
+Human-confirmed candidates then follow an import, review, and publish flow:
+
+```bash
+npm run import:candidates -- --file=tmp/case-candidates.json
+npm run review:candidates
+npm run review:candidates -- --action=approve --id=<candidate-uuid> --note="Source and method verified" --evidence-level=L1 --tags=video,verified
+# Or reject it
+npm run review:candidates -- --action=reject --id=<candidate-uuid> --note="Creator or original source could not be verified"
+npm run publish:cases
+```
+
+Only `pending` candidates can be reviewed, and every decision records its note, evidence level, and timestamp. Import and publish are append-only by default. Interrupted publishes can safely resume through `source_candidate_id`. Updating an unbound Case with the same slug requires the explicit `--allow-update` flag; a Case already bound to another candidate can never be reassigned.
 
 ## Stack
 
@@ -63,4 +71,4 @@ Next.js App Router, Tailwind CSS, Supabase, deployed on Vercel. Visually: one ac
 
 ## Credits
 
-GoodCase.ai is part of the [LearnPrompt](https://www.learnprompt.pro) ecosystem, maintained by [Carl](https://github.com/LearnPrompt). Stay curious.
+GoodCase.ai is maintained by [Carl](https://github.com/LearnPrompt). [LearnPrompt](https://www.learnprompt.pro) remains an external learning destination rather than a merged content library.

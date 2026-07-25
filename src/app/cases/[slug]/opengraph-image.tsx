@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getCaseDetailData } from "@/lib/cases";
 import { loadChineseFont } from "@/lib/og-font";
+import { SITE_HOST } from "@/lib/site";
 
 export const revalidate = 300;
 
@@ -16,6 +17,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   video: "AI 视频",
   web: "AI 编程(UI)",
   copy: "AI 文案",
+  hardware: "AI 硬件",
 };
 
 const CATEGORY_LABELS_EN: Record<string, string> = {
@@ -23,6 +25,7 @@ const CATEGORY_LABELS_EN: Record<string, string> = {
   video: "AI VIDEO",
   web: "AI CODING (UI)",
   copy: "AI COPY",
+  hardware: "AI HARDWARE",
 };
 
 export default async function Image({
@@ -77,7 +80,7 @@ export default async function Image({
               style={{
                 width: "18px",
                 height: "18px",
-                backgroundColor: "#ff5733",
+                backgroundColor: "#c2410c",
               }}
             />
             <div
@@ -94,8 +97,8 @@ export default async function Image({
           <div
             style={{
               display: "flex",
-              border: "2px solid #ff5733",
-              color: "#ff5733",
+              border: "2px solid #c2410c",
+              color: "#c2410c",
               fontSize: "22px",
               padding: "8px 20px",
               letterSpacing: "0.08em",
@@ -128,9 +131,9 @@ export default async function Image({
           }}
         >
           <div style={{ fontSize: "24px", color: "#a3a39e", display: "flex" }}>
-            {fontData ? "点赞解锁完整 Prompt" : "Unlock the full prompt"}
+            {fontData ? "完整 Prompt 公开" : "Full prompt is public"}
           </div>
-          <div style={{ fontSize: "24px", color: "#6b6b66" }}>goodcase.ai</div>
+          <div style={{ fontSize: "24px", color: "#6b6b66" }}>{SITE_HOST}</div>
         </div>
       </div>
     ),

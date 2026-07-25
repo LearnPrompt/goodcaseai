@@ -43,4 +43,5 @@ next-env.d.ts
 # local temp artifacts
 tmp/
 .hermes/
+.partner/
 logs/
