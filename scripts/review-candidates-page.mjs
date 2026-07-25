@@ -1,5 +1,9 @@
 import http from "node:http";
 import { createClient } from "@supabase/supabase-js";
+import {
+  buildDailyReviewQueue,
+  sourceInteractionCount,
+} from "./review/lib/review-queue.mjs";
 
 function getArg(name, fallback) {
   const prefix = `${name}=`;
@@ -33,13 +37,16 @@ function renderMedia(item) {
 
 function renderCard(item, index) {
   const prompt = escapeHtml(item.prompt_full || item.prompt_preview);
+  const code = `D${String(index + 1).padStart(2, "0")}`;
+  const candidateId = escapeHtml(item.id);
+  const shortId = escapeHtml(String(item.id).slice(0, 8));
   return `
-    <article class="card" id="case-${index + 1}">
+    <article class="card" id="case-${code}" data-card data-candidate-id="${candidateId}" data-code="${code}">
       <div class="media">${renderMedia(item)}</div>
       <div class="content">
         <div class="eyebrow">
-          <label class="select"><input type="checkbox" data-select="${index + 1}"> 选择</label>
-          <span class="number">#${index + 1}</span>
+          <span class="number">${code}</span>
+          <span>ID ${shortId}</span>
           <span class="status">${escapeHtml(item.status)}</span>
           <span>${escapeHtml(item.evidence_level)}</span>
           <span>${escapeHtml(item.source_platform)}</span>
@@ -52,10 +59,14 @@ function renderCard(item, index) {
           <span>评论 ${metric(item.source_comment_count)}</span>
           <span>转发 ${metric(item.source_share_count)}</span>
           <span>收藏 ${metric(item.source_save_count)}</span>
+          <span>互动合计 ${metric(sourceInteractionCount(item))}</span>
         </div>
         <div class="actions">
           <a href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">查看 X 原帖 ↗</a>
-          <button type="button" data-copy="通过 #${index + 1}">复制“通过 #${index + 1}”</button>
+          <button type="button" class="approve" data-decision="approve">通过</button>
+          <button type="button" class="reject" data-decision="reject">拒绝</button>
+          <button type="button" class="clear" data-decision="clear">清除</button>
+          <strong class="decision" data-decision-label>未判断</strong>
         </div>
         <details>
           <summary>查看完整 Prompt</summary>
@@ -65,8 +76,9 @@ function renderCard(item, index) {
     </article>`;
 }
 
-function renderPage(rows, batch) {
+function renderPage(rows, batch, stats) {
   const cards = rows.map(renderCard).join("");
+  const batchJson = JSON.stringify(batch);
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -85,15 +97,17 @@ function renderPage(rows, batch) {
     .toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:12px; }
     .toolbar button { padding:7px 11px; background:transparent; }
     .toolbar .copy-selection { border-color:var(--orange); color:var(--orange); }
+    .progress { font:700 12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; }
     main { width:min(1280px,92vw); margin:30px auto 80px; display:grid; gap:24px; }
     .card { display:grid; grid-template-columns:minmax(300px,44%) 1fr; min-height:430px; background:#fff; border:1px solid var(--ink); box-shadow:8px 8px 0 var(--ink); overflow:hidden; }
+    .card[data-state="approve"] { box-shadow:8px 8px 0 #16794b; }
+    .card[data-state="reject"] { box-shadow:8px 8px 0 #b42318; opacity:.82; }
     .media { min-height:430px; background:#151515; display:grid; place-items:center; }
     .media img,.media video { width:100%; height:100%; max-height:680px; object-fit:contain; background:#151515; }
     .media-empty { color:#888; }
     .content { padding:28px; min-width:0; }
     .eyebrow,.metrics,.actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
     .eyebrow span,.metrics span { border:1px solid var(--line); padding:5px 9px; font-size:12px; text-transform:uppercase; }
-    .select { display:flex; gap:6px; align-items:center; padding:4px 8px; border:1px solid var(--line); font-size:12px; font-weight:700; }
     .eyebrow .number { border-color:var(--ink); background:var(--ink); color:#fff; font-weight:800; }
     .eyebrow .status { border-color:var(--orange); color:var(--orange); font-weight:800; }
     h2 { margin:18px 0 8px; font-size:clamp(26px,3vw,44px); line-height:1.05; letter-spacing:-.04em; }
@@ -103,6 +117,9 @@ function renderPage(rows, batch) {
     .actions { margin:18px 0; }
     a,button { appearance:none; border:1px solid var(--ink); background:#fff; color:var(--ink); padding:10px 14px; font:inherit; font-weight:700; text-decoration:none; cursor:pointer; }
     a:hover,button:hover { background:var(--orange); color:#fff; border-color:var(--orange); }
+    button.approve { border-color:#16794b; color:#16794b; }
+    button.reject { border-color:#b42318; color:#b42318; }
+    .decision { min-width:68px; font-size:13px; }
     details { margin-top:20px; border-top:1px solid var(--line); padding-top:16px; }
     summary { cursor:pointer; font-weight:800; }
     pre { margin:16px 0 0; padding:16px; max-height:420px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; background:#f5f5f5; border:1px solid var(--line); font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; }
@@ -118,15 +135,16 @@ function renderPage(rows, batch) {
 <body>
   <header>
     <div class="brand">
-      <h1>GOODCASE <strong>候选审核</strong></h1>
-      <span>${rows.length} 条 · ${escapeHtml(batch)}</span>
+      <h1>GOODCASE <strong>每日快审</strong></h1>
+      <span>${rows.length} / ${stats.totalPending} 条 · ${escapeHtml(batch)}</span>
     </div>
-    <p class="notice">只读页面：状态以卡片为准，浏览和勾选都不会自动上线。请检查作品、原帖与 Prompt，再复制已选编号交给 Codex 审核。</p>
+    <p class="notice">只读页面：本轮优先展示字段完整、原帖互动较高且作者不过度重复的候选。通过/拒绝只保存在当前浏览器，不会写数据库或自动上线。</p>
     <div class="toolbar">
       <button type="button" id="previous-page">← 上一页</button>
       <strong id="page-status"></strong>
       <button type="button" id="next-page">下一页 →</button>
-      <button type="button" class="copy-selection" id="copy-selection">复制已选通过编号</button>
+      <button type="button" class="copy-selection" id="copy-selection">复制本轮审核结果</button>
+      <span class="progress" id="decision-progress"></span>
     </div>
   </header>
   <main>${cards}</main>
@@ -157,21 +175,62 @@ function renderPage(rows, batch) {
       currentPage = Math.min(totalPages, currentPage + 1);
       renderPage();
     });
-    document.querySelector("#copy-selection").addEventListener("click", async (event) => {
-      const selected = [...document.querySelectorAll("[data-select]:checked")]
-        .map((input) => "#" + input.dataset.select);
-      const text = selected.length ? "通过 " + selected.join("、") : "尚未选择候选";
-      await navigator.clipboard.writeText(text);
-      event.currentTarget.textContent = "已复制：" + text;
-    });
-    for (const button of document.querySelectorAll("[data-copy]")) {
-      button.addEventListener("click", async () => {
-        const text = button.dataset.copy;
-        await navigator.clipboard.writeText(text);
-        button.textContent = "已复制：" + text;
+
+    const storageKey = "goodcase-review:" + ${batchJson};
+    let decisions = {};
+    try {
+      decisions = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    } catch {
+      decisions = {};
+    }
+
+    function renderDecisions() {
+      let approved = 0;
+      let rejected = 0;
+      for (const card of cards) {
+        const state = decisions[card.dataset.candidateId] || "";
+        card.dataset.state = state;
+        const label = card.querySelector("[data-decision-label]");
+        label.textContent =
+          state === "approve" ? "已通过" : state === "reject" ? "已拒绝" : "未判断";
+        approved += state === "approve" ? 1 : 0;
+        rejected += state === "reject" ? 1 : 0;
+      }
+      document.querySelector("#decision-progress").textContent =
+        "已判断 " + (approved + rejected) + " / ${rows.length} · 通过 " +
+        approved + " · 拒绝 " + rejected;
+      localStorage.setItem(storageKey, JSON.stringify(decisions));
+    }
+
+    for (const button of document.querySelectorAll("[data-decision]")) {
+      button.addEventListener("click", () => {
+        const card = button.closest("[data-card]");
+        const decision = button.dataset.decision;
+        if (decision === "clear") {
+          delete decisions[card.dataset.candidateId];
+        } else {
+          decisions[card.dataset.candidateId] = decision;
+        }
+        renderDecisions();
       });
     }
+
+    document.querySelector("#copy-selection").addEventListener("click", async (event) => {
+      const approved = cards
+        .filter((card) => decisions[card.dataset.candidateId] === "approve")
+        .map((card) => card.dataset.code + ":" + card.dataset.candidateId.slice(0, 8));
+      const rejected = cards
+        .filter((card) => decisions[card.dataset.candidateId] === "reject")
+        .map((card) => card.dataset.code + ":" + card.dataset.candidateId.slice(0, 8));
+      const text =
+        "批次 " + ${batchJson} +
+        "\\n通过 " + (approved.join("、") || "无") +
+        "\\n拒绝 " + (rejected.join("、") || "无");
+      await navigator.clipboard.writeText(text);
+      event.currentTarget.textContent = "审核结果已复制";
+    });
     renderPage();
+    renderDecisions();
   </script>
 </body>
 </html>`;
@@ -181,12 +240,20 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const batch = getArg("--batch", "youmind-2026-07-25");
 const port = Number(getArg("--port", "4318"));
+const limit = Number(getArg("--limit", "20"));
+const maxPerCreator = Number(getArg("--max-per-creator", "2"));
 
 if (!url || !serviceRole) {
   throw new Error("缺少 NEXT_PUBLIC_SUPABASE_URL 或 SUPABASE_SERVICE_ROLE_KEY。");
 }
 if (!Number.isInteger(port) || port < 1024 || port > 65535) {
   throw new Error(`无效端口：${port}`);
+}
+if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
+  throw new Error(`无效 limit：${limit}`);
+}
+if (!Number.isInteger(maxPerCreator) || maxPerCreator < 1 || maxPerCreator > 20) {
+  throw new Error(`无效 max-per-creator：${maxPerCreator}`);
 }
 
 const supabase = createClient(url, serviceRole, {
@@ -195,7 +262,7 @@ const supabase = createClient(url, serviceRole, {
 const { data, error } = await supabase
   .from("case_candidates")
   .select(
-    "id,title,status,evidence_level,source_platform,source_url,creator_name,summary,prompt_preview,prompt_full,media_kind,media_url,poster_url,source_like_count,source_comment_count,source_share_count,source_save_count,created_at"
+    "id,title,status,evidence_level,source_platform,source_url,source_metrics_captured_at,creator_name,summary,prompt_preview,prompt_full,media_kind,media_url,poster_url,source_like_count,source_comment_count,source_share_count,source_save_count,created_at"
   )
   .eq("import_batch_id", batch)
   .order("created_at", { ascending: true });
@@ -207,7 +274,14 @@ if (!data?.length) {
   throw new Error(`批次没有候选：${batch}`);
 }
 
-const page = renderPage(data, batch);
+const queue = buildDailyReviewQueue(data, { limit, maxPerCreator });
+if (!queue.rows.length) {
+  throw new Error(
+    `批次没有可快审候选：pending=${queue.totalPending}, ready=${queue.totalReady}`
+  );
+}
+
+const page = renderPage(queue.rows, batch, queue);
 const server = http.createServer((request, response) => {
   if (request.url !== "/" && request.url !== "/favicon.ico") {
     response.writeHead(404).end("Not Found");
@@ -228,5 +302,7 @@ const server = http.createServer((request, response) => {
 });
 
 server.listen(port, "127.0.0.1", () => {
-  console.log(`GoodCase 候选审核页：http://127.0.0.1:${port}`);
+  console.log(
+    `GoodCase 每日快审页：http://127.0.0.1:${port}（${queue.rows.length}/${queue.totalPending}，排除 ${queue.totalExcluded}）`
+  );
 });
