@@ -18,6 +18,18 @@ function hasUsefulText(value, minimumLength = 2) {
   return typeof value === "string" && value.trim().length >= minimumLength;
 }
 
+function hasPublishableMedia(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return false;
+  }
+
+  const normalized = value.trim();
+  return (
+    normalized !== "/media/placeholder.png" &&
+    (normalized.startsWith("/media/") || hasHttpUrl(normalized))
+  );
+}
+
 export function parseTags(value) {
   if (!value) {
     return [];
@@ -70,6 +82,9 @@ export function validateReview(candidate, input) {
       !hasUsefulText(candidate.prompt_preview, 12)
     ) {
       errors.push("缺少公开 Prompt 或可复现方法");
+    }
+    if (!hasPublishableMedia(candidate.media_url)) {
+      errors.push("缺少可公开展示的真实媒体，不能使用占位图");
     }
   }
 

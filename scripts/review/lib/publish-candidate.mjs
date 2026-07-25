@@ -74,3 +74,51 @@ export function decidePublish({
     caseId: existingBySlug.id,
   };
 }
+
+export function validatePublishCandidate(candidate) {
+  const errors = [];
+  if (candidate.status !== "approved") {
+    errors.push(`只有 approved 候选可发布，当前状态=${candidate.status || "unknown"}`);
+  }
+  if (!["L1", "L2"].includes(candidate.evidence_level)) {
+    errors.push("发布必须是 L1 或 L2 证据");
+  }
+  try {
+    const source = new URL(candidate.source_url);
+    if (source.protocol !== "http:" && source.protocol !== "https:") {
+      errors.push("原始来源必须是 http(s) URL");
+    }
+  } catch {
+    errors.push("缺少有效原始来源");
+  }
+  if (
+    typeof candidate.media_url !== "string" ||
+    !candidate.media_url.trim() ||
+    candidate.media_url === "/media/placeholder.png"
+  ) {
+    errors.push("缺少真实媒体");
+  }
+  if (
+    typeof candidate.summary !== "string" ||
+    candidate.summary.trim().length < 12
+  ) {
+    errors.push("摘要不足");
+  }
+  if (
+    !(
+      typeof candidate.prompt_full === "string" &&
+      candidate.prompt_full.trim().length >= 12
+    ) &&
+    !(
+      typeof candidate.prompt_preview === "string" &&
+      candidate.prompt_preview.trim().length >= 12
+    )
+  ) {
+    errors.push("缺少公开 Prompt 或可复现方法");
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+  };
+}

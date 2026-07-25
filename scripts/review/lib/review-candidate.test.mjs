@@ -14,6 +14,7 @@ const validCandidate = {
   summary: "这是一段足够说明作品结果与学习价值的案例摘要。",
   prompt_full: "Use the supplied reference and reproduce the documented result.",
   prompt_preview: null,
+  media_url: "/media/example.mp4",
   evidence_level: "L1",
   tags: ["video"],
 };
@@ -60,6 +61,22 @@ test("approve requires a public prompt or reproducible method", () => {
   );
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /Prompt/);
+});
+
+test("approve rejects placeholder media", () => {
+  const result = validateReview(
+    {
+      ...validCandidate,
+      media_url: "/media/placeholder.png",
+    },
+    {
+      action: "approve",
+      note: "来源已核对",
+      evidenceLevel: "L1",
+    }
+  );
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /占位图/);
 });
 
 test("reject only requires a pending candidate and review note", () => {

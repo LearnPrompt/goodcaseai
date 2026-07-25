@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   buildCasePayload,
   decidePublish,
+  validatePublishCandidate,
 } from "./publish-candidate.mjs";
 
 test("buildCasePayload carries the source candidate id and evidence", () => {
@@ -110,4 +111,30 @@ test("allow-update cannot steal a case owned by another candidate", () => {
   });
   assert.equal(result.action, "conflict");
   assert.match(result.reason, /禁止改绑/);
+});
+
+test("publishing requires approved, traceable, non-placeholder evidence", () => {
+  const valid = {
+    status: "approved",
+    evidence_level: "L1",
+    source_url: "https://example.com/original",
+    media_url: "/media/example.mp4",
+    summary: "这是一段足够说明价值的案例摘要。",
+    prompt_full: "A reproducible prompt with enough detail.",
+    prompt_preview: null,
+  };
+  assert.equal(validatePublishCandidate(valid).ok, true);
+
+  const invalid = validatePublishCandidate({
+    ...valid,
+    status: "pending",
+    evidence_level: "L0",
+    source_url: null,
+    media_url: "/media/placeholder.png",
+  });
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.errors.join("\n"), /approved/);
+  assert.match(invalid.errors.join("\n"), /L1 或 L2/);
+  assert.match(invalid.errors.join("\n"), /原始来源/);
+  assert.match(invalid.errors.join("\n"), /真实媒体/);
 });
