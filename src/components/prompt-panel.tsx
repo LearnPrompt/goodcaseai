@@ -1,4 +1,8 @@
 import { PromptViewer } from "@/components/prompt-viewer";
+import {
+  formatStabilityScore,
+  hasMeasuredStability,
+} from "@/lib/stability";
 
 export function PromptPanel({
   promptPreview,
@@ -50,7 +54,10 @@ export function PromptPanel({
             <dl className="mt-4 grid gap-2 text-sm leading-6">
               <div className="flex justify-between gap-4 border-t border-[var(--concrete)] pt-2">
                 <dt className="text-[var(--muted)]">稳定度</dt>
-                <dd className="font-semibold">{stabilityScore} / 100</dd>
+                <dd className="font-semibold">
+                  {formatStabilityScore(stabilityScore)}
+                  {hasMeasuredStability(stabilityScore) ? " / 100" : ""}
+                </dd>
               </div>
               <div className="flex justify-between gap-4 border-t border-[var(--concrete)] pt-2">
                 <dt className="text-[var(--muted)]">成本</dt>

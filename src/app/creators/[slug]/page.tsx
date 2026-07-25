@@ -6,6 +6,7 @@ import { CreatorAvatar } from "@/components/creator-avatar";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
 import { getCreatorDetailData, getCreatorListData } from "@/lib/cases";
+import { formatStabilityScore } from "@/lib/stability";
 
 export const revalidate = 300;
 
@@ -98,7 +99,9 @@ export default async function CreatorDetailPage({
         </div>
         <div>
           <div className="gc-stat-label">Average</div>
-          <div className="gc-stat-value">{creator.averageStabilityScore}</div>
+          <div className="gc-stat-value">
+            {formatStabilityScore(creator.averageStabilityScore)}
+          </div>
           <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
             Stability
           </div>

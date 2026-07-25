@@ -1,4 +1,5 @@
 import type { CaseItem } from "@/lib/mock-data";
+import { averageMeasuredStability } from "@/lib/stability";
 
 export type CreatorCaseItem = CaseItem & {
   sourceHeatScore: number | null;
@@ -13,7 +14,7 @@ export type CreatorItem = {
   primaryCategory: CaseItem["category"];
   sourceFootprint: string[];
   totalSourceInteractions: number;
-  averageStabilityScore: number;
+  averageStabilityScore: number | null;
   averageSourceHeatScore: number | null;
   tags: string[];
   highlightedLabel: "编辑精选" | "值得学习";
@@ -51,7 +52,7 @@ function buildCreatorBio(
   category: CaseItem["category"],
   sources: string[],
   heroCase: CaseItem,
-  stabilityScore: number,
+  stabilityScore: number | null,
   sourceHeatScore: number | null
 ) {
   const primarySource = sources[0] || "多个平台";
@@ -61,20 +62,20 @@ function buildCreatorBio(
   const footprint = secondSource ? `${primarySource}和${secondSource}两头都在更新` : `长期扎根${primarySource}`;
   const costPhrase =
     heroCase.costBand === "low" ? "成本压得低" : heroCase.costBand === "high" ? "愿意为质感砸成本" : "成本控制在中等区间";
+  const stabilityPhrase =
+    stabilityScore === null ? "稳定度待复测" : `复现稳定分 ${stabilityScore}%`;
   const signalPhrase =
-    sourceHeatScore === null
-      ? `复现稳定分 ${stabilityScore}%`
-      : `来源热度 ${sourceHeatScore}`;
+    sourceHeatScore === null ? stabilityPhrase : `来源热度 ${sourceHeatScore}`;
 
   const templatesByCategory: Record<CaseItem["category"], Array<(n: string) => string>> = {
     image: [
       (n) => `${n} 主攻 AI 生图，代表作《${heroTitle}》当前${signalPhrase}，${footprint}，惯用 ${leadModel} 出图。`,
-      (n) => `${n} 的图不追求花哨，靠 ${leadModel} 把布光和质感做扎实，《${heroTitle}》复现稳定分 ${stabilityScore}%。`,
+      (n) => `${n} 的图不追求花哨，靠 ${leadModel} 把布光和质感做扎实，《${heroTitle}》${stabilityPhrase}。`,
       (n) => `${n} ${footprint}，出图节奏很稳，《${heroTitle}》是目前的代表作，${costPhrase}。`,
     ],
     video: [
       (n) => `${n} 短视频节奏抓得准，《${heroTitle}》靠 ${leadModel} 做出转场，当前${signalPhrase}，${footprint}。`,
-      (n) => `${n} ${footprint}，镜头语言干净，代表作《${heroTitle}》复现稳定分 ${stabilityScore}%。`,
+      (n) => `${n} ${footprint}，镜头语言干净，代表作《${heroTitle}》${stabilityPhrase}。`,
       (n) => `${n} 的视频胜在节奏感，《${heroTitle}》用 ${leadModel} 跑出来的，${costPhrase}。`,
     ],
     web: [
@@ -147,8 +148,8 @@ export function deriveCreatorsFromCases(caseList: CreatorCaseItem[]): CreatorIte
         (sum, item) => sum + (item.sourceInteractionCount ?? 0),
         0
       );
-      const averageStabilityScore = Math.round(
-        items.reduce((sum, item) => sum + item.stabilityScore, 0) / items.length
+      const averageStabilityScore = averageMeasuredStability(
+        items.map((item) => item.stabilityScore)
       );
       const averageSourceHeatScore =
         sourceHeatScores.length > 0
@@ -159,7 +160,8 @@ export function deriveCreatorsFromCases(caseList: CreatorCaseItem[]): CreatorIte
           : null;
       const highlightedLabel =
         averageSourceHeatScore !== null &&
-        averageSourceHeatScore >= averageStabilityScore
+        (averageStabilityScore === null ||
+          averageSourceHeatScore >= averageStabilityScore)
           ? "编辑精选"
           : "值得学习";
       const avatarUrl = heroCase.creatorAvatarUrl || items.find((item) => item.creatorAvatarUrl)?.creatorAvatarUrl;
@@ -190,11 +192,11 @@ export function deriveCreatorsFromCases(caseList: CreatorCaseItem[]): CreatorIte
     .sort((a, b) => {
       const scoreA =
         (a.averageSourceHeatScore ?? 0) +
-        a.averageStabilityScore +
+        (a.averageStabilityScore ?? 0) +
         a.totalSourceInteractions / 100;
       const scoreB =
         (b.averageSourceHeatScore ?? 0) +
-        b.averageStabilityScore +
+        (b.averageStabilityScore ?? 0) +
         b.totalSourceInteractions / 100;
       return scoreB - scoreA;
     });
