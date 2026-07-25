@@ -12,7 +12,7 @@ export function CaseMedia({
   title: string;
 }) {
   return (
-    <article className="overflow-hidden rounded-[24px] border border-[var(--line)] bg-[var(--panel)] shadow-[0_20px_60px_rgba(43,28,18,0.12)] xl:sticky xl:top-24">
+    <article className="overflow-hidden border border-[var(--hair)] bg-[var(--ink)] xl:sticky xl:top-24">
       <div className="relative aspect-[4/3] min-h-[240px] overflow-hidden bg-[#e9e1d5] sm:min-h-[320px] lg:aspect-[16/10] xl:aspect-[4/5] xl:min-h-[520px]">
         {mediaType === "image" ? (
           <Image
@@ -25,11 +25,10 @@ export function CaseMedia({
         ) : (
           <video
             muted
-            loop
-            autoPlay
             playsInline
             preload="metadata"
             poster={posterUrl}
+            controls
             className="h-full w-full object-cover"
           >
             <source src={mediaUrl} type="video/mp4" />

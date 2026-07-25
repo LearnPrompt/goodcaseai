@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
 import { FavoritesList } from "@/components/favorites-list";
 
@@ -12,17 +13,16 @@ export const metadata: Metadata = {
 
 export default function FavoritesPage() {
   return (
-    <SiteShell footerNote="收藏保存在本机浏览器，登录体系接入后会升级为跨设备同步。">
-      <section className="mb-7 grid gap-4 sm:mb-8">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-          Favorites
-        </p>
-        <h1 className="max-w-[13ch] font-[family-name:var(--font-display)] text-4xl leading-[0.95] tracking-[-0.04em] sm:text-5xl lg:text-6xl xl:text-7xl">
-          我的收藏
-        </h1>
-      </section>
+    <SiteShell footerNote="收藏保存在本机浏览器，不要求登录，也不会上传个人书架。">
+      <PageHero
+        eyebrow="Favorites · 本地书架"
+        title="把值得复看的 Case 留在手边。"
+        description="收藏只是个人工作台，不生成另一套内容。每条收藏仍然回到同一个 Case、作者、Prompt 和复测记录。"
+      />
 
-      <FavoritesList />
+      <div className="py-7">
+        <FavoritesList />
+      </div>
     </SiteShell>
   );
 }

@@ -1,6 +1,5 @@
 import type { DisplayCaseItem } from "@/lib/cases";
-
-const SITE_ORIGIN = "https://goodcase.ai";
+import { SITE_ORIGIN } from "@/lib/site";
 
 export const PUBLIC_API_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
@@ -27,6 +26,18 @@ export function toPublicListItem(item: DisplayCaseItem) {
     title: item.title,
     category: item.category,
     source: item.source,
+    sourceUrl: item.sourceUrl || null,
+    sourceLikeCount: item.sourceLikeCount ?? null,
+    sourceCommentCount: item.sourceCommentCount ?? null,
+    sourceShareCount: item.sourceShareCount ?? null,
+    sourceSaveCount: item.sourceSaveCount ?? null,
+    sourcePublishedAt: item.sourcePublishedAt || null,
+    sourceMetricsCapturedAt: item.sourceMetricsCapturedAt || null,
+    sourceInteractionCount: item.sourceInteractionCount,
+    sourceWeightedInteractionCount: item.sourceWeightedInteractionCount,
+    sourceInteractionVelocity: item.sourceInteractionVelocity,
+    sourceMetricsCompleteness: item.sourceMetricsCompleteness,
+    sourceHeatScore: item.sourceHeatScore,
     creator: item.creator,
     summary: item.summary,
     promptPreview: item.promptPreview,
@@ -39,6 +50,8 @@ export function toPublicListItem(item: DisplayCaseItem) {
     favoriteScore: item.favoriteScore,
     recommendedModels: item.recommendedModels,
     costBand: item.costBand,
+    evidenceLevel: item.evidenceLevel || null,
+    tags: item.tags || [],
     url: `${SITE_ORIGIN}/cases/${item.slug}`,
   };
 }
@@ -49,6 +62,7 @@ export function toPublicDetailItem(item: DisplayCaseItem) {
     promptFull: item.promptFull,
     spreadScore: item.spreadScore,
     spreadScoreNote: item.spreadScoreNote,
+    sourceHeatNote: item.sourceHeatNote,
     promptPublicNote: item.promptPublicNote,
     promptLoginNotes: item.promptLoginNotes,
     promptContributionNotes: item.promptContributionNotes,

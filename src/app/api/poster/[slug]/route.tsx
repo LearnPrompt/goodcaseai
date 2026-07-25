@@ -14,6 +14,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   video: "AI 视频",
   web: "AI 编程(UI)",
   copy: "AI 文案",
+  hardware: "AI 硬件",
 };
 
 const CATEGORY_LABELS_EN: Record<string, string> = {
@@ -21,6 +22,7 @@ const CATEGORY_LABELS_EN: Record<string, string> = {
   video: "AI VIDEO",
   web: "AI CODING (UI)",
   copy: "AI COPY",
+  hardware: "AI HARDWARE",
 };
 
 const COST_BAND_LABELS: Record<string, string> = {
@@ -84,7 +86,8 @@ export async function GET(
   }
 
   const origin = new URL(request.url).origin;
-  const caseUrl = `https://goodcase.ai/cases/${slug}`;
+  const caseUrl = `${origin}/cases/${slug}`;
+  const siteHost = new URL(caseUrl).host;
 
   const categoryKey = item.category;
   // 非 BMP 花体字符（如 𝕏 U+1D54F）不在中文字体子集内，会渲染成豆腐块
@@ -98,7 +101,7 @@ export async function GET(
     loadChineseFont(
       `${item.title}${summary}${CATEGORY_LABELS[categoryKey]}${models.join(
         ""
-      )}${costLabel}好案例点赞解锁完整Prompt扫码看案例·`
+      )}${costLabel}好案例完整Prompt公开扫码看案例·`
     ),
     loadHeroImage(heroSrc, origin),
   ]);
@@ -156,7 +159,7 @@ export async function GET(
               style={{
                 width: "40px",
                 height: "40px",
-                backgroundColor: "#ff5733",
+                backgroundColor: "#c2410c",
               }}
             />
             <div
@@ -187,8 +190,8 @@ export async function GET(
             <div
               style={{
                 display: "flex",
-                border: "1px solid #ff5733",
-                color: "#ff5733",
+                border: "1px solid #c2410c",
+                color: "#c2410c",
                 fontSize: "22px",
                 padding: "6px 16px",
                 letterSpacing: "0.1em",
@@ -280,7 +283,7 @@ export async function GET(
                 style={{
                   width: "20px",
                   height: "20px",
-                  backgroundColor: "#ff5733",
+                  backgroundColor: "#c2410c",
                 }}
               />
               <div
@@ -291,17 +294,17 @@ export async function GET(
                   letterSpacing: "-0.01em",
                 }}
               >
-                {zh ? "goodcase.ai · 好案例" : "goodcase.ai"}
+                {zh ? `${siteHost} · 好案例` : siteHost}
               </div>
             </div>
             <div
               style={{
                 display: "flex",
                 fontSize: "26px",
-                color: "#ff5733",
+                color: "#c2410c",
               }}
             >
-              {zh ? "点赞解锁完整 Prompt" : "Unlock the full prompt"}
+              {zh ? "完整 Prompt 公开" : "Full prompt is public"}
             </div>
           </div>
 

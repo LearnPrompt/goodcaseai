@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AnalyticsBeacon } from "@/components/analytics-beacon";
+import { SITE_ORIGIN } from "@/lib/site";
 
 const SITE_DESCRIPTION =
-  "creator-first 的 AI 案例学习平台：先看真实 Case，再决定用哪个模型；点赞解锁完整 Prompt。";
+  "中文 AI Case 证据库：看真实作品、作者、方法、原始来源与复测证据。";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://goodcase.ai"),
+  metadataBase: new URL(SITE_ORIGIN),
   title: {
     default: "GoodCase.ai",
     template: "%s | GoodCase.ai",
@@ -49,6 +51,7 @@ export default function RootLayout({
       className="h-full antialiased"
     >
       <body suppressHydrationWarning className="min-h-full">
+        <AnalyticsBeacon />
         {children}
       </body>
     </html>

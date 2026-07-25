@@ -1,14 +1,24 @@
-export type CaseCategory = "image" | "video" | "web" | "copy";
+export type CaseCategory = "image" | "video" | "web" | "copy" | "hardware";
 
 export type CaseItem = {
   slug: string;
   title: string;
   category: CaseCategory;
   source: string;
+  sourceUrl?: string;
+  sourceLikeCount?: number;
+  sourceCommentCount?: number;
+  sourceShareCount?: number;
+  sourceSaveCount?: number;
+  sourcePublishedAt?: string;
+  sourceMetricsCapturedAt?: string;
   creator: string;
+  creatorAvatarUrl?: string;
   summary: string;
   promptPreview: string;
   promptFull: string;
+  promptTranslationZh?: string;
+  resultBreakdown?: [string, string, string];
   mediaType: "image" | "video";
   mediaUrl: string;
   posterUrl?: string;
@@ -18,7 +28,23 @@ export type CaseItem = {
   favoriteScore: number;
   recommendedModels: string[];
   costBand: "low" | "medium" | "high";
+  evidenceLevel?: "L0" | "L1" | "L2";
+  tags?: string[];
   createdAt?: string;
+};
+
+export const creatorAvatarUrls: Record<string, string> = {
+  "@umesh_ai": "/media/goodcase/avatars/umesh_ai.jpg",
+  "@chetaslua": "/media/goodcase/avatars/chetaslua.jpg",
+  "@chesnyfcb": "/media/goodcase/avatars/chesnyfcb.png",
+  "@azed_ai": "/media/goodcase/avatars/azed_ai.jpg",
+  "@Goodmanprotocol": "/media/goodcase/avatars/goodmanprotocol.jpg",
+  "@aimikoda": "/media/goodcase/avatars/aimikoda.jpg",
+  "@TechieBySA": "/media/goodcase/avatars/techiebysa.jpg",
+  "@LudovicCreator": "/media/goodcase/avatars/ludoviccreator.jpg",
+  "@harboriis": "/media/goodcase/avatars/harboriis.jpg",
+  "@servasyy_ai": "/media/goodcase/avatars/servasyy_ai.jpg",
+  "@viktoroddy": "/media/goodcase/avatars/viktoroddy.jpg",
 };
 
 export const caseItems: CaseItem[] = [
@@ -27,10 +53,24 @@ export const caseItems: CaseItem[] = [
     "title": "箭矢微观战场（Umesh）",
     "category": "video",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/umesh_ai/status/2041746400443298180",
+    "sourceLikeCount": 1362,
+    "sourceCommentCount": 71,
+    "sourceShareCount": 144,
+    "sourceSaveCount": 1050,
+    "sourcePublishedAt": "2026-04-08T05:14:10.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@umesh_ai",
-    "summary": "来自 X / 𝕏 的真实 视频 案例，由 @umesh_ai 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
+    "summary": "镜头跟随离弦箭矢穿越古战场，并持续推近到箭杆表面的微型战争；核心是用同一运动完成宏观战场到微观文明的尺度转换。",
     "promptPreview": "Epic wide-angle shot of a vast ancient battlefield at golden hour, thousands of warriors clashing with swords and shields under a hazy amber sky thick with smoke and ash. A lone ar...",
     "promptFull": "Epic wide-angle shot of a vast ancient battlefield at golden hour, thousands of warriors clashing with swords and shields under a hazy amber sky thick with smoke and ash. A lone archer in weathered bronze armor, face streaked with dirt, draws a longbow with deliberate tension. The arrow releases with a sharp twang. Camera immediately snaps behind the arrow, tracking it in extreme slow motion as it cuts through drifting smoke and falling embers. Shallow depth of field keeps the arrow razor-sharp while the chaotic battlefield blurs behind. The camera pushes closer, tighter, until the wooden shaft fills the frame—revealing intricate carved runes and weathered grain. Seamless transition to macro scale: the arrow's surface becomes a landscape. A microscopic civilization of tiny warriors the size of splinters wages war across the fletching. Miniature catapults hurl fragments of dust. Warriors scale the carved runes like canyon walls. Torches flicker. Banners wave.",
+    "promptTranslationZh": "史诗级广角镜头：金色时刻的辽阔古代战场，数千名战士在烟尘与灰烬弥漫的琥珀色天空下持剑盾厮杀。一名身着风化青铜盔甲的孤独弓箭手，脸上沾满尘土，沉稳地拉满长弓。箭矢伴随清脆弦响射出。镜头立刻来到箭矢后方，以极慢动作跟随它穿过飘散的烟雾和坠落的余烬。浅景深让箭矢保持锐利，混乱战场在后方虚化。镜头不断推近，直到木制箭杆占满画面，显露复杂刻纹和风化木纹。无缝转入微观尺度：箭矢表面变成一片地貌。一支只有木屑大小的微型战士文明在箭羽上交战。微型投石车扬起尘土碎屑。战士们攀爬如峡谷峭壁般的刻纹。火把闪烁，旗帜飘动。",
+    "resultBreakdown": [
+      "镜头始终追随同一支箭：先穿越战场，再贴近箭杆，最后揭示刻纹上的微型军队与投石车。尺度变化由同一物体和同一运动完成，没有依赖硬切。",
+      "飞行主体 → 追踪推近 → 表面纹理铺满画面 → 纹理转成地形 → 微观世界揭示。这条结构可以替换成飞船、昆虫、机械零件等其他载体。",
+      "重点检查箭矢方向与外形是否连续、宏观到微观是否无跳变，以及兵人、火把和投石车是否稳定附着在箭杆表面。"
+    ],
     "mediaType": "video",
     "mediaUrl": "/media/goodcase/umesh_ai-2041746400443298180-01.mp4",
     "posterUrl": "/media/goodcase/umesh_ai-2041746400443298180-01.jpg",
@@ -49,6 +89,14 @@ export const caseItems: CaseItem[] = [
     "title": "教授授课",
     "category": "video",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/chetaslua/status/2053824398503678108",
+    "sourceLikeCount": 6244,
+    "sourceCommentCount": 354,
+    "sourceShareCount": 844,
+    "sourceSaveCount": 3039,
+    "sourcePublishedAt": "2026-05-11T13:07:49.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@chetaslua",
     "summary": "来自 X / 𝕏 的真实 视频 案例，由 @chetaslua 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "A professor writes out a mathematical proof for trigonometric identities on a traditional chalkboard, explaining the step he is currently on in the equation.",
@@ -70,6 +118,14 @@ export const caseItems: CaseItem[] = [
     "title": "水彩泼墨风格运动员体育海报",
     "category": "image",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/chesny/status/2055716498367222213",
+    "sourceLikeCount": 213,
+    "sourceCommentCount": 9,
+    "sourceShareCount": 17,
+    "sourceSaveCount": 209,
+    "sourcePublishedAt": "2026-05-16T18:26:21.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@chesnyfcb",
     "summary": "来自 X / 𝕏 的真实 图像 案例，由 @chesnyfcb 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "Create a hyper-detailed artistic sports poster in a sketch + watercolor splash style. Subject: [type here] wearing national team jersey ([number]), athletic build, sharp facial fea...",
@@ -92,6 +148,14 @@ export const caseItems: CaseItem[] = [
     "title": "半透明玻璃水果",
     "category": "image",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/azed_ai/status/2055649770199503046",
+    "sourceLikeCount": 93,
+    "sourceCommentCount": 7,
+    "sourceShareCount": 13,
+    "sourceSaveCount": 46,
+    "sourcePublishedAt": "2026-05-16T14:01:11.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@azed_ai",
     "summary": "来自 X / 𝕏 的真实 图像 案例，由 @azed_ai 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "Hyper-realistic translucent glass [fruit name], sculpted entirely from clear tinted glass, smooth rounded surface with internal micro air bubbles suspended inside, crystal-like mat...",
@@ -114,6 +178,14 @@ export const caseItems: CaseItem[] = [
     "title": "复古旅行海报拼贴",
     "category": "image",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/Goodmanprotocol/status/2055882758845878709",
+    "sourceLikeCount": 162,
+    "sourceCommentCount": 24,
+    "sourceShareCount": 14,
+    "sourceSaveCount": 119,
+    "sourcePublishedAt": "2026-05-17T05:27:00.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@Goodmanprotocol",
     "summary": "来自 X / 𝕏 的真实 图像 案例，由 @Goodmanprotocol 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "Generate a retro travel poster collage style main visual for \"[Country Name] TRAVEL POSTERS\". Overall Layout: Antique beige paper background Large, bold country names at the top (e...",
@@ -136,6 +208,14 @@ export const caseItems: CaseItem[] = [
     "title": "梅林元素功夫表演",
     "category": "video",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/aimikoda/status/2054460932068200517",
+    "sourceLikeCount": 1264,
+    "sourceCommentCount": 53,
+    "sourceShareCount": 161,
+    "sourceSaveCount": 1115,
+    "sourcePublishedAt": "2026-05-13T07:17:10.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@aimikoda",
     "summary": "来自 X / 𝕏 的真实 视频 案例，由 @aimikoda 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "GPT Image 2 Prompt: Create a raw kung fu performance storyboard focused on extreme physical action. Use reference image for the character. 16:9 storyboard sheet, 12 cinematic panel...",
@@ -159,6 +239,14 @@ export const caseItems: CaseItem[] = [
     "title": "法式牛角包制作过程",
     "category": "video",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/TechieBySA/status/2053523775702925768",
+    "sourceLikeCount": 494,
+    "sourceCommentCount": 33,
+    "sourceShareCount": 67,
+    "sourceSaveCount": 438,
+    "sourcePublishedAt": "2026-05-10T17:13:15.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@TechieBySA",
     "summary": "来自 X / 𝕏 的真实 视频 案例，由 @TechieBySA 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "GPT Image 2 Storyboard prompt: “Create a crisp, clean infographic storyboard poster for THE CROISSANT BAKER. Wide 16:9 layout, white background, black borders, bold black typograph...",
@@ -181,6 +269,14 @@ export const caseItems: CaseItem[] = [
     "title": "空旷平原日出瞬间城市自建",
     "category": "video",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/LudovicCreator/status/2055351279170318782",
+    "sourceLikeCount": 55,
+    "sourceCommentCount": 6,
+    "sourceShareCount": 9,
+    "sourceSaveCount": 26,
+    "sourcePublishedAt": "2026-05-15T18:15:06.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@LudovicCreator",
     "summary": "来自 X / 𝕏 的真实 视频 案例，由 @LudovicCreator 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "A completely empty flat landscape at sunrise. At the 2-second mark, buildings begin assembling themselves ,steel beams flying into place, glass panels snapping together, roads draw...",
@@ -225,6 +321,14 @@ export const caseItems: CaseItem[] = [
     "title": "幻想森林肖像",
     "category": "image",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/harboriis/status/2055108243438125519",
+    "sourceLikeCount": 242,
+    "sourceCommentCount": 43,
+    "sourceShareCount": 45,
+    "sourceSaveCount": 149,
+    "sourcePublishedAt": "2026-05-15T02:09:21.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@harboriis",
     "summary": "来自 X / 𝕏 的真实 图像 案例，由 @harboriis 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "Ultra realistic cinematic portrait of a mysterious young alternative girl sitting in a dark foggy pine forest beside a massive Bengal tiger, emotional moody atmosphere, soft cold c...",
@@ -247,6 +351,14 @@ export const caseItems: CaseItem[] = [
     "title": "image to 3D",
     "category": "web",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/servasyy_ai/status/2053430277020770561",
+    "sourceLikeCount": 3916,
+    "sourceCommentCount": 145,
+    "sourceShareCount": 604,
+    "sourceSaveCount": 5239,
+    "sourcePublishedAt": "2026-05-10T11:01:43.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@servasyy_ai",
     "summary": "来自 X / 𝕏 的真实 编程/UI 案例，由 @servasyy_ai 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "[https://github.com/huangserva/3DCellForge](https://github.com/huangserva/3DCellForge)",
@@ -270,6 +382,14 @@ export const caseItems: CaseItem[] = [
     "title": "应式3D角色轮播动画UI",
     "category": "web",
     "source": "X / 𝕏",
+    "sourceUrl": "https://x.com/viktoroddy/status/2054885940183880156",
+    "sourceLikeCount": 206,
+    "sourceCommentCount": 9,
+    "sourceShareCount": 12,
+    "sourceSaveCount": 160,
+    "sourcePublishedAt": "2026-05-14T11:26:00.000000Z",
+    "sourceMetricsCapturedAt": "2026-07-23T10:14:54.102Z",
+    "evidenceLevel": "L1",
     "creator": "@viktoroddy",
     "summary": "来自 X / 𝕏 的真实 编程/UI 案例，由 @viktoroddy 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。",
     "promptPreview": "Access ALL prompts for stunning animated websites in one click: [http://motionsites.ai](https://t.co/N0kni8yzNb) Build a single full-viewport hero section in React + TypeScript + V...",

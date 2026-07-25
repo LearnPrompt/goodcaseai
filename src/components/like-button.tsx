@@ -12,7 +12,7 @@ export function LikeButton({
   caseSlug: string;
   initialCount: number;
 }) {
-  // SSR 与首次 hydration 一律按未点赞渲染，挂载后由 useHasLikedCase 读 localStorage 更新，避免 hydration mismatch。
+  // SSR 与首次 hydration 一律按未点赞渲染，挂载后读本机状态，避免 hydration mismatch。
   const hasLiked = useHasLikedCase(caseSlug);
   const likedCount = initialCount + (hasLiked ? 1 : 0);
 
@@ -21,15 +21,15 @@ export function LikeButton({
       <button
         type="button"
         onClick={() => toggleLocalLike(caseSlug)}
-        className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition ${
+        className={`gc-action whitespace-nowrap ${
           hasLiked
-            ? "border-[var(--accent)] bg-[rgba(203,92,47,0.14)] text-[var(--ink)]"
-            : "border-[var(--line)] bg-white/60 text-[var(--ink)] hover:-translate-y-0.5"
+            ? "border-[var(--orange)] bg-[var(--orange)] text-white"
+            : ""
         }`}
       >
         <span aria-hidden="true">{hasLiked ? "♥" : "♡"}</span>
         <span>{likedCount}</span>
-        <span>{hasLiked ? "已点赞" : "点赞解锁"}</span>
+        <span>{hasLiked ? "已点赞" : "点赞"}</span>
       </button>
     </div>
   );

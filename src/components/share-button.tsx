@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 export function ShareButton({
   caseSlug,
@@ -33,6 +34,7 @@ export function ShareButton({
       return;
     }
     setStatus("busy");
+    trackEvent("case_share", { caseSlug });
 
     const posterPath = `/api/poster/${caseSlug}`;
     const caseUrl = `${window.location.origin}/cases/${caseSlug}`;
@@ -50,7 +52,7 @@ export function ShareButton({
             await navigator.share({
               files: [file],
               title,
-              text: `${title} · goodcase.ai`,
+              text: `${title} · GoodCase.ai`,
               url: caseUrl,
             });
             setStatus("idle");
@@ -82,7 +84,7 @@ export function ShareButton({
         type="button"
         onClick={share}
         disabled={status === "busy"}
-        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--line)] bg-white/60 px-4 text-sm font-semibold whitespace-nowrap text-[var(--ink)] transition hover:-translate-y-0.5 disabled:opacity-60"
+        className="gc-action whitespace-nowrap disabled:opacity-60"
       >
         <span aria-hidden="true">↗</span>
         <span>{status === "busy" ? "生成中…" : "分享海报"}</span>

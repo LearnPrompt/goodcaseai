@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CreatorAvatar } from "@/components/creator-avatar";
 import { SiteShell } from "@/components/site-shell";
 import { getHomeData, type DisplayCaseItem } from "@/lib/cases";
 
@@ -11,6 +12,7 @@ const categoryLabels: Record<DisplayCaseItem["category"], string> = {
   video: "AI 视频",
   web: "CODING-WF",
   copy: "COPY-WF",
+  hardware: "HARDWARE",
 };
 
 const costLabels: Record<DisplayCaseItem["costBand"], string> = {
@@ -46,10 +48,8 @@ function MediaTile({
       ) : item.mediaType === "video" ? (
         <video
           muted
-          loop
-          autoPlay
           playsInline
-          preload="metadata"
+          preload="none"
           poster={item.posterUrl}
           className="h-full w-full object-cover opacity-90 grayscale"
         >
@@ -58,7 +58,7 @@ function MediaTile({
       ) : (
         <Image src={item.mediaUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className="object-cover opacity-90 grayscale" />
       )}
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,87,51,0.32),transparent_46%,rgba(10,10,10,0.38))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.32),transparent_46%,rgba(10,10,10,0.38))]" />
       {rank ? (
         <span className="absolute left-2 top-2 bg-[var(--orange)] px-2 py-1 font-mono text-[10px] text-white">
           {rank}
@@ -79,10 +79,8 @@ function EvidenceTile({ item }: { item: DisplayCaseItem }) {
       ) : item.mediaType === "video" ? (
         <video
           muted
-          loop
-          autoPlay
           playsInline
-          preload="metadata"
+          preload="none"
           poster={item.posterUrl}
           className="h-full w-full object-cover opacity-80 grayscale"
         >
@@ -91,7 +89,7 @@ function EvidenceTile({ item }: { item: DisplayCaseItem }) {
       ) : (
         <Image src={item.mediaUrl} alt={item.title} fill sizes="120px" className="object-cover opacity-80 grayscale" />
       )}
-      <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,87,51,0.28),transparent_54%,rgba(0,0,0,0.46))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(194,65,12,0.28),transparent_54%,rgba(0,0,0,0.46))]" />
       <span className="absolute bottom-0 right-0 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.05em] text-white">
         {item.recommendedModels[0] || categoryLabels[item.category]}
       </span>
@@ -126,9 +124,20 @@ function RankingList({
   );
 }
 
-function renderFavoriteRow(item: DisplayCaseItem, index: number) {
+function formatMetricCount(value: number | null) {
+  if (value === null) {
+    return "—";
+  }
+
+  return new Intl.NumberFormat("zh-CN", {
+    notation: value >= 10_000 ? "compact" : "standard",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function renderSourceHeatRow(item: DisplayCaseItem, index: number) {
   return (
-    <div key={item.slug} className="grid grid-cols-[34px_56px_1fr_72px] items-center gap-4 border-b border-[var(--concrete)] px-5 py-3 last:border-b-0">
+    <div key={item.slug} className="grid grid-cols-[34px_56px_1fr_82px] items-center gap-4 border-b border-[var(--concrete)] px-5 py-3 last:border-b-0">
       <span className={`font-mono text-xs ${index < 3 ? "text-[var(--orange)]" : "text-[var(--mute)]"}`}>
         {String(index + 1).padStart(2, "0")}
       </span>
@@ -140,11 +149,11 @@ function renderFavoriteRow(item: DisplayCaseItem, index: number) {
           {item.title}
         </Link>
         <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--mute)]">
-          {item.creator} · {categoryLabels[item.category]}
+          {item.source} · 原始互动 {formatMetricCount(item.sourceInteractionCount)}
         </div>
       </div>
       <div className="text-right font-mono text-xs">
-        ♥ <b className="text-[var(--orange)]">{item.favoriteScore}</b>
+        Heat <b className="text-[var(--orange)]">{item.sourceHeatScore}</b>
       </div>
     </div>
   );
@@ -159,11 +168,11 @@ function renderStabilityRow(item: DisplayCaseItem, index: number) {
       <span className={`font-mono text-xs ${index < 2 ? "text-[var(--orange)]" : "text-[var(--mute)]"}`}>
         {String(index + 1).padStart(2, "0")}
       </span>
-      <Link href={`/cases/${item.slug}#model-effects`}>
+      <Link href={`/cases/${item.slug}#prompt`}>
         <EvidenceTile item={item} />
       </Link>
       <div>
-        <Link href={`/cases/${item.slug}#model-effects`} className="font-semibold leading-tight hover:text-[var(--orange)]">
+        <Link href={`/cases/${item.slug}#prompt`} className="font-semibold leading-tight hover:text-[var(--orange)]">
           {item.title}
         </Link>
         <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--mute)]">
@@ -191,42 +200,44 @@ export default async function Home() {
     totalCreatorCount,
     featuredCreators,
     spreadLeaderboard,
-    favoriteLeaderboard,
+    sourceHeatLeaderboard,
     stabilityLeaderboard,
   } = await getHomeData();
 
   const previewCases = uniqueCases([
     ...spreadLeaderboard,
-    ...favoriteLeaderboard,
+    ...sourceHeatLeaderboard,
     ...stabilityLeaderboard,
   ]);
-  const skillCases = previewCases.slice(0, 6);
+  const evidenceCases = previewCases.slice(0, 6);
 
-  const heroTopCases = favoriteLeaderboard.slice(0, 3);
+  const heroTopCases = uniqueCases([
+    ...sourceHeatLeaderboard,
+    ...stabilityLeaderboard,
+  ]).slice(0, 3);
+  const heroTopLabel =
+    sourceHeatLeaderboard.length > 0 ? "来源互动领先 Case · Top3" : "稳定分领先 Case · Top3";
   const heroTopCreator = featuredCreators[0];
-  const heroTopSkill = skillCases[0];
 
   return (
-    <SiteShell footerNote="GoodCase.ai · Case / Creator / Lab / Skill 持续更新。">
+    <SiteShell footerNote="GoodCase.ai · 真实 Case、作者与复测证据持续更新。">
       <section className="grid min-w-0 gap-10 py-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(560px,1fr)] lg:items-end lg:py-8">
         <article className="min-w-0">
-          <h1 className="mt-4 max-w-full text-5xl font-medium leading-[0.92] tracking-normal text-[var(--ink)] sm:text-5xl md:max-w-[10ch] md:text-7xl">
-            <span className="block md:inline">看清什么</span>
-            <span className="block md:inline">
-              <span className="text-[var(--orange)]">真有效</span>，
+          <h1 className="mt-4 max-w-full text-5xl font-medium leading-[0.94] tracking-[-0.04em] text-[var(--ink)] sm:text-[3.5rem] lg:text-[3.75rem] xl:text-[4.25rem]">
+            <span className="block">
+              看清什么<span className="text-[var(--orange)]">真有效</span>
             </span>
-            <span className="block md:inline">关注持续</span>
-            <span className="block md:inline">产出的人。</span>
+            <span className="mt-2 block">关注直接输出的人。</span>
           </h1>
           <p className="mt-5 max-w-xl break-words text-base leading-8 text-[var(--mute)]">
-            GoodCase.ai 追踪正在传播的 AI case，用同提示复现实验验证稳定性，再把反复成立的创作者模式沉淀成可复用方法包。
+            GoodCase.ai 追踪正在传播的 AI Case，把作品、作者、方法、原始来源与复测证据放回同一个页面。
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link className="gc-btn gc-btn-primary" href="/cases">
               查看榜单 <span>→</span>
             </Link>
-            <Link className="gc-btn" href="/creators">
-              浏览创作者
+            <Link className="gc-btn" href="/connect">
+              Agent 接入 <span>→</span>
             </Link>
             <Link className="gc-btn gc-btn-ghost" href="/submit">
               提交案例
@@ -240,21 +251,23 @@ export default async function Home() {
               <b className="text-[var(--ink)]">{totalCreatorCount}</b> creators
             </span>
             <span>
-              <b className="text-[var(--ink)]">{skillCases.length}</b> skill seeds
+              <b className="text-[var(--ink)]">{evidenceCases.length}</b> deep cases
             </span>
           </div>
         </article>
 
         <article className="relative min-w-0 border border-[var(--hair)] bg-white shadow-[0_44px_90px_-52px_rgba(10,10,10,0.7)]">
           <div className="flex min-w-0 items-center justify-between gap-2 border-b border-[var(--hair)] bg-[var(--paper-2)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
-            <span>实时预览 · Beta</span>
-            <span className="text-[var(--orange)]">● 实时</span>
+            <span>当前样本 · Beta</span>
+            <span className="text-[var(--orange)]">● 证据库</span>
           </div>
 
           <div className="border-b border-[var(--hair)] p-4">
             <div className="mb-3 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
-              <span>最厉害的 Case · Top3</span>
-              <span className="text-[var(--orange)]">● 实时</span>
+              <span>{heroTopLabel}</span>
+              <span className="text-[var(--orange)]">
+                {sourceHeatLeaderboard.length > 0 ? "● Source" : "● Evidence"}
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-px border border-[var(--hair)] bg-[var(--hair)]">
               {heroTopCases.map((item, index) => (
@@ -269,9 +282,11 @@ export default async function Home() {
             <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">最厉害的人 · Creator</div>
             <Link href={`/creators/${heroTopCreator.slug}`} className="flex items-center justify-between gap-3">
               <span className="flex items-center gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center border border-[var(--hair)] bg-[var(--paper-2)] font-mono text-xs">
-                  {heroTopCreator.name.slice(0, 2).toUpperCase()}
-                </span>
+                <CreatorAvatar
+                  name={heroTopCreator.name}
+                  avatarUrl={heroTopCreator.avatarUrl}
+                  size={40}
+                />
                 <span>
                   <span className="block font-semibold leading-tight">{heroTopCreator.name}</span>
                   <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--mute)]">
@@ -283,16 +298,6 @@ export default async function Home() {
             </Link>
           </div>
 
-          <div className="p-4">
-            <div className="mb-3 flex justify-between font-mono text-[10px] uppercase tracking-[0.09em] text-[var(--mute)]">
-              <span>最厉害的 Skill · 方法包</span>
-              <span className="text-[var(--orange)]">Open</span>
-            </div>
-            <Link href={`/cases/${heroTopSkill.slug}`} className="flex items-center justify-between gap-3">
-              <span className="font-semibold leading-tight">{heroTopSkill.title}</span>
-              <span className="shrink-0 font-mono text-xs text-[var(--orange)]">查看方法包 →</span>
-            </Link>
-          </div>
         </article>
       </section>
 
@@ -302,22 +307,27 @@ export default async function Home() {
         </div>
         <div className="grid border-t border-[var(--hair)] lg:grid-cols-2">
           <article className="border border-t-0 border-[var(--hair)] bg-white">
-            <div className="flex justify-between border-b border-[var(--hair)] px-5 py-4">
-              <h3 className="text-xl font-semibold tracking-[-0.02em]">
+            <div className="border-b border-[var(--hair)] px-5 py-4">
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">
                 <span className="mr-2 inline-block size-2 bg-[var(--orange)]" />
-                Love Ranking · 喜爱榜
-              </h3>
-              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">24h</span>
+                来源互动榜
+              </h2>
             </div>
-            <RankingList items={favoriteLeaderboard} renderRow={renderFavoriteRow} />
+            {sourceHeatLeaderboard.length > 0 ? (
+              <RankingList items={sourceHeatLeaderboard} renderRow={renderSourceHeatRow} />
+            ) : (
+              <div className="px-5 py-10 text-sm leading-7 text-[var(--mute)]">
+                尚无可核验的来源互动快照。接入真实点赞、评论、转发、收藏和采集时间后才进入榜单；旧“喜爱分”不会顶替。
+              </div>
+            )}
           </article>
 
           <article className="border border-t-0 border-[var(--hair)] bg-white lg:border-l-0">
             <div className="flex justify-between border-b border-[var(--hair)] px-5 py-4">
-              <h3 className="text-xl font-semibold tracking-[-0.02em]">
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">
                 <span className="mr-2 inline-block size-2 bg-[var(--orange)]" />
                 Stability Ranking · 稳定榜
-              </h3>
+              </h2>
               <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">Beta 实验</span>
             </div>
             <RankingList items={stabilityLeaderboard} renderRow={renderStabilityRow} />
@@ -327,43 +337,35 @@ export default async function Home() {
 
       <section className="gc-section">
         <div className="gc-section-head">
-          <div className="gc-section-id">§ 02 · 方法包</div>
+          <div className="gc-section-id">§ 02 · 深度 Case</div>
           <div>
-            <h2 className="gc-section-title whitespace-nowrap text-4xl">当模式反复出现，就升级成 Skill。</h2>
+            <h2 className="gc-section-title text-4xl">从作品结果，一直读到复测方法。</h2>
           </div>
         </div>
         <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
-          {skillCases.map((item, index) => (
-            <article key={item.slug} className="min-h-80 border-b border-r border-[var(--hair)] bg-white p-6">
-              <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
-                <span>Skill · {String(index + 1).padStart(4, "0")}</span>
-                <span className={index % 3 === 2 ? "text-[var(--mute)]" : "text-[var(--orange)]"}>
-                  {index % 3 === 2 ? "Like-unlock" : "Open"}
-                </span>
-              </div>
-              <h3 className="mt-7 text-2xl font-semibold tracking-[-0.03em]">{item.title}</h3>
-              <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--mute)]">
-                {categoryLabels[item.category]}
-              </p>
-              <div className="mt-6 grid gap-3 font-mono text-[11px]">
-                <div className="grid grid-cols-[92px_1fr] gap-3 border-b border-dashed border-[var(--concrete)] pb-3">
-                  <span className="text-[var(--mute)]">运行过的模型</span>
-                  <span>{item.recommendedModels.slice(0, 2).join(" / ")}</span>
+          {evidenceCases.map((item, index) => (
+            <article key={item.slug} className="group flex min-h-[440px] flex-col border-b border-r border-[var(--hair)] bg-white">
+              <Link href={`/cases/${item.slug}`} className="block overflow-hidden border-b border-[var(--hair)]">
+                <MediaTile item={item} className="aspect-[16/9] w-full transition duration-300 group-hover:scale-[1.015]" />
+              </Link>
+              <div className="flex flex-1 flex-col p-6">
+                <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
+                  <span>Case · {String(index + 1).padStart(4, "0")}</span>
+                  <span className="text-[var(--orange)]">Preview</span>
                 </div>
-                <div className="grid grid-cols-[92px_1fr] gap-3 border-b border-dashed border-[var(--concrete)] pb-3">
-                  <span className="text-[var(--mute)]">输出概要</span>
-                  <span>{item.summary.slice(0, 58)}...</span>
+                <h3 className="mt-5 text-2xl font-semibold tracking-[-0.03em]">{item.title}</h3>
+                <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--mute)]">
+                  {categoryLabels[item.category]} · {item.creator}
+                </p>
+                <p className="mt-4 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
+                  {item.summary}
+                </p>
+                <div className="mt-auto flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
+                  <span>稳定参考 {item.stabilityScore}</span>
+                  <Link href={`/cases/${item.slug}`} className="text-[var(--orange)]">
+                    查看提示语 ↗
+                  </Link>
                 </div>
-                <div className="grid grid-cols-[92px_1fr] gap-3">
-                  <span className="text-[var(--mute)]">By</span>
-                  <span>{item.creator}</span>
-                </div>
-              </div>
-              <div className="mt-7 flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
-                <span>{item.remakeCount} 次运行</span>
-                <Link href={`/cases/${item.slug}`} className="text-[var(--orange)]">
-                  View ↗
-                </Link>
               </div>
             </article>
           ))}
@@ -382,9 +384,11 @@ export default async function Home() {
             <Link key={creator.slug} href={`/creators/${creator.slug}`} className="flex h-full min-h-80 flex-col border-b border-r border-[var(--hair)] bg-white p-6 transition hover:bg-[var(--paper-2)]">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex gap-3">
-                  <span className="flex size-12 items-center justify-center border border-[var(--hair)] bg-[var(--paper-2)] font-mono text-sm font-semibold">
-                    {creator.name.slice(0, 2).toUpperCase()}
-                  </span>
+                  <CreatorAvatar
+                    name={creator.name}
+                    avatarUrl={creator.avatarUrl}
+                    size={48}
+                  />
                   <span>
                     <span className="block font-semibold">{creator.name}</span>
                     <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--mute)]">
@@ -399,7 +403,7 @@ export default async function Home() {
               <p className="mt-6 text-sm leading-7 text-[var(--mute)]">{creator.bio}</p>
               <div className="mt-auto grid grid-cols-3 gap-2 pt-6">
                 <MiniMetric label="Cases" value={creator.representativeCases.length} />
-                <MiniMetric label="Love" value={creator.averageFavoriteScore} />
+                <MiniMetric label="Heat" value={creator.averageSourceHeatScore ?? "—"} />
                 <MiniMetric label="Stab." value={creator.averageStabilityScore} />
               </div>
             </Link>
@@ -411,7 +415,7 @@ export default async function Home() {
         <div className="gc-section-head">
           <div className="gc-section-id">§ 04 · 方法</div>
           <div>
-            <h2 className="gc-section-title whitespace-nowrap text-4xl">从碎片化爆款，到可复用方法。</h2>
+            <h2 className="gc-section-title text-4xl">从碎片化爆款，到可复用方法。</h2>
           </div>
         </div>
         <div className="grid gap-0 border-t border-[var(--hair)] lg:grid-cols-[1fr_48px_1fr]">
@@ -470,13 +474,13 @@ export default async function Home() {
                 </div>
               ))}
               <div className="mt-5 grid grid-cols-3 gap-3">
-                <MiniMetric label="传播" value={featuredCase.spreadScore} />
+                <MiniMetric label="传播" value={featuredCase.spreadScore ?? "—"} />
                 <MiniMetric label="稳定" value={featuredCase.stabilityScore} />
                 <MiniMetric label="成本" value={costLabels[featuredCase.costBand]} />
               </div>
               <div className="mt-6 border border-[var(--hair)] p-4">
-                <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">已升级方法包</div>
-                <div className="mt-2 text-base font-semibold">{featuredCase.title} 方法包 · Beta</div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">复测记录</div>
+                <div className="mt-2 text-base font-semibold">{featuredCase.title} · Beta 证据</div>
               </div>
             </div>
           </article>
@@ -486,7 +490,7 @@ export default async function Home() {
       <section className="gc-section pb-6">
         <div className="grid gap-6 border border-[var(--hair)] bg-[var(--ink)] p-8 text-[var(--paper)] md:grid-cols-[1fr_auto] md:items-end">
           <div>
-            <p className="font-mono text-xs uppercase tracking-[0.12em] text-[var(--orange)]">GoodCase.ai Beta</p>
+            <p className="font-mono text-xs uppercase tracking-[0.12em] text-[var(--orange-on-dark)]">GoodCase.ai Beta</p>
             <h2 className="mt-5 max-w-3xl text-5xl font-medium leading-[0.98] tracking-[-0.045em] md:text-7xl">
               不只收藏案例，顺着创作者找到方法。
             </h2>

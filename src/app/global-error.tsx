@@ -21,14 +21,24 @@ export default function GlobalError({
             '"Avenir Next", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif',
         }}
       >
-        <div style={{ textAlign: "center", padding: "24px" }}>
+        <div
+          style={{
+            maxWidth: "720px",
+            margin: "24px",
+            padding: "40px",
+            border: "1px solid #0a0a0a",
+            backgroundColor: "#ffffff",
+            boxShadow: "8px 8px 0 #c2410c",
+            textAlign: "center",
+          }}
+        >
           <p
             style={{
               fontSize: "12px",
               fontWeight: 700,
               textTransform: "uppercase",
               letterSpacing: "0.18em",
-              color: "#ff5733",
+              color: "#c2410c",
             }}
           >
             GoodCase.ai
@@ -53,12 +63,12 @@ export default function GlobalError({
               marginTop: "24px",
               minHeight: "44px",
               padding: "0 24px",
-              borderRadius: "9999px",
               border: "1px solid #0a0a0a",
               backgroundColor: "#0a0a0a",
               color: "#fafaf7",
               fontSize: "14px",
               fontWeight: 600,
+              letterSpacing: "0.08em",
               cursor: "pointer",
             }}
           >

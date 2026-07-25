@@ -18,10 +18,10 @@ export function FavoriteButton({ caseSlug }: { caseSlug: string }) {
         event.stopPropagation();
         toggleFavorite(caseSlug);
       }}
-      className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition ${
+      className={`gc-action whitespace-nowrap ${
         isFavorited
-          ? "border-[var(--accent)] bg-[rgba(203,92,47,0.14)] text-[var(--ink)]"
-          : "border-[var(--line)] bg-white/60 text-[var(--ink)] hover:-translate-y-0.5"
+          ? "border-[var(--orange)] bg-[var(--orange)] text-white"
+          : ""
       }`}
     >
       <span aria-hidden="true" className={isFavorited ? "text-[var(--accent)]" : undefined}>
