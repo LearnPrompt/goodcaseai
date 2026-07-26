@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHero } from "@/components/page-hero";
 import { FeedbackForm } from "@/components/feedback-form";
 import { SiteShell } from "@/components/site-shell";
@@ -64,6 +65,21 @@ export default function ConnectPage() {
           <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">Public</div>
         </div>
       </PageHero>
+
+      <Link
+        href="/llms.txt"
+        className="mt-7 flex min-h-24 items-center justify-between gap-5 border border-[var(--orange)] bg-[var(--orange)] px-5 py-4 text-white transition hover:border-[var(--ink)] hover:bg-[var(--ink)] sm:px-7"
+      >
+        <span>
+          <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-white/75">
+            Agent discovery
+          </span>
+          <span className="mt-1 block text-xl font-semibold tracking-[-0.02em] sm:text-2xl">
+            给 Agent 一个入口：llms.txt
+          </span>
+        </span>
+        <span className="shrink-0 text-xl">打开 →</span>
+      </Link>
 
       <div className="grid min-w-0 gap-0 border-l border-t border-[var(--hair)] py-8 lg:grid-cols-2">
         <section className="gc-panel min-w-0 border-l-0 border-t-0 p-5 sm:p-8">

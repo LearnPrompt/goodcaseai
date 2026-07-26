@@ -1,6 +1,13 @@
 import "server-only";
 
 import { getAdminSupabaseClient } from "@/lib/supabase/admin-client";
+import {
+  PUBLIC_TRAFFIC_EVENTS,
+  summarizeCaseHealth,
+  summarizeOperatorAnalytics,
+  type OperatorAnalyticsRow,
+  type OperatorCaseHealthRow,
+} from "@/lib/operator/metrics";
 
 export type OperatorFeedback = {
   id: string;
@@ -48,6 +55,8 @@ export async function getOperatorInbox() {
     recentFeedbackResult,
     pendingCandidateResult,
     approvedCandidateResult,
+    analyticsResult,
+    caseHealthResult,
   ] = await Promise.all([
     supabase
       .from("feedback_messages")
@@ -75,6 +84,19 @@ export async function getOperatorInbox() {
       .eq("status", "approved")
       .order("created_at", { ascending: true })
       .limit(20),
+    supabase
+      .from("analytics_events")
+      .select("event_name, path, referrer, anonymous_session_id, created_at")
+      .in("event_name", [...PUBLIC_TRAFFIC_EVENTS])
+      .gte(
+        "created_at",
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      )
+      .order("created_at", { ascending: false })
+      .limit(5000),
+    supabase
+      .from("cases")
+      .select("is_published, evidence_level, stability_score"),
   ]);
 
   if (openFeedbackResult.error || recentFeedbackResult.error) {
@@ -92,6 +114,13 @@ export async function getOperatorInbox() {
       }`
     );
   }
+  if (analyticsResult.error || caseHealthResult.error) {
+    throw new Error(
+      `读取运营指标失败：${
+        analyticsResult.error?.message || caseHealthResult.error?.message
+      }`
+    );
+  }
 
   const feedback = [
     ...(openFeedbackResult.data ?? []),
@@ -101,10 +130,18 @@ export async function getOperatorInbox() {
     ...(approvedCandidateResult.data ?? []),
     ...(pendingCandidateResult.data ?? []),
   ] as OperatorCandidate[];
+  const analytics = summarizeOperatorAnalytics(
+    (analyticsResult.data ?? []) as OperatorAnalyticsRow[]
+  );
+  const caseHealth = summarizeCaseHealth(
+    (caseHealthResult.data ?? []) as OperatorCaseHealthRow[]
+  );
 
   return {
     feedback,
     candidates,
+    analytics,
+    caseHealth,
     counts: {
       openFeedback: openFeedbackResult.count ?? 0,
       pendingCandidates: pendingCandidateResult.count ?? 0,

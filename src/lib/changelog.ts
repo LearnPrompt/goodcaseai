@@ -7,6 +7,17 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-07-27",
+    title: "运营数据和 Agent 入口补齐",
+    items: [
+      "内部运营页新增最近 30 天匿名访问、Case 行为、投稿、公开证据与隐藏历史数据总览。",
+      "测试反馈会被明确标记并单独归档，不与真实用户建议混在一起。",
+      "新增 /llms.txt 机器入口，Agent 可从一个地址发现公开 API、RSS、Skill 与证据使用规则。",
+      "公开 API 和案例库补齐 AI 文案、AI 硬件分类的一致支持。",
+    ],
+    tags: ["运营", "开放"],
+  },
+  {
     date: "2026-07-25",
     title: "Agent 接入移到顶部，品牌图标统一",
     items: [

@@ -18,7 +18,7 @@ Base URL: `https://goodcase.ai/api/public`
 | 用户在说 | 应该走的接口 |
 |---|---|
 | **宽问题**："有什么好的 AI 案例"、"最近什么 AI 图很火"、"给我看几个爆款 case" | `GET /cases`（默认 20 条，可加 `take`） |
-| **限定类型**："AI 视频案例"、"找几个图像的 case"、"AI 编程 UI 案例"、"AI 文案案例" | `GET /cases?category=video`（image / video / web / copy） |
+| **限定类型**："AI 视频案例"、"找几个图像的 case"、"AI 编程 UI 案例"、"AI 文案案例"、"AI 硬件案例" | `GET /cases?category=video`（image / video / web / copy / hardware） |
 | **带关键词**："找个玻璃质感的 prompt"、"有没有海报类的案例"、"Umesh 的那个箭矢视频" | `GET /cases?q=<关键词>`（匹配标题/摘要/创作者，大小写不敏感） |
 | **要完整 Prompt / 复刻方法**："把完整提示词给我"、"这个怎么复刻"、"详细拆解一下这条" | `GET /cases/{slug}`（含 promptFull、编辑点评、实验笔记） |
 | **按模型找**："Veo 案例"、"Seedance 能做什么"、"GPT Image 的玩法" | 先 `GET /cases`（可带 category），再按返回的 `recommendedModels` 字段在结果里筛 |
@@ -42,7 +42,7 @@ curl -s "https://goodcase.ai/api/public/cases/real-case-01-umesh-ai"
 ```
 
 参数约定：
-- `category`：`image`（AI 图像）/ `video`（AI 视频）/ `web`（AI 编程/UI）/ `copy`（AI 文案）。传别的值会 400
+- `category`：`image`（AI 图像）/ `video`（AI 视频）/ `web`（AI 编程/UI）/ `copy`（AI 文案）/ `hardware`（AI 硬件）。传别的值会 400
 - `q`：关键词，匹配 title / summary / creator，中英文都行
 - `take`：1-50，默认 20，越界自动钳制
 - 鉴权：无（匿名）
@@ -67,8 +67,8 @@ curl -s "https://goodcase.ai/api/public/cases/real-case-01-umesh-ai"
       "mediaType": "video",
       "mediaUrl": "https://goodcase.ai/media/goodcase/....mp4",
       "posterUrl": "https://goodcase.ai/media/goodcase/....jpg",
-      "likedCount": 4200,
-      "remakeCount": 1280,
+      "sourceInteractionCount": 4200,
+      "sourceHeatScore": 91,
       "stabilityScore": 91,
       "favoriteScore": 96,
       "recommendedModels": ["Veo", "Kling"],
@@ -99,11 +99,13 @@ curl -s "https://goodcase.ai/api/public/cases/real-case-01-umesh-ai"
 - 可空：`posterUrl`（只有视频类通常有封面图，图片类为 null）
 - 分值含义：
   - `stabilityScore` 稳定分（0-100）：同一 Prompt 复测出片方向一致的程度，越高越"照抄就能出"
-  - `favoriteScore` 喜爱分（0-100）：站内喜爱信号强度
-  - `likedCount` 点赞数、`remakeCount` 复刻次数：社区行为量
+  - `stabilityScore = 0`：待复测，不是“稳定度为零”
+  - `sourceHeatScore` 来源热度（0-100）：只在存在可核验的原帖互动快照时成立
+  - `sourceInteractionCount`：原帖点赞、评论、转发与收藏的原始合计
+  - `favoriteScore` / `likedCount` / `remakeCount`：旧版兼容字段，不用于来源互动榜
   - `costBand` 成本档：`low` 低 / `medium` 中 / `high` 高——high 通常是视频类，先小步复测再放量
 - `recommendedModels`：官方推荐先试的模型列表，第一个是首选
-- `category` 取值集：`image` / `video` / `web` / `copy`
+- `category` 取值集：`image` / `video` / `web` / `copy` / `hardware`
 
 ## 给用户的输出格式
 

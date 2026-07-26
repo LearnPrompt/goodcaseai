@@ -24,6 +24,7 @@ const FILTER_OPTIONS: Array<{ value: CaseFilter; label: string }> = [
   { value: "video", label: "AI 视频" },
   { value: "web", label: "AI 编程(UI)" },
   { value: "image", label: "AI 图像" },
+  { value: "copy", label: "AI 文案" },
   { value: "hardware", label: "AI 硬件" },
 ];
 
@@ -31,6 +32,7 @@ function normalizeFilter(value?: string): CaseFilter {
   return value === "video" ||
     value === "web" ||
     value === "image" ||
+    value === "copy" ||
     value === "hardware" ||
     value === "all"
     ? value
