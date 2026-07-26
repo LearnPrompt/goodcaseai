@@ -4,6 +4,7 @@ import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
 import { requireOperatorIdentity } from "@/lib/operator/auth";
 import { getOperatorInbox } from "@/lib/operator/data";
+import { isDiagnosticFeedback } from "@/lib/operator/metrics";
 import {
   publishCandidate,
   reviewCandidate,
@@ -84,6 +85,84 @@ export default async function OperatorPage({
 
       <section className="gc-section">
         <div className="gc-section-head">
+          <div className="gc-section-id">§ Metrics · 最近 30 天</div>
+          <div>
+            <h2 className="gc-section-title">只看行动需要的数据。</h2>
+            <p className="gc-section-sub">
+              统计只使用匿名会话和公开页面路径，不展示搜索词、联系方式或完整 IP。
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-px border border-[var(--hair)] bg-[var(--hair)] sm:grid-cols-2 lg:grid-cols-4">
+          <div className="bg-white p-5">
+            <div className="gc-stat-label">页面浏览</div>
+            <div className="gc-stat-value">{inbox.analytics.eventCounts.page_view}</div>
+          </div>
+          <div className="bg-white p-5">
+            <div className="gc-stat-label">匿名访客</div>
+            <div className="gc-stat-value">{inbox.analytics.uniqueSessions}</div>
+          </div>
+          <div className="bg-white p-5">
+            <div className="gc-stat-label">打开 Case</div>
+            <div className="gc-stat-value">{inbox.analytics.eventCounts.case_open}</div>
+          </div>
+          <div className="bg-white p-5">
+            <div className="gc-stat-label">分享 Case</div>
+            <div className="gc-stat-value">{inbox.analytics.eventCounts.case_share}</div>
+          </div>
+          <div className="bg-white p-5">
+            <div className="gc-stat-label">LearnPrompt 跳转</div>
+            <div className="gc-stat-value">{inbox.analytics.eventCounts.outbound_learnprompt}</div>
+          </div>
+          <div className="bg-white p-5">
+            <div className="gc-stat-label">提交 Case</div>
+            <div className="gc-stat-value">{inbox.analytics.eventCounts.case_submit}</div>
+          </div>
+          <div className="bg-white p-5">
+            <div className="gc-stat-label">公开 / 全部 Case</div>
+            <div className="gc-stat-value">
+              {inbox.caseHealth.public} / {inbox.caseHealth.total}
+            </div>
+          </div>
+          <div className="bg-white p-5">
+            <div className="gc-stat-label">L2 / 待复测</div>
+            <div className="gc-stat-value">
+              {inbox.caseHealth.publicL2} / {inbox.caseHealth.publicPendingRetest}
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <div className="gc-panel p-5">
+            <h3 className="text-lg font-semibold">访问最多的页面</h3>
+            <ol className="mt-4 grid gap-3 text-sm">
+              {inbox.analytics.topPaths.length ? inbox.analytics.topPaths.map((item) => (
+                <li key={item.label} className="flex items-center justify-between gap-4 border-b border-[var(--concrete)] pb-3">
+                  <span className="truncate font-mono text-xs">{item.label}</span>
+                  <strong>{item.count}</strong>
+                </li>
+              )) : <li className="text-[var(--muted)]">暂无访问数据。</li>}
+            </ol>
+          </div>
+          <div className="gc-panel p-5">
+            <h3 className="text-lg font-semibold">访问来源</h3>
+            <ol className="mt-4 grid gap-3 text-sm">
+              {inbox.analytics.topReferrers.length ? inbox.analytics.topReferrers.map((item) => (
+                <li key={item.label} className="flex items-center justify-between gap-4 border-b border-[var(--concrete)] pb-3">
+                  <span className="truncate font-mono text-xs">{item.label}</span>
+                  <strong>{item.count}</strong>
+                </li>
+              )) : <li className="text-[var(--muted)]">暂无外部来源数据。</li>}
+            </ol>
+          </div>
+        </div>
+        <p className="mt-4 text-xs leading-6 text-[var(--muted)]">
+          隐藏历史 Case：{inbox.caseHealth.hidden} · 公开 L1：{inbox.caseHealth.publicL1}
+          {inbox.analytics.truncated ? " · 事件超过 5,000 条，本页只统计最近 5,000 条。" : ""}
+        </p>
+      </section>
+
+      <section className="gc-section">
+        <div className="gc-section-head">
           <div className="gc-section-id">§ Feedback · 待处理反馈</div>
           <div>
             <h2 className="gc-section-title">先让用户的问题有去处。</h2>
@@ -91,27 +170,40 @@ export default async function OperatorPage({
           </div>
         </div>
         <div className="grid gap-4">
-          {openFeedback.length ? openFeedback.map((item) => (
-            <article key={item.id} className="gc-panel grid gap-4 p-5 md:grid-cols-[1fr_auto]">
-              <div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="gc-chip gc-chip-accent">{item.kind}</span>
-                  <span className="gc-chip">{formatTime(item.created_at)}</span>
+          {openFeedback.length ? openFeedback.map((item) => {
+            const isDiagnostic = isDiagnosticFeedback(item.message);
+
+            return (
+              <article key={item.id} className="gc-panel grid gap-4 p-5 md:grid-cols-[1fr_auto]">
+                <div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="gc-chip gc-chip-accent">{item.kind}</span>
+                    {isDiagnostic ? (
+                      <span className="gc-chip">测试记录</span>
+                    ) : null}
+                    <span className="gc-chip">{formatTime(item.created_at)}</span>
+                  </div>
+                  <p className="mt-4 whitespace-pre-wrap text-sm leading-7">{item.message}</p>
+                  <dl className="mt-4 grid gap-1 text-xs leading-6 text-[var(--muted)]">
+                    <div>联系方式：{item.contact || "未填写"}</div>
+                    <div>页面：{item.page || "未记录"}</div>
+                    <div className="font-mono">编号：{item.id}</div>
+                  </dl>
                 </div>
-                <p className="mt-4 whitespace-pre-wrap text-sm leading-7">{item.message}</p>
-                <dl className="mt-4 grid gap-1 text-xs leading-6 text-[var(--muted)]">
-                  <div>联系方式：{item.contact || "未填写"}</div>
-                  <div>页面：{item.page || "未记录"}</div>
-                  <div className="font-mono">编号：{item.id}</div>
-                </dl>
-              </div>
-              <form action={updateFeedbackStatus} className="self-start">
-                <input type="hidden" name="id" value={item.id} />
-                <input type="hidden" name="status" value="resolved" />
-                <button type="submit" className="gc-btn gc-btn-primary">标记已处理</button>
-              </form>
-            </article>
-          )) : <div className="gc-empty-state">没有待处理反馈。</div>}
+                <form action={updateFeedbackStatus} className="self-start">
+                  <input type="hidden" name="id" value={item.id} />
+                  <input
+                    type="hidden"
+                    name="status"
+                    value={isDiagnostic ? "archived" : "resolved"}
+                  />
+                  <button type="submit" className="gc-btn gc-btn-primary">
+                    {isDiagnostic ? "归档测试" : "标记已处理"}
+                  </button>
+                </form>
+              </article>
+            );
+          }) : <div className="gc-empty-state">没有待处理反馈。</div>}
         </div>
       </section>
 

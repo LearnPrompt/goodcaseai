@@ -3,7 +3,13 @@ import { filterCasesByQuery, getCaseListData } from "@/lib/cases";
 import type { CaseCategory } from "@/lib/mock-data";
 import { PUBLIC_API_HEADERS, toPublicListItem } from "../_lib/public-case";
 
-const VALID_CATEGORIES: readonly CaseCategory[] = ["image", "video", "web", "copy"];
+const VALID_CATEGORIES: readonly CaseCategory[] = [
+  "image",
+  "video",
+  "web",
+  "copy",
+  "hardware",
+];
 
 const DEFAULT_TAKE = 20;
 const MIN_TAKE = 1;

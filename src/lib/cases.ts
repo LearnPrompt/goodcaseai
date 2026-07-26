@@ -76,7 +76,13 @@ const COST_BAND_LABELS: Record<CaseItem["costBand"], string> = {
   high: "高",
 };
 
-export type CaseFilter = "all" | "video" | "web" | "image" | "hardware";
+export type CaseFilter =
+  | "all"
+  | "video"
+  | "web"
+  | "image"
+  | "copy"
+  | "hardware";
 
 function applyCaseFilter<T extends CaseItem>(list: T[], filter: CaseFilter): T[] {
   if (filter === "all") {
