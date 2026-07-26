@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { getAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { buildDedupeKey, normalizeCategory, slugify } from "@/lib/candidate-dedupe";
 import { sendOwnerNotification } from "@/lib/owner-notification";
+import { absoluteUrl } from "@/lib/site";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 5;
@@ -178,6 +179,9 @@ export async function POST(request: NextRequest) {
         `原始链接：${url}`,
         `联系方式：${contact || "未填写"}`,
         `Prompt：${prompt ? "已提供" : "未提供"}`,
+        `审核入口：${absoluteUrl(
+          `/operator?candidate=${encodeURIComponent(inserted.id)}`
+        )}`,
       ],
       createdAt: inserted.created_at,
     });

@@ -32,9 +32,21 @@ function readUuid(formData: FormData, name: string) {
   return value;
 }
 
-function finish(message: string, type: "success" | "error" = "success"): never {
+function readReturnTo(formData: FormData) {
+  const value = readString(formData, "returnTo", 1000);
+  return value === "/operator" || value.startsWith("/operator?")
+    ? value
+    : "/operator";
+}
+
+function finish(
+  message: string,
+  type: "success" | "error" = "success",
+  returnTo = "/operator"
+): never {
   const params = new URLSearchParams({ notice: message, type });
-  redirect(`/operator?${params.toString()}`);
+  const separator = returnTo.includes("?") ? "&" : "?";
+  redirect(`${returnTo}${separator}${params.toString()}`);
 }
 
 function errorMessage(error: unknown) {
@@ -71,6 +83,7 @@ async function audit(
 
 export async function updateFeedbackStatus(formData: FormData) {
   const operator = await requireOperatorIdentity();
+  const returnTo = readReturnTo(formData);
 
   try {
     const id = readUuid(formData, "id");
@@ -97,14 +110,15 @@ export async function updateFeedbackStatus(formData: FormData) {
     await audit(operator.id, `feedback.${status}`, "feedback", id, { status });
     revalidatePath("/operator");
   } catch (error) {
-    finish(errorMessage(error), "error");
+    finish(errorMessage(error), "error", returnTo);
   }
 
-  finish("反馈状态已更新");
+  finish("反馈状态已更新", "success", returnTo);
 }
 
 export async function reviewCandidate(formData: FormData) {
   const operator = await requireOperatorIdentity();
+  const returnTo = readReturnTo(formData);
 
   try {
     const id = readUuid(formData, "id");
@@ -152,14 +166,15 @@ export async function reviewCandidate(formData: FormData) {
     });
     revalidatePath("/operator");
   } catch (error) {
-    finish(errorMessage(error), "error");
+    finish(errorMessage(error), "error", returnTo);
   }
 
-  finish("候选审核状态已更新");
+  finish("候选审核状态已更新", "success", returnTo);
 }
 
 export async function publishCandidate(formData: FormData) {
   const operator = await requireOperatorIdentity();
+  const returnTo = readReturnTo(formData);
 
   try {
     const id = readUuid(formData, "id");
@@ -252,10 +267,10 @@ export async function publishCandidate(formData: FormData) {
     revalidatePath("/cases");
     revalidatePath(`/cases/${candidate.slug}`);
   } catch (error) {
-    finish(errorMessage(error), "error");
+    finish(errorMessage(error), "error", returnTo);
   }
 
-  finish("Case 已发布");
+  finish("Case 已发布", "success", returnTo);
 }
 
 export async function signOutOperator() {

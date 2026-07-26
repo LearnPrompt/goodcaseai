@@ -9,7 +9,11 @@ const sample = {
   kind: "feedback",
   receiptId: "receipt-123",
   title: "页面问题",
-  lines: ["内容：按钮无法点击", "联系方式：未填写"],
+  lines: [
+    "内容：按钮无法点击",
+    "联系方式：未填写",
+    "处理入口：https://goodcase.ai/operator?view=feedback",
+  ],
   createdAt: "2026-07-25T02:30:00+09:00",
 };
 
@@ -19,6 +23,7 @@ test("owner notification uses Feishu text payload when configured", () => {
   assert.match(payload.content.text, /GoodCase/);
   assert.match(payload.content.text, /receipt-123/);
   assert.match(payload.content.text, /按钮无法点击/);
+  assert.match(payload.content.text, /goodcase\.ai\/operator\?view=feedback/);
 });
 
 test("owner notification tolerates whitespace around the Feishu format", () => {

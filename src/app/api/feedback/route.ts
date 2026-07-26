@@ -1,6 +1,7 @@
 import { getAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { sendOwnerNotification } from "@/lib/owner-notification";
 import { readBoundedJsonObject } from "@/lib/request-json";
+import { absoluteUrl } from "@/lib/site";
 
 const KINDS = new Set(["content", "bug", "suggestion", "other"]);
 const MAX_BODY_BYTES = 16_384;
@@ -63,6 +64,7 @@ export async function POST(request: Request) {
       `内容：${message}`,
       `联系方式：${contact || "未填写"}`,
       `来源页面：${page || "未记录"}`,
+      `处理入口：${absoluteUrl("/operator?view=feedback")}`,
     ],
     createdAt: data.created_at,
   });
