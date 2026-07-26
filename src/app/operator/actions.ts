@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireOperatorIdentity } from "@/lib/operator/auth";
+import { OPERATOR_SESSION_COOKIE } from "@/lib/operator/shared-session";
 import { getAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { getAuthSupabaseClient } from "@/lib/supabase/auth-server-client";
 import {
@@ -274,6 +276,8 @@ export async function publishCandidate(formData: FormData) {
 }
 
 export async function signOutOperator() {
+  const cookieStore = await cookies();
+  cookieStore.delete(OPERATOR_SESSION_COOKIE);
   const supabase = await getAuthSupabaseClient();
   if (supabase) {
     await supabase.auth.signOut();

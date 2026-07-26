@@ -588,9 +588,9 @@ export default async function OperatorPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const operator = await requireOperatorIdentity();
   const rawParams = await searchParams;
   const query = parseOperatorQuery(rawParams);
+  const operator = await requireOperatorIdentity(buildOperatorHref(query));
   const inbox = await getOperatorInbox(query);
   const notice = Array.isArray(rawParams.notice)
     ? rawParams.notice[0]
