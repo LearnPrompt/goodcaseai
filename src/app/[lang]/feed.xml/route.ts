@@ -1,4 +1,5 @@
 import { getCaseListData } from "@/lib/cases";
+import { localizeHref, normalizeLocale } from "@/i18n/config";
 import { SITE_ORIGIN } from "@/lib/site";
 
 export const revalidate = 300;
@@ -27,8 +28,13 @@ function toPubDate(createdAt?: string): string | null {
   return date.toUTCString();
 }
 
-export async function GET() {
-  const list = await getCaseListData("all");
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ lang: string }> }
+) {
+  const locale = normalizeLocale((await params).lang);
+  const isEnglish = locale === "en";
+  const list = await getCaseListData("all", locale);
 
   const items = [...list]
     .sort((a, b) => {
@@ -40,11 +46,19 @@ export async function GET() {
 
   const itemsXml = items
     .map((item) => {
-      const link = `${SITE_ORIGIN}/cases/${item.slug}`;
+      const link = `${SITE_ORIGIN}${localizeHref(
+        locale,
+        `/cases/${item.slug}`
+      )}`;
       // 只放摘要与 Prompt 预览，绝不输出 promptFull，保持与公开列表 API 一致的暴露面。
-      const description = `${item.summary}\n\nPrompt 预览：${item.promptPreview}`;
+      const description = `${item.summary}\n\n${
+        isEnglish ? "Prompt preview" : "Prompt 预览"
+      }：${item.promptPreview}`;
       const pubDate = toPubDate(item.createdAt);
-      const enclosureUrl = `${SITE_ORIGIN}/cases/${item.slug}/opengraph-image`;
+      const enclosureUrl = `${SITE_ORIGIN}${localizeHref(
+        locale,
+        `/cases/${item.slug}/opengraph-image`
+      )}`;
 
       return [
         "    <item>",
@@ -65,11 +79,13 @@ export async function GET() {
 <rss version="2.0">
   <channel>
     <title>GoodCase.ai</title>
-    <link>${SITE_ORIGIN}</link>
+    <link>${SITE_ORIGIN}${localizeHref(locale, "/")}</link>
     <description>${escapeXml(
-      "中文 AI Case 证据库：真实出处、创作者署名、方法与复测证据。"
+      isEnglish
+        ? "A public AI case evidence library with original sources, credited creators, methods, and retest evidence."
+        : "中文 AI Case 证据库：真实出处、创作者署名、方法与复测证据。"
     )}</description>
-    <language>zh-cn</language>
+    <language>${isEnglish ? "en" : "zh-cn"}</language>
 ${itemsXml}
   </channel>
 </rss>
@@ -79,6 +95,7 @@ ${itemsXml}
     status: 200,
     headers: {
       "Content-Type": "application/rss+xml; charset=utf-8",
+      "Content-Language": locale,
       "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
     },
   });

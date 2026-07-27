@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useMessages } from "@/i18n/client";
 
 function getInitials(name: string) {
   const normalized = name.replace(/^@/, "").trim();
@@ -22,13 +25,14 @@ export function CreatorAvatar({
   size?: number;
   className?: string;
 }) {
+  const messages = useMessages();
   const style = { width: size, height: size };
 
   if (avatarUrl) {
     return (
       <Image
         src={avatarUrl}
-        alt={`${name} 的头像`}
+        alt={`${name} ${messages.creatorAvatar.imageAlt}`}
         width={size}
         height={size}
         sizes={`${size}px`}
@@ -40,7 +44,7 @@ export function CreatorAvatar({
 
   return (
     <span
-      aria-label={`${name} 的头像占位`}
+      aria-label={`${name} ${messages.creatorAvatar.placeholderAlt}`}
       className={`flex shrink-0 items-center justify-center rounded-full border border-[var(--hair)] bg-[var(--paper-2)] font-mono text-xs font-semibold ${className}`}
       style={style}
     >

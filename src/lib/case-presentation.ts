@@ -61,23 +61,17 @@ function getStandaloneResourceUrl(value: string) {
   }
 }
 
-export function getCaseCardPrompt(
-  promptPreview?: string | null,
-  promptTranslationZh?: string | null
-) {
-  const original = promptPreview?.trim() || "";
-  const resourceUrl = getStandaloneResourceUrl(original);
+export function getCaseCardPrompt(promptValue?: string | null) {
+  const prompt = promptValue?.trim() || "";
+  const resourceUrl = getStandaloneResourceUrl(prompt);
 
   if (resourceUrl) {
     return { text: null, resourceUrl };
   }
 
-  const translation = promptTranslationZh?.trim() || "";
-  const text = translation || original;
-
-  if (!text || text === MISSING_PROMPT_PREVIEW) {
+  if (!prompt || prompt === MISSING_PROMPT_PREVIEW) {
     return { text: null, resourceUrl: null };
   }
 
-  return { text, resourceUrl: null };
+  return { text: prompt, resourceUrl: null };
 }

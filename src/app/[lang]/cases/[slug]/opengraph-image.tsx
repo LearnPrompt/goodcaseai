@@ -1,11 +1,12 @@
 import { ImageResponse } from "next/og";
 import { getCaseDetailData } from "@/lib/cases";
+import { normalizeLocale } from "@/i18n/config";
 import { loadChineseFont } from "@/lib/og-font";
 import { SITE_HOST } from "@/lib/site";
 
 export const revalidate = 300;
 
-export const alt = "GoodCase.ai 案例";
+export const alt = "GoodCase.ai case";
 export const size = {
   width: 1200,
   height: 630,
@@ -31,20 +32,22 @@ const CATEGORY_LABELS_EN: Record<string, string> = {
 export default async function Image({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ lang: string; slug: string }>;
 }) {
-  const { slug } = await params;
-  const item = await getCaseDetailData(slug);
+  const { lang, slug } = await params;
+  const locale = normalizeLocale(lang);
+  const isEnglish = locale === "en";
+  const item = await getCaseDetailData(slug, locale);
 
-  const title = item?.title || "GoodCase.ai 案例";
+  const title = item?.title || (isEnglish ? "GoodCase.ai case" : "GoodCase.ai 案例");
   const categoryKey = item?.category || "image";
 
-  const fontData = await loadChineseFont(
-    `${title}${CATEGORY_LABELS[categoryKey]}案例`
-  );
+  const fontData = isEnglish
+    ? null
+    : await loadChineseFont(`${title}${CATEGORY_LABELS[categoryKey]}案例`);
 
-  const displayTitle = fontData ? title : slug.replace(/-/g, " ");
-  const displayCategory = fontData
+  const displayTitle = isEnglish || fontData ? title : slug.replace(/-/g, " ");
+  const displayCategory = !isEnglish && fontData
     ? CATEGORY_LABELS[categoryKey]
     : CATEGORY_LABELS_EN[categoryKey];
 
@@ -131,7 +134,7 @@ export default async function Image({
           }}
         >
           <div style={{ fontSize: "24px", color: "#a3a39e", display: "flex" }}>
-            {fontData ? "完整 Prompt 公开" : "Full prompt is public"}
+            {isEnglish ? "Full prompt is public" : "完整 Prompt 公开"}
           </div>
           <div style={{ fontSize: "24px", color: "#6b6b66" }}>{SITE_HOST}</div>
         </div>

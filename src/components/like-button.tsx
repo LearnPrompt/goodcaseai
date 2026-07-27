@@ -4,6 +4,7 @@ import {
   toggleLocalLike,
   useHasLikedCase,
 } from "@/lib/local-likes";
+import { useMessages } from "@/i18n/client";
 
 export function LikeButton({
   caseSlug,
@@ -12,6 +13,7 @@ export function LikeButton({
   caseSlug: string;
   initialCount: number;
 }) {
+  const messages = useMessages();
   // SSR 与首次 hydration 一律按未点赞渲染，挂载后读本机状态，避免 hydration mismatch。
   const hasLiked = useHasLikedCase(caseSlug);
   const likedCount = initialCount + (hasLiked ? 1 : 0);
@@ -29,7 +31,9 @@ export function LikeButton({
       >
         <span aria-hidden="true">{hasLiked ? "♥" : "♡"}</span>
         <span>{likedCount}</span>
-        <span>{hasLiked ? "已点赞" : "点赞"}</span>
+        <span>
+          {hasLiked ? messages.interaction.liked : messages.interaction.like}
+        </span>
       </button>
     </div>
   );

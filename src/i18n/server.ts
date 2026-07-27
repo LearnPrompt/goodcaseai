@@ -1,5 +1,7 @@
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import {
+  isLocale,
   LOCALE_REQUEST_HEADER,
   normalizeLocale,
   type Locale,
@@ -13,4 +15,14 @@ export async function getLocale(): Promise<Locale> {
 
 export async function getServerMessages() {
   return getMessages(await getLocale());
+}
+
+export async function getLocaleFromParams(
+  params: Promise<{ lang: string }>
+): Promise<Locale> {
+  const { lang } = await params;
+  if (!isLocale(lang)) {
+    notFound();
+  }
+  return lang;
 }

@@ -17,7 +17,9 @@ export type CaseItem = {
   summary: string;
   promptPreview: string;
   promptFull: string;
+  contentLocale?: "zh-CN" | "en";
   promptTranslationZh?: string;
+  promptTranslationEn?: string;
   resultBreakdown?: [string, string, string];
   mediaType: "image" | "video";
   mediaUrl: string;

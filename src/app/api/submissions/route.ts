@@ -4,6 +4,7 @@ import { getAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { buildDedupeKey, normalizeCategory, slugify } from "@/lib/candidate-dedupe";
 import { sendOwnerNotification } from "@/lib/owner-notification";
 import { absoluteUrl } from "@/lib/site";
+import { normalizeLocale, type Locale } from "@/i18n/config";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 5;
@@ -38,6 +39,10 @@ function parseHttpUrl(value: string): URL | null {
   }
 }
 
+function message(locale: Locale, zh: string, en: string) {
+  return locale === "en" ? en : zh;
+}
+
 export async function POST(request: NextRequest) {
   try {
     let body: unknown;
@@ -52,6 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const raw = body as Record<string, unknown>;
+    const locale = normalizeLocale(asTrimmedString(raw.locale));
 
     // honeypot：机器人填了隐藏字段，假装成功但不写库。
     if (asTrimmedString(raw.website)) {
@@ -61,12 +67,30 @@ export async function POST(request: NextRequest) {
     const url = asTrimmedString(raw.url);
     const parsedUrl = parseHttpUrl(url);
     if (!parsedUrl) {
-      return Response.json({ error: "url is required and must be a valid http(s) url" }, { status: 400 });
+      return Response.json(
+        {
+          error: message(
+            locale,
+            "案例链接必填，且必须是有效的 http(s) 地址。",
+            "A valid http(s) case URL is required."
+          ),
+        },
+        { status: 400 }
+      );
     }
 
     const title = asTrimmedString(raw.title);
     if (!title || title.length > 120) {
-      return Response.json({ error: "title is required (max 120 chars)" }, { status: 400 });
+      return Response.json(
+        {
+          error: message(
+            locale,
+            "标题必填，且不能超过 120 个字符。",
+            "A title is required and must be no longer than 120 characters."
+          ),
+        },
+        { status: 400 }
+      );
     }
 
     const category = normalizeCategory(raw.category ?? "web");
@@ -74,13 +98,31 @@ export async function POST(request: NextRequest) {
     const summary = asTrimmedString(raw.summary);
     const prompt = asTrimmedString(raw.prompt);
     if (summary.length > 2000 || prompt.length > 2000) {
-      return Response.json({ error: "summary/prompt too long (max 2000 chars)" }, { status: 400 });
+      return Response.json(
+        {
+          error: message(
+            locale,
+            "案例说明和 Prompt 均不能超过 2000 个字符。",
+            "The summary and prompt must each be no longer than 2,000 characters."
+          ),
+        },
+        { status: 400 }
+      );
     }
 
     const creatorName = asTrimmedString(raw.creatorName);
     const contact = asTrimmedString(raw.contact);
     if (creatorName.length > 120 || contact.length > 120) {
-      return Response.json({ error: "creatorName/contact too long (max 120 chars)" }, { status: 400 });
+      return Response.json(
+        {
+          error: message(
+            locale,
+            "名字和联系方式均不能超过 120 个字符。",
+            "The name and contact fields must each be no longer than 120 characters."
+          ),
+        },
+        { status: 400 }
+      );
     }
 
     const supabase = getAdminSupabaseClient();
@@ -131,6 +173,9 @@ export async function POST(request: NextRequest) {
       creator_name: creatorName || null,
       summary: summary || "暂无摘要",
       prompt_full: prompt || null,
+      content_locale: locale,
+      translations: {},
+      translation_status: "untranslated",
       media_kind: category === "video" ? "video" : "image",
       media_url: "/media/placeholder.png",
       evidence_level: "L0",

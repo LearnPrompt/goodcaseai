@@ -1,22 +1,33 @@
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { SiteShell } from "@/components/site-shell";
+import { getLocale } from "@/i18n/server";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const locale = await getLocale();
+  const isEnglish = locale === "en";
   return (
-    <SiteShell footerNote="这个版本先只做了核心路由，404 页面也保持同一视觉语言。">
+    <SiteShell
+      footerNote={
+        isEnglish
+          ? "This address does not point to a published GoodCase page."
+          : "这个地址没有对应已发布的 GoodCase 页面。"
+      }
+    >
       <section className="gc-empty-state my-8">
         <p className="gc-eyebrow">
-          Not found
+          {isEnglish ? "Page not found" : "页面不存在"}
         </p>
         <h1 className="text-5xl font-medium leading-[0.95] tracking-[-0.04em] md:text-7xl">
-          这个页面还没做，或者路径不对。
+          {isEnglish
+            ? "This page does not exist, or the address is wrong."
+            : "这个页面不存在，或者路径不对。"}
         </h1>
         <div>
           <Link
             href="/"
             className="gc-action gc-action-primary"
           >
-            返回首页
+            {isEnglish ? "Back to home" : "返回首页"}
           </Link>
         </div>
       </section>
