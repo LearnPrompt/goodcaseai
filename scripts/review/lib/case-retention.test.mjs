@@ -84,9 +84,9 @@ test("missing prompt sentinel stays stable for card suppression", () => {
   assert.equal(MISSING_PROMPT_PREVIEW, "该案例暂未提供 Prompt 预览。");
 });
 
-test("case cards prefer a Chinese prompt translation when available", () => {
+test("case cards render the selected prompt language", () => {
   assert.deepEqual(
-    getCaseCardPrompt("An English prompt", "中文提示语"),
+    getCaseCardPrompt("中文提示语"),
     { text: "中文提示语", resourceUrl: null }
   );
 });

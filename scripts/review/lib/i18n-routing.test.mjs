@@ -11,6 +11,17 @@ import {
   getMessages,
   zhCNMessages,
 } from "../../../src/i18n/messages.ts";
+import { getEnglishCaseTranslation } from "../../../src/i18n/content.ts";
+import { caseItems } from "../../../src/lib/mock-data.ts";
+
+function messageKeys(value, prefix = "") {
+  return Object.entries(value).flatMap(([key, nested]) => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    return nested && typeof nested === "object"
+      ? messageKeys(nested, path)
+      : [path];
+  });
+}
 
 test("locale path parsing keeps Chinese URLs stable and strips English prefix", () => {
   assert.deepEqual(splitLocalePathname("/cases/example"), {
@@ -64,10 +75,32 @@ test("locale normalization and message catalogs remain complete", () => {
   assert.equal(normalizeLocale("fr"), "zh-CN");
   assert.equal(getMessages("en").nav.cases, "Cases");
   assert.equal(getMessages("zh-CN").nav.cases, "案例");
-  assert.deepEqual(Object.keys(enMessages), Object.keys(zhCNMessages));
-  assert.deepEqual(Object.keys(enMessages.nav), Object.keys(zhCNMessages.nav));
-  assert.deepEqual(
-    Object.keys(enMessages.language),
-    Object.keys(zhCNMessages.language)
-  );
+  assert.deepEqual(messageKeys(enMessages), messageKeys(zhCNMessages));
+  for (const messages of [enMessages, zhCNMessages]) {
+    for (const key of messageKeys(messages)) {
+      const value = key
+        .split(".")
+        .reduce((current, segment) => current[segment], messages);
+      assert.ok(String(value).trim(), `${key} must not be empty`);
+    }
+  }
+});
+
+test("all published fixtures have English metadata and translatable prompts", () => {
+  assert.equal(caseItems.length, 12);
+  for (const item of caseItems) {
+    const translation = getEnglishCaseTranslation(item.slug);
+    assert.ok(translation?.title, `${item.slug} is missing an English title`);
+    assert.ok(translation?.summary, `${item.slug} is missing an English summary`);
+
+    if (
+      item.slug !== "real-case-11-servasyy-ai" &&
+      item.slug !== "real-case-12-viktoroddy"
+    ) {
+      assert.ok(
+        translation?.promptTranslationZh || item.promptTranslationZh,
+        `${item.slug} is missing a Chinese prompt translation`
+      );
+    }
+  }
 });
