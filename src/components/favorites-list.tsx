@@ -39,7 +39,7 @@ export function FavoritesList() {
   useEffect(() => {
     let cancelled = false;
 
-    fetch("/api/public/cases?take=50")
+    fetch("/api/public/cases?take=50", { cache: "no-store" })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`unexpected status ${response.status}`);

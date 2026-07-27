@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  type PromptLanguage,
+  usePromptLanguage,
+} from "@/lib/prompt-language";
 
 export function PromptViewer({
   original,
@@ -9,9 +13,7 @@ export function PromptViewer({
   original: string;
   translationZh?: string;
 }) {
-  const [language, setLanguage] = useState<"original" | "zh">(
-    translationZh ? "zh" : "original"
-  );
+  const [language, setLanguage] = usePromptLanguage(Boolean(translationZh));
   const [copied, setCopied] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prompt = language === "zh" && translationZh ? translationZh : original;
@@ -52,7 +54,7 @@ export function PromptViewer({
                   key={value}
                   type="button"
                   aria-pressed={language === value}
-                  onClick={() => setLanguage(value as "original" | "zh")}
+                  onClick={() => setLanguage(value as PromptLanguage)}
                   className={`min-h-10 border-r border-[var(--hair)] px-3 font-mono text-[10px] uppercase tracking-[0.08em] transition ${
                     language === value
                       ? "bg-[var(--ink)] text-[var(--paper)]"

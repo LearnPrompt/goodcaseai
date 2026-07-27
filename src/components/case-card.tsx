@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CaseCardPrompt } from "@/components/case-card-prompt";
 import {
   CATEGORY_LABELS,
-  getCaseCardPrompt,
   getCaseCardSummary,
 } from "@/lib/case-presentation";
 import { formatStabilityScore } from "@/lib/stability";
@@ -35,10 +35,6 @@ export function CaseCard({
     CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] ||
     item.category;
   const summary = getCaseCardSummary(item.summary);
-  const prompt = getCaseCardPrompt(
-    item.promptPreview,
-    item.promptTranslationZh
-  );
 
   return (
     <article className="gc-card group flex h-full flex-col overflow-hidden">
@@ -87,38 +83,18 @@ export function CaseCard({
           </p>
         ) : null}
 
-        {prompt.text ? (
-          <div className="mt-5 border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3">
-            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
-              Prompt / 方法片段
-            </p>
-            <p className="mt-2 line-clamp-3 font-mono text-[11px] leading-5 text-[var(--ink)]">
-              {prompt.text}
-            </p>
-          </div>
-        ) : prompt.resourceUrl ? (
-          <div className="mt-5 border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3">
-            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
-              方法 / 代码
-            </p>
-            <a
-              href={prompt.resourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="gc-action mt-3 inline-flex"
-            >
-              查看方法 / 代码 ↗
-            </a>
-          </div>
-        ) : null}
+        <CaseCardPrompt
+          promptPreview={item.promptPreview}
+          promptTranslationZh={item.promptTranslationZh}
+        />
 
         <div className="mt-5 grid grid-cols-2 gap-2">
           <div className="gc-stat">
-            <div className="gc-stat-label">Source heat</div>
+            <div className="gc-stat-label">来源热度 / Source Heat</div>
             <div className="gc-stat-value">{item.sourceHeatScore ?? "—"}</div>
           </div>
           <div className="gc-stat">
-            <div className="gc-stat-label">Stability</div>
+            <div className="gc-stat-label">稳定度 / Stability</div>
             <div className="gc-stat-value">
               {formatStabilityScore(item.stabilityScore)}
             </div>
