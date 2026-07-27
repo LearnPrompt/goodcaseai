@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   formatPublishedDate,
+  getCaseCardPrompt,
+  getCaseCardSummary,
   MISSING_PROMPT_PREVIEW,
 } from "../../../src/lib/case-presentation.ts";
 import {
@@ -80,4 +82,36 @@ test("published dates are normalized to a stable UTC day", () => {
 
 test("missing prompt sentinel stays stable for card suppression", () => {
   assert.equal(MISSING_PROMPT_PREVIEW, "该案例暂未提供 Prompt 预览。");
+});
+
+test("case cards prefer a Chinese prompt translation when available", () => {
+  assert.deepEqual(
+    getCaseCardPrompt("An English prompt", "中文提示语"),
+    { text: "中文提示语", resourceUrl: null }
+  );
+});
+
+test("standalone prompt links become explicit resources", () => {
+  assert.deepEqual(
+    getCaseCardPrompt(
+      "[https://github.com/example/project](https://github.com/example/project)"
+    ),
+    {
+      text: null,
+      resourceUrl: "https://github.com/example/project",
+    }
+  );
+});
+
+test("generic source summaries are hidden while specific summaries remain", () => {
+  assert.equal(
+    getCaseCardSummary(
+      "来自 X / 𝕏 的真实 图像 案例，由 @creator 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。"
+    ),
+    null
+  );
+  assert.equal(
+    getCaseCardSummary("镜头沿箭矢连续推进，并从宏观战场切入微观世界。"),
+    "镜头沿箭矢连续推进，并从宏观战场切入微观世界。"
+  );
 });

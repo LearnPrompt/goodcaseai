@@ -3,7 +3,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import {
   CATEGORY_LABELS,
-  MISSING_PROMPT_PREVIEW,
+  getCaseCardPrompt,
+  getCaseCardSummary,
 } from "@/lib/case-presentation";
 import { formatStabilityScore } from "@/lib/stability";
 
@@ -15,6 +16,7 @@ export type CaseCardItem = {
   creator?: string;
   summary: string;
   promptPreview?: string | null;
+  promptTranslationZh?: string | null;
   mediaType: string;
   mediaUrl: string | null;
   posterUrl?: string | null;
@@ -32,9 +34,11 @@ export function CaseCard({
   const label =
     CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] ||
     item.category;
-  const promptPreview = item.promptPreview?.trim();
-  const showPromptPreview =
-    Boolean(promptPreview) && promptPreview !== MISSING_PROMPT_PREVIEW;
+  const summary = getCaseCardSummary(item.summary);
+  const prompt = getCaseCardPrompt(
+    item.promptPreview,
+    item.promptTranslationZh
+  );
 
   return (
     <article className="gc-card group flex h-full flex-col overflow-hidden">
@@ -77,18 +81,34 @@ export function CaseCard({
             {item.title}
           </h2>
         </Link>
-        <p className="mt-3 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
-          {item.summary}
-        </p>
+        {summary ? (
+          <p className="mt-3 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
+            {summary}
+          </p>
+        ) : null}
 
-        {showPromptPreview ? (
+        {prompt.text ? (
           <div className="mt-5 border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3">
             <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
               Prompt / 方法片段
             </p>
             <p className="mt-2 line-clamp-3 font-mono text-[11px] leading-5 text-[var(--ink)]">
-              {promptPreview}
+              {prompt.text}
             </p>
+          </div>
+        ) : prompt.resourceUrl ? (
+          <div className="mt-5 border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
+              方法 / 代码
+            </p>
+            <a
+              href={prompt.resourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="gc-action mt-3 inline-flex"
+            >
+              查看方法 / 代码 ↗
+            </a>
           </div>
         ) : null}
 

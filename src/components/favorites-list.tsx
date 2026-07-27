@@ -14,6 +14,7 @@ type PublicCaseItem = {
   source: string;
   summary: string;
   promptPreview: string | null;
+  promptTranslationZh: string | null;
   mediaType: string;
   mediaUrl: string | null;
   posterUrl: string | null;
