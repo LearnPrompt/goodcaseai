@@ -18,6 +18,7 @@
     "ops:map-human-reviews": "node --env-file=.env.local scripts/ops/apply-human-review-labels.mjs",
     "ops:reconcile": "node --env-file=.env.local scripts/ops/reconcile-production-data.mjs",
     "ops:domain-ready": "node scripts/ops/check-domain-readiness.mjs",
+    "ops:i18n-smoke": "node scripts/ops/check-i18n-pages.mjs",
     "import:candidates": "node scripts/ingest-candidates.mjs",
     "review:candidates": "node scripts/review-candidates.mjs",
     "publish:cases": "node scripts/publish-approved-cases.mjs"

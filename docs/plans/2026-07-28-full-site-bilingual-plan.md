@@ -1,8 +1,8 @@
 # GoodCase 全站中英文切换开发计划
 
 日期：2026-07-28  
-状态：Idea King 审核完成，等待 URL 方案确认后实施  
-目标分支：建议从 PR #7 当前分支另开 `feat/full-site-i18n`
+状态：已按 Idea King 审核结论实施，进入 PR 验收
+目标分支：`feat/full-site-i18n-20260728`
 
 ## 结论 (Verdict)
 
