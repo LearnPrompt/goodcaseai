@@ -1,16 +1,21 @@
-import Link from "next/link";
-import Image from "next/image";
+"use client";
 
-const navItems = [
-  { href: "/cases", label: "案例" },
-  { href: "/creators", label: "创作者" },
-  { href: "/favorites", label: "收藏" },
-  { href: "/submit", label: "投稿" },
-  { href: "/changelog", label: "更新日志" },
-  { href: "/connect#feedback", label: "反馈" },
-];
+import Image from "next/image";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { LocalizedLink as Link } from "@/components/localized-link";
+import { useMessages } from "@/i18n/client";
 
 export function SiteHeader() {
+  const messages = useMessages();
+  const navItems = [
+    { href: "/cases", label: messages.nav.cases },
+    { href: "/creators", label: messages.nav.creators },
+    { href: "/favorites", label: messages.nav.favorites },
+    { href: "/submit", label: messages.nav.submit },
+    { href: "/changelog", label: messages.nav.changelog },
+    { href: "/connect#feedback", label: messages.nav.feedback },
+  ];
+
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--hair)] bg-[rgba(250,250,247,0.94)] backdrop-blur-xl">
       <div className="mx-auto flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-3 px-4 py-3 md:px-6">
@@ -21,13 +26,13 @@ export function SiteHeader() {
           <span className="flex flex-col">
             <span className="text-sm font-semibold tracking-[-0.01em] text-[var(--ink)]">GoodCase.ai</span>
             <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] sm:block">
-              中文 AI Case 证据库
+              {messages.site.tagline}
             </span>
           </span>
         </Link>
 
         <nav
-          aria-label="主导航"
+          aria-label={messages.nav.ariaLabel}
           className="order-3 flex w-full max-w-full overflow-x-auto border border-[var(--hair)] bg-white font-mono text-[10px] uppercase tracking-[0.08em] sm:w-auto md:order-none md:flex-nowrap md:overflow-visible"
         >
           {navItems.map((item) => (
@@ -41,12 +46,15 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <Link
-          href="/connect"
-          className="order-2 inline-flex min-h-11 shrink-0 items-center border border-[var(--orange)] bg-[var(--orange)] px-3 text-xs font-semibold text-white transition hover:border-[var(--ink)] hover:bg-[var(--ink)] md:order-none"
-        >
-          Agent 接入 <span aria-hidden>→</span>
-        </Link>
+        <div className="order-2 flex items-center gap-2 md:order-none">
+          <LanguageSwitcher />
+          <Link
+            href="/connect"
+            className="inline-flex min-h-11 shrink-0 items-center border border-[var(--orange)] bg-[var(--orange)] px-3 text-xs font-semibold text-white transition hover:border-[var(--ink)] hover:bg-[var(--ink)]"
+          >
+            {messages.nav.connect} <span aria-hidden>→</span>
+          </Link>
+        </div>
       </div>
     </header>
   );
