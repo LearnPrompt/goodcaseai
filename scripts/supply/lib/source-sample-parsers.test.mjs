@@ -4,6 +4,7 @@ import {
   classifySample,
   decodeHtml,
   extractBalancedJsonValue,
+  extractComfyWorkflowCards,
   extractIdeogramGalleryItems,
   extractJsonScript,
   extractMeta,
@@ -58,6 +59,38 @@ test("Ideogram gallery parser keeps prompt, detail URL, and media", () => {
       prompt: "A & B",
       sourceUrl: "https://ideogram.ai/g/abc/0",
       mediaUrl: "https://cdn.example.com/result.png",
+    },
+  ]);
+});
+
+test("Comfy workflow parser extracts embedded community cards once", () => {
+  const html = [
+    '<astro-island props="{&quot;items&quot;:[1,[[0,{',
+    '&quot;name&quot;:[0,&quot;abc123&quot;],',
+    '&quot;shareId&quot;:[0,&quot;abc123&quot;],',
+    '&quot;title&quot;:[0,&quot;Product Poster&quot;],',
+    '&quot;description&quot;:[0,&quot;A reproducible workflow description long enough to explain the method.&quot;],',
+    '&quot;mediaType&quot;:[0,&quot;image&quot;],',
+    '&quot;models&quot;:[1,[[0,&quot;Flux&quot;]]],',
+    '&quot;thumbnails&quot;:[1,[[0,&quot;https://cdn.example.com/result.png&quot;]]],',
+    '&quot;username&quot;:[0,&quot;alice&quot;],',
+    '&quot;creatorDisplayName&quot;:[0,&quot;Alice&quot;]',
+    "}]]]}",
+    '"></astro-island>',
+  ].join("");
+
+  assert.deepEqual(extractComfyWorkflowCards(html), [
+    {
+      name: "abc123",
+      shareId: "abc123",
+      title: "Product Poster",
+      description:
+        "A reproducible workflow description long enough to explain the method.",
+      mediaType: "image",
+      mediaUrl: "https://cdn.example.com/result.png",
+      username: "alice",
+      creator: "Alice",
+      model: "Flux",
     },
   ]);
 });

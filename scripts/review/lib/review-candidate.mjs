@@ -68,7 +68,7 @@ export function validateReview(candidate, input) {
     if (!hasHttpUrl(candidate.source_url)) {
       errors.push("缺少可访问的 http(s) 原始来源 source_url");
     }
-    if (!hasUsefulText(candidate.creator_name)) {
+    if (!hasUsefulText(candidate.creator_name, 1)) {
       errors.push("缺少作者 creator_name");
     }
     if (!hasUsefulText(candidate.title, 4)) {

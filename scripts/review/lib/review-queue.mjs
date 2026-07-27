@@ -28,6 +28,68 @@ export function sourceInteractionCount(candidate) {
   );
 }
 
+export function filterCandidatesByIds(candidates, ids = []) {
+  if (!Array.isArray(ids)) {
+    throw new Error("ids 必须是数组。");
+  }
+  if (ids.length === 0) {
+    return candidates;
+  }
+
+  const allowedIds = new Set(ids);
+  return candidates.filter((candidate) => allowedIds.has(candidate.id));
+}
+
+const RECOMMENDED_DECISIONS = {
+  review_first: "approve",
+  borderline: "borderline",
+  pre_reject: "reject",
+};
+
+export function buildRecommendationReviewPlan(items, groups = []) {
+  if (!Array.isArray(items)) {
+    throw new Error("recommendation items 必须是数组。");
+  }
+  if (!Array.isArray(groups)) {
+    throw new Error("recommendation groups 必须是数组。");
+  }
+
+  const allowedGroups = new Set(
+    groups.length > 0 ? groups : Object.keys(RECOMMENDED_DECISIONS)
+  );
+  const seenIds = new Set();
+
+  return items
+    .filter((item) => allowedGroups.has(item.recommendation))
+    .map((item) => {
+      if (!hasText(item.id)) {
+        throw new Error("recommendation item 缺少 id。");
+      }
+      if (!RECOMMENDED_DECISIONS[item.recommendation]) {
+        throw new Error(`不支持的 recommendation：${item.recommendation}`);
+      }
+      if (seenIds.has(item.id)) {
+        throw new Error(`recommendation id 重复：${item.id}`);
+      }
+      seenIds.add(item.id);
+      return {
+        id: item.id,
+        recommendation: item.recommendation,
+        recommended_decision: RECOMMENDED_DECISIONS[item.recommendation],
+        rule: hasText(item.rule) ? item.rule : "",
+      };
+    })
+    .sort((left, right) => {
+      if (groups.length === 0) {
+        return 0;
+      }
+      return (
+        groups.indexOf(left.recommendation) -
+        groups.indexOf(right.recommendation)
+      );
+    });
+}
+
 export function reviewReadinessIssues(candidate) {
   const issues = [];
 

@@ -1,0 +1,32 @@
+{
+  "batch": "youmind-image-2026-07-25",
+  "completed_at": "2026-07-27",
+  "summary": {
+    "total": 127,
+    "approve": 43,
+    "reject": 82,
+    "borderline": 2,
+    "skip": 0,
+    "binary_approval_rate": 0.344
+  },
+  "source_files": [
+    {"path":"image-v1-calibration-2026-07-26.json","count":30},
+    {"path":"image-v1-followup-results-2026-07-27.json","count":20},
+    {"path":"image-v1-shortlist-results-2026-07-27.json","count":17},
+    {"path":"image-v1-final-confirm-results-2026-07-27.json","count":60}
+  ],
+  "final_confirmation_evaluation": {
+    "machine_reject_total": 53,
+    "machine_reject_confirmed": 41,
+    "machine_reject_overridden_to_approve": 12,
+    "machine_reject_precision": 0.774,
+    "conclusion": "机器建议只用于排序；最终图片判断必须保留人工看图确认。"
+  },
+  "production_state": {
+    "mapped_at": "2026-07-27",
+    "approved": 43,
+    "rejected": 82,
+    "pending_borderline": 2,
+    "published": 0
+  }
+}

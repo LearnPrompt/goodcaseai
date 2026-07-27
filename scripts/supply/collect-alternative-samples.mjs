@@ -7,6 +7,7 @@ import {
   classifySample,
   decodeHtml,
   extractBalancedJsonValue,
+  extractComfyWorkflowCards,
   extractIdeogramGalleryItems,
   extractJsonScript,
   extractMeta,
@@ -135,6 +136,61 @@ const LEXICA_SEARCHES = [
   { query: "product poster", limit: 2 },
   { query: "packaging design", limit: 2 },
   { query: "interior design", limit: 1 },
+];
+
+const RUNCOMFY_SEEDS = [
+  "consistent-character-creator-4-0-comfyui-flux-2-dataset",
+  "krea-2-muse-text-to-image-comfyui-workflow-turbo-fp8-portrait-concept-art",
+  "ideogram-4-comfyui-workflow-structured-text-to-image-generator",
+];
+
+const YOUML_SEEDS = [
+  {
+    id: "5817-ai-sticker-maker",
+    creator: "tom",
+    method: "Generate cute stickers with a transparent background.",
+    prompt: "a cute cat",
+  },
+  {
+    id: "12009-poster-copy",
+    creator: "leon34",
+    method: "",
+    prompt: "",
+  },
+];
+
+const PROMPTDEN_SEEDS = [
+  "elegant-kintsugi-bowl-artistry-in-repair",
+  "premium-baby-food-broccoli-zucchini-delight",
+  "whimsical-black-cat-starry-night-artwork",
+];
+
+const DISCOVERY_ONLY_SOURCES = [
+  {
+    id: "motionsites",
+    label: "MotionSites",
+    note: "有可复制 Prompt，但缺少清晰作者与稳定案例详情，只作网页动效选题源。",
+  },
+  {
+    id: "superdesign",
+    label: "Superdesign",
+    note: "适合 UI、动画和落地页 Prompt 富化，不作为创作者 Case 主源。",
+  },
+  {
+    id: "ui-prompt-explorer",
+    label: "UI Prompt Explorer",
+    note: "适合风格标签与检索词富化，缺少创作者证据。",
+  },
+  {
+    id: "ai-design-guide",
+    label: "AI Design Guide",
+    note: "单一作者知识库，适合 LearnPrompt 外链与方法富化。",
+  },
+  {
+    id: "prompting-pixels",
+    label: "Prompting Pixels",
+    note: "有可下载工作流，但多数归属站点编辑部，先作工作流线索。",
+  },
 ];
 
 function getArg(name, fallback = "") {
@@ -650,6 +706,181 @@ async function collectIdeogram() {
   return rows;
 }
 
+async function collectComfy() {
+  const html = await fetchText("https://comfy.org/workflows/");
+  const rows = [];
+  const creatorCounts = new Map();
+
+  for (const card of extractComfyWorkflowCards(html)) {
+    if (rows.length >= 12) {
+      break;
+    }
+    if (
+      card.username === "comfyui" ||
+      hasBlockedTerms(`${card.title}\n${card.description}`)
+    ) {
+      continue;
+    }
+
+    const creatorCount = creatorCounts.get(card.username) || 0;
+    if (creatorCount >= 2) {
+      continue;
+    }
+    creatorCounts.set(card.username, creatorCount + 1);
+
+    rows.push(
+      classifySample({
+        id: `comfy-${card.shareId}`,
+        sourceId: "comfy",
+        sourceLabel: "Comfy Workflows",
+        sourceUrl: `https://comfy.org/workflows/${card.shareId}-${card.shareId}/`,
+        title: card.title,
+        creator: card.creator || card.username,
+        creatorUrl: `https://comfy.org/workflows/creators/${card.username}/`,
+        mediaUrl: card.mediaUrl,
+        mediaKind:
+          card.mediaType === "video" || card.mediaUrl.includes(".mp4")
+            ? "video"
+            : "image",
+        promptText: "",
+        method: card.description,
+        model: card.model || "ComfyUI",
+        license: "原页未明确，待人工复核",
+        notes:
+          "公开社区工作流，可在原页查看或下载；尚未由 GoodCase 实际复跑。",
+      })
+    );
+  }
+
+  return rows;
+}
+
+async function collectRunComfy() {
+  const rows = [];
+  for (const slug of RUNCOMFY_SEEDS) {
+    const sourceUrl = `https://www.runcomfy.com/comfyui-workflows/${slug}`;
+    const html = await fetchText(sourceUrl);
+    const body = stripHtml(html);
+    const description = firstString(
+      extractMeta(html, "og:description", { property: true }),
+      extractMeta(html, "description")
+    );
+    const method = extractSection(
+      body,
+      ["Workflow Name:"],
+      ["Examples", "Get started for Free"],
+      description
+    );
+    const mediaUrl = extractMeta(html, "og:image", { property: true });
+
+    rows.push(
+      classifySample({
+        id: `runcomfy-${slug}`,
+        sourceId: "runcomfy",
+        sourceLabel: "RunComfy",
+        sourceUrl,
+        title: firstString(
+          extractMeta(html, "og:title", { property: true }),
+          slug.replaceAll("-", " ")
+        ),
+        creator: "未知作者",
+        creatorUrl: "",
+        mediaUrl,
+        mediaKind: mediaUrl.includes(".mp4") ? "video" : "image",
+        promptText: "",
+        method: method.slice(0, 4_000),
+        model: "ComfyUI",
+        license: "原页未明确，待人工复核",
+        notes:
+          "工作流与结果可运行，但当前公开详情未提供可核验的原始创作者，因此只作线索。",
+      })
+    );
+  }
+  return rows;
+}
+
+async function collectYouMl() {
+  const rows = [];
+  for (const seed of YOUML_SEEDS) {
+    const sourceUrl = `https://youml.com/recipes/${seed.id}`;
+    const html = await fetchText(sourceUrl);
+    const mediaUrl = extractMeta(html, "og:image", { property: true });
+    rows.push(
+      classifySample({
+        id: `youml-${seed.id.split("-")[0]}`,
+        sourceId: "youml",
+        sourceLabel: "YouML",
+        sourceUrl,
+        title: firstString(
+          extractMeta(html, "og:title", { property: true }),
+          seed.id.replaceAll("-", " ")
+        ),
+        creator: seed.creator,
+        creatorUrl: `https://youml.com/users/${seed.creator}`,
+        mediaUrl,
+        mediaKind: mediaUrl.includes(".mp4") ? "video" : "image",
+        promptText: seed.prompt,
+        method: seed.method,
+        model: "YouML Recipe",
+        license: "原页未明确，待人工复核",
+        notes:
+          "有稳定 Recipe、作者和运行入口；底层 Prompt/工作流未完整公开时只作线索。",
+      })
+    );
+  }
+  return rows;
+}
+
+async function collectPromptDen() {
+  const rows = [];
+  for (const slug of PROMPTDEN_SEEDS) {
+    const sourceUrl = `https://promptden.com/post/${slug}`;
+    const html = await fetchText(sourceUrl);
+    const body = stripHtml(html);
+    const creatorRaw = body.match(/\nBy\s+@([^\s•]+)/)?.[1] || "";
+    const creator =
+      creatorRaw === "prompts" || creatorRaw === "mjart"
+        ? "未知作者"
+        : creatorRaw;
+    const promptText =
+      body
+        .match(
+          /Prompt Used\s+(?:Please login to view the prompt\.\s*)?([\s\S]*?)(?:\n(?:MidJourney|DALL-E|Stable Diffusion|Firefly|Veo|Flux)\b)/i
+        )?.[1]
+        ?.trim() || "";
+    const title = extractMeta(html, "og:title", { property: true });
+    if (hasBlockedTerms(`${title}\n${promptText}`)) {
+      continue;
+    }
+    const mediaUrl = extractMeta(html, "og:image", { property: true });
+
+    rows.push(
+      classifySample({
+        id: `promptden-${slug}`,
+        sourceId: "promptden",
+        sourceLabel: "PromptDen",
+        sourceUrl,
+        title,
+        creator: creator || "未知作者",
+        creatorUrl: creator
+          ? `https://promptden.com/profile/${encodeURIComponent(creator)}`
+          : "",
+        mediaUrl,
+        mediaKind: mediaUrl.includes(".mp4") ? "video" : "image",
+        promptText,
+        method: "",
+        model: body.includes("\nMidJourney\n") ? "MidJourney" : "",
+        license: "原页未明确，待人工复核",
+        notes:
+          creator === "未知作者"
+            ? "当前条目来自站点聚合账号，不能当作原始创作者 Case。"
+            : "有详情、结果与 Prompt；仍需核对原创身份和转载许可。",
+      })
+    );
+  }
+  return rows;
+}
+
 async function collectFireflyStatus() {
   const html = await fetchText("https://firefly.adobe.com/community");
   const text = stripHtml(html);
@@ -662,6 +893,10 @@ async function collectFireflyStatus() {
 const COLLECTORS = [
   ["runninghub", "RunningHub", collectRunningHub],
   ["liblib", "LiblibAI", collectLiblib],
+  ["comfy", "Comfy Workflows", collectComfy],
+  ["runcomfy", "RunComfy", collectRunComfy],
+  ["youml", "YouML", collectYouMl],
+  ["promptden", "PromptDen", collectPromptDen],
   ["prompthero", "PromptHero", collectPromptHero],
   ["civitai", "Civitai", collectCivitai],
   ["openart", "OpenArt", collectOpenArt],
@@ -687,8 +922,13 @@ function renderMarkdown(report) {
     "|---|---|---:|---:|---:|",
   ];
   for (const source of report.sources) {
+    const result = source.role === "discovery_only"
+      ? `仅发现：${source.note}`
+      : source.error
+        ? `失败：${source.error}`
+        : "成功";
     lines.push(
-      `| ${source.label} | ${source.error ? `失败：${source.error}` : "成功"} | ${source.collected} | ${source.cases} | ${source.topicSeeds} |`
+      `| ${source.label} | ${result} | ${source.collected} | ${source.cases} | ${source.topicSeeds} |`
     );
   }
   lines.push(
@@ -749,6 +989,16 @@ async function main() {
       });
     }
   }
+  sources.push(
+    ...DISCOVERY_ONLY_SOURCES.map((source) => ({
+      ...source,
+      role: "discovery_only",
+      collected: 0,
+      cases: 0,
+      topicSeeds: 0,
+      error: "",
+    }))
+  );
 
   const report = {
     schemaVersion: 1,

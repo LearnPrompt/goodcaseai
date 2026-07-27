@@ -1,0 +1,22 @@
+[
+  {"id":"a7711898-7d00-4ee7-a855-f541086f0be2","title":"Floraverse 植物纤维融合","predicted_decision":"approve","confidence":"high","reason":"参考主体被转化为完整的植物纤维 3D 视觉系统，具有明确创意机制。"},
+  {"id":"a3abdb96-70ff-4aa7-a35d-ef11833f720d","title":"Redphase Survey 提示词生成器","predicted_decision":"approve","confidence":"medium","reason":"不是单张作品，而是可以迁移到多场景的结构化视觉提示系统。"},
+  {"id":"d0f53dfe-8f60-49a0-92a3-6f3aa4f44e96","title":"三步拥有幸福人生信息图","predicted_decision":"approve","confidence":"medium","reason":"中文信息图具有明确用途，但需要验证是否足够区别于普通内容海报。"},
+  {"id":"7eb9e845-7190-458b-b153-202ff2bb102d","title":"天桥上的夏季制服人像","predicted_decision":"reject","confidence":"high","reason":"普通写实生活人像，缺少独特方法或设计系统。"},
+  {"id":"7a0cd0be-f362-40b7-97d7-6189e968df17","title":"豪华轿车电影感肖像","predicted_decision":"reject","confidence":"high","reason":"常见电影感豪车人像，题材和方法均偏泛化。"},
+  {"id":"8ccc4786-f58c-43a4-b060-a688300cda1a","title":"Luxury Three-Portrait Gallery Wall","predicted_decision":"reject","confidence":"medium","reason":"室内相框 mockup 用途明确，但创意和方法增量较弱。"},
+  {"id":"dc83ab93-dc7e-4655-bcff-0c618eba9e6b","title":"单色蓝色圆珠笔肖像画","predicted_decision":"approve","confidence":"high","reason":"媒介风格鲜明且可复用，不是普通写实肖像。"},
+  {"id":"d3012990-4233-4845-bd81-8520f587a832","title":"怀抱猫咪的暗黑贵族武士","predicted_decision":"approve","confidence":"medium","reason":"人物、猫和夜市场景形成明确的叙事及视觉方向，但可能只有题材新奇。"},
+  {"id":"3ec68a90-2b2b-49c0-b535-66de87d43f36","title":"哥特风女孩角色三视图设定集","predicted_decision":"approve","confidence":"high","reason":"三视图与标注构成完整角色设计系统。"},
+  {"id":"30b9e847-a10a-4d85-b4d1-49ed10bdff49","title":"心形泡泡时尚肖像","predicted_decision":"approve","confidence":"medium","reason":"属于编辑时尚人像，并有心形泡泡这一明确造型机制。"},
+  {"id":"b249110b-9e6f-4b02-bcb2-b9b03b5dbc56","title":"蒸汽朋克西施犬与月光之城","predicted_decision":"approve","confidence":"medium","reason":"概念组合鲜明，但需要判断是否只是题材混搭。"},
+  {"id":"9eefebc0-9403-4ab1-b752-9751515a887b","title":"动漫商场时尚人像","predicted_decision":"reject","confidence":"high","reason":"普通动漫时尚肖像，没有形成设计系统或独特方法。"},
+  {"id":"0d5a5102-76be-437d-a805-1dccfbafe3ff","title":"天体机械龙天文台","predicted_decision":"approve","confidence":"medium","reason":"世界观和机械天文台构成独特概念场景，但可复用价值尚需验证。"},
+  {"id":"9dca7b6c-efc6-4976-b9d8-d564ba0864cf","title":"动漫角色设定图生成器","predicted_decision":"approve","confidence":"high","reason":"标准化正侧背面与设计指南具有明确方法和复用价值。"},
+  {"id":"161c2a29-40f5-49a2-b90f-3faf5c9c53b3","title":"瑞利散射信息图","predicted_decision":"approve","confidence":"high","reason":"结构化解释科学概念，结果与用途明确。"},
+  {"id":"9ada1793-d71d-4e7e-9814-54324b458920","title":"Geometric Android Girl Portrait","predicted_decision":"reject","confidence":"low","reason":"几何碎片增强风格，但核心仍可能是普通动漫肖像。"},
+  {"id":"35bfcbe7-12b1-4fd1-97c5-aab6bdbb651a","title":"机甲驾驶舱俯瞰城市","predicted_decision":"reject","confidence":"low","reason":"场景完整但方法增量不清晰，用于检验题材新奇是否足够。"},
+  {"id":"21a72df5-0ab5-40ac-a8bb-7d87e011bf99","title":"月下古筝演奏者漫画","predicted_decision":"approve","confidence":"medium","reason":"黑白漫画媒介、月光构图和传统乐器形成较鲜明美术方向。"},
+  {"id":"b619c5d5-2ab4-412e-9846-671def2338dc","title":"悬疑惊悚风格卧室笔记本电脑场景","predicted_decision":"reject","confidence":"medium","reason":"电影剧照氛围明确，但复用方法和差异化可能不足。"},
+  {"id":"4d5b5b7c-45fd-40c0-8d85-3dcf2005f609","title":"教育类漫画生成提示词","predicted_decision":"approve","confidence":"high","reason":"角色一致性、画格布局和教育用途构成可迁移的方法系统。"}
+]

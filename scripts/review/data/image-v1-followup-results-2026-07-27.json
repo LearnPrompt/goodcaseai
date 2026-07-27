@@ -1,0 +1,48 @@
+{
+  "review_key": "image-v1-followup-2026-07-26",
+  "reviewed_at": "2026-07-27",
+  "summary": {
+    "total": 20,
+    "human": {
+      "approve": 4,
+      "reject": 15,
+      "borderline": 1,
+      "skip": 0
+    },
+    "prediction": {
+      "approve": 13,
+      "reject": 7
+    },
+    "binary_evaluation": {
+      "evaluated": 19,
+      "exact_matches": 11,
+      "agreement_rate": 0.579,
+      "approve_precision": 0.308,
+      "approve_recall": 1,
+      "reject_precision": 1,
+      "reject_recall": 0.467
+    }
+  },
+  "items": [
+    {"code":"D01","id":"a7711898-7d00-4ee7-a855-f541086f0be2","title":"Floraverse 植物纤维融合","predicted_decision":"approve","human_decision":"reject","source_url":"https://x.com/i/status/2079797020416753679"},
+    {"code":"D02","id":"a3abdb96-70ff-4aa7-a35d-ef11833f720d","title":"Redphase Survey 提示词生成器","predicted_decision":"approve","human_decision":"borderline","source_url":"https://x.com/i/status/2079209581977202731"},
+    {"code":"D03","id":"d0f53dfe-8f60-49a0-92a3-6f3aa4f44e96","title":"三步拥有幸福人生信息图","predicted_decision":"approve","human_decision":"approve","source_url":"https://x.com/i/status/2078869781189677408"},
+    {"code":"D04","id":"7eb9e845-7190-458b-b153-202ff2bb102d","title":"天桥上的夏季制服人像","predicted_decision":"reject","human_decision":"reject","source_url":"https://x.com/i/status/2080461713707585600"},
+    {"code":"D05","id":"7a0cd0be-f362-40b7-97d7-6189e968df17","title":"豪华轿车电影感肖像","predicted_decision":"reject","human_decision":"reject","source_url":"https://x.com/i/status/2080287995463414012"},
+    {"code":"D06","id":"8ccc4786-f58c-43a4-b060-a688300cda1a","title":"Luxury Three-Portrait Gallery Wall","predicted_decision":"reject","human_decision":"reject","source_url":"https://x.com/i/status/2080541602473246777"},
+    {"code":"D07","id":"dc83ab93-dc7e-4655-bcff-0c618eba9e6b","title":"单色蓝色圆珠笔肖像画","predicted_decision":"approve","human_decision":"reject","source_url":"https://x.com/i/status/2080312959855923687"},
+    {"code":"D08","id":"d3012990-4233-4845-bd81-8520f587a832","title":"怀抱猫咪的暗黑贵族武士","predicted_decision":"approve","human_decision":"reject","source_url":"https://x.com/i/status/2080296715555672415"},
+    {"code":"D09","id":"3ec68a90-2b2b-49c0-b535-66de87d43f36","title":"哥特风女孩角色三视图设定集","predicted_decision":"approve","human_decision":"reject","source_url":"https://x.com/i/status/2077955103827599717"},
+    {"code":"D10","id":"30b9e847-a10a-4d85-b4d1-49ed10bdff49","title":"心形泡泡时尚肖像","predicted_decision":"approve","human_decision":"reject","source_url":"https://x.com/i/status/2080246557061103822"},
+    {"code":"D11","id":"b249110b-9e6f-4b02-bcb2-b9b03b5dbc56","title":"蒸汽朋克西施犬与月光之城","predicted_decision":"approve","human_decision":"reject","source_url":"https://x.com/i/status/2080281708172353703"},
+    {"code":"D12","id":"9eefebc0-9403-4ab1-b752-9751515a887b","title":"动漫商场时尚人像","predicted_decision":"reject","human_decision":"reject","source_url":"https://x.com/i/status/2080325692210991464"},
+    {"code":"D13","id":"0d5a5102-76be-437d-a805-1dccfbafe3ff","title":"天体机械龙天文台","predicted_decision":"approve","human_decision":"reject","source_url":"https://x.com/i/status/2080435479959548283"},
+    {"code":"D14","id":"9dca7b6c-efc6-4976-b9d8-d564ba0864cf","title":"动漫角色设定图生成器","predicted_decision":"approve","human_decision":"approve","source_url":"https://x.com/i/status/2080494791826268265"},
+    {"code":"D15","id":"161c2a29-40f5-49a2-b90f-3faf5c9c53b3","title":"瑞利散射信息图","predicted_decision":"approve","human_decision":"approve","source_url":"https://x.com/i/status/2079959686737252419"},
+    {"code":"D16","id":"9ada1793-d71d-4e7e-9814-54324b458920","title":"Geometric Android Girl Portrait","predicted_decision":"reject","human_decision":"reject","source_url":"https://x.com/i/status/2080488387715502296"},
+    {"code":"D17","id":"35bfcbe7-12b1-4fd1-97c5-aab6bdbb651a","title":"机甲驾驶舱俯瞰城市","predicted_decision":"reject","human_decision":"reject","source_url":"https://x.com/i/status/2080267892013351337"},
+    {"code":"D18","id":"21a72df5-0ab5-40ac-a8bb-7d87e011bf99","title":"月下古筝演奏者漫画","predicted_decision":"approve","human_decision":"approve","source_url":"https://x.com/i/status/2079951164611907719"},
+    {"code":"D19","id":"b619c5d5-2ab4-412e-9846-671def2338dc","title":"悬疑惊悚风格卧室笔记本电脑场景","predicted_decision":"reject","human_decision":"reject","source_url":"https://x.com/i/status/2080345428399141136"},
+    {"code":"D20","id":"4d5b5b7c-45fd-40c0-8d85-3dcf2005f609","title":"教育类漫画生成提示词","predicted_decision":"approve","human_decision":"reject","source_url":"https://x.com/i/status/2078818022761124118"}
+  ]
+}
