@@ -59,6 +59,16 @@ check(
   apiResult.response.headers.get("content-language") === "en"
 );
 
+if (apiResult.response.status !== 200) {
+  const location = apiResult.response.headers.get("location");
+  console.error(
+    `i18n smoke could not read the preview API: HTTP ${apiResult.response.status}${
+      location ? ` → ${location}` : ""
+    }`
+  );
+  process.exit(1);
+}
+
 const apiData = JSON.parse(apiResult.body);
 const caseSlugs = apiData.items.map((item) => item.slug);
 for (const item of apiData.items) {
