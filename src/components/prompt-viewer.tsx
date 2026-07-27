@@ -9,7 +9,9 @@ export function PromptViewer({
   original: string;
   translationZh?: string;
 }) {
-  const [language, setLanguage] = useState<"original" | "zh">("original");
+  const [language, setLanguage] = useState<"original" | "zh">(
+    translationZh ? "zh" : "original"
+  );
   const [copied, setCopied] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prompt = language === "zh" && translationZh ? translationZh : original;

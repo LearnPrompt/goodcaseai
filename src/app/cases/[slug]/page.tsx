@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CaseCard } from "@/components/case-card";
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
@@ -9,7 +10,16 @@ import { ShareButton } from "@/components/share-button";
 import { PromptPanel } from "@/components/prompt-panel";
 import { CaseMedia } from "@/components/case-media";
 import { TrackEvent } from "@/components/track-event";
-import { getCaseDetailData, getCaseSlugs, getCreatorForCase } from "@/lib/cases";
+import {
+  getCaseDetailData,
+  getCaseDetailPageData,
+  getCaseSlugs,
+} from "@/lib/cases";
+import {
+  CATEGORY_LABELS,
+  formatPublishedDate,
+} from "@/lib/case-presentation";
+import { MISSING_MODEL } from "@/lib/related-cases";
 import { absoluteUrl } from "@/lib/site";
 
 function costBandLabel(costBand: "low" | "medium" | "high") {
@@ -76,15 +86,16 @@ export default async function CaseDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [item, creator] = await Promise.all([
-    getCaseDetailData(slug),
-    getCreatorForCase(slug),
-  ]);
+  const { item, creator, relatedCases } = await getCaseDetailPageData(slug);
 
   if (!item) {
     notFound();
   }
 
+  const publishedDate = formatPublishedDate(item.sourcePublishedAt);
+  const searchableModels = item.recommendedModels.filter(
+    (model) => model !== MISSING_MODEL
+  );
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -108,17 +119,65 @@ export default async function CaseDetailPage({
       <section className="grid gap-0 border-b border-[var(--hair)] pb-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-start">
         <article className="flex min-w-0 flex-col gap-5 self-start py-8 xl:pr-8">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="gc-chip gc-chip-accent">
-              {item.category}
-            </span>
+            <Link
+              href={`/cases?filter=${item.category}`}
+              className="gc-chip gc-chip-accent"
+            >
+              {CATEGORY_LABELS[item.category]}
+            </Link>
             <span className="gc-chip">{item.source}</span>
+            {publishedDate ? (
+              <span className="gc-chip font-mono">{publishedDate}</span>
+            ) : null}
             {item.evidenceLevel ? (
               <span className="gc-chip">证据 {item.evidenceLevel}</span>
             ) : null}
+            {(item.tags ?? []).map((tag) => (
+              <Link
+                key={tag}
+                href={`/cases?q=${encodeURIComponent(tag)}`}
+                className="gc-chip"
+              >
+                #{tag}
+              </Link>
+            ))}
+            {searchableModels.map((model) => (
+              <Link
+                key={model}
+                href={`/cases?q=${encodeURIComponent(model)}`}
+                className="gc-chip"
+              >
+                {model}
+              </Link>
+            ))}
           </div>
           <h1 className="max-w-[12ch] text-5xl font-medium leading-[0.92] tracking-[-0.05em] sm:text-6xl lg:text-7xl">
             {item.title}
           </h1>
+          {creator ? (
+            <Link
+              href={`/creators/${creator.slug}`}
+              className="group flex w-fit items-center gap-3"
+            >
+              <CreatorAvatar
+                name={creator.name}
+                avatarUrl={creator.avatarUrl}
+                size={44}
+              />
+              <span>
+                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--muted)]">
+                  Creator
+                </span>
+                <span className="mt-1 block text-sm font-semibold transition group-hover:text-[var(--orange)]">
+                  {creator.name} →
+                </span>
+              </span>
+            </Link>
+          ) : (
+            <p className="font-mono text-xs text-[var(--muted)]">
+              Creator · {item.creator}
+            </p>
+          )}
           <p className="max-w-3xl text-sm leading-7 text-[var(--muted)] sm:text-base sm:leading-8">{item.summary}</p>
           {item.sourceUrl ? (
             <a
@@ -159,6 +218,15 @@ export default async function CaseDetailPage({
           costBand={costBandLabel(item.costBand)}
         />
 
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 text-sm">
+          <span className="text-[var(--muted)]">
+            这条 Case 的经验 Skill 还没有沉淀。
+          </span>
+          <Link href="/connect#feedback" className="gc-action">
+            去反馈区催更 →
+          </Link>
+        </div>
+
         {creator ? (
           <article className="gc-panel grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div className="flex items-start gap-4">
@@ -185,6 +253,31 @@ export default async function CaseDetailPage({
               查看 Creator →
             </Link>
           </article>
+        ) : null}
+      </section>
+
+      <section className="gc-section">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--hair)] pb-6">
+          <div>
+            <p className="gc-eyebrow">Keep exploring</p>
+            <h2 className="mt-3 text-4xl font-medium leading-[0.95] tracking-[-0.04em]">
+              继续看相关 Case。
+            </h2>
+          </div>
+          <Link
+            href={`/cases?filter=${item.category}`}
+            className="gc-action"
+          >
+            查看全部 {CATEGORY_LABELS[item.category]} Case →
+          </Link>
+        </div>
+
+        {relatedCases.length > 0 ? (
+          <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 2xl:grid-cols-3">
+            {relatedCases.map((relatedCase) => (
+              <CaseCard key={relatedCase.slug} item={relatedCase} />
+            ))}
+          </div>
         ) : null}
       </section>
     </SiteShell>

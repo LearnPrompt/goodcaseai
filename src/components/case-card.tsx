@@ -1,15 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import {
+  CATEGORY_LABELS,
+  MISSING_PROMPT_PREVIEW,
+} from "@/lib/case-presentation";
 import { formatStabilityScore } from "@/lib/stability";
-
-const categoryLabels: Record<string, string> = {
-  image: "AI 图像",
-  video: "AI 视频",
-  web: "AI 编程",
-  copy: "AI 文案",
-  hardware: "AI 硬件",
-};
 
 export type CaseCardItem = {
   slug: string;
@@ -18,6 +14,7 @@ export type CaseCardItem = {
   source: string;
   creator?: string;
   summary: string;
+  promptPreview?: string | null;
   mediaType: string;
   mediaUrl: string | null;
   posterUrl?: string | null;
@@ -32,7 +29,12 @@ export function CaseCard({
   item: CaseCardItem;
   actions?: ReactNode;
 }) {
-  const label = categoryLabels[item.category] || item.category;
+  const label =
+    CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] ||
+    item.category;
+  const promptPreview = item.promptPreview?.trim();
+  const showPromptPreview =
+    Boolean(promptPreview) && promptPreview !== MISSING_PROMPT_PREVIEW;
 
   return (
     <article className="gc-card group flex h-full flex-col overflow-hidden">
@@ -78,6 +80,17 @@ export function CaseCard({
         <p className="mt-3 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
           {item.summary}
         </p>
+
+        {showPromptPreview ? (
+          <div className="mt-5 border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
+              Prompt / 方法片段
+            </p>
+            <p className="mt-2 line-clamp-3 font-mono text-[11px] leading-5 text-[var(--ink)]">
+              {promptPreview}
+            </p>
+          </div>
+        ) : null}
 
         <div className="mt-5 grid grid-cols-2 gap-2">
           <div className="gc-stat">

@@ -13,6 +13,7 @@ type PublicCaseItem = {
   category: string;
   source: string;
   summary: string;
+  promptPreview: string | null;
   mediaType: string;
   mediaUrl: string | null;
   posterUrl: string | null;

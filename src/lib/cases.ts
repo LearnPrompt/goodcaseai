@@ -6,9 +6,14 @@ import {
   findCreatorBySlug,
   type CreatorItem,
 } from "@/lib/creators";
+import {
+  CATEGORY_LABELS,
+  MISSING_PROMPT_PREVIEW,
+} from "@/lib/case-presentation";
 import { scoreSourceHeat, type SourceHeatFields } from "@/lib/source-heat";
 import { getServerSupabaseClient, withTimeout } from "@/lib/supabase/server-client";
 import { caseItems, creatorAvatarUrls, type CaseItem } from "@/lib/mock-data";
+import { getRelatedCases, MISSING_MODEL } from "@/lib/related-cases";
 import {
   formatStabilityScore,
   hasMeasuredStability,
@@ -62,14 +67,6 @@ export type DisplayCaseItem = CaseItem & DerivedCaseFields;
 
 const MEDIA_PLACEHOLDER = "/media/placeholder.png";
 
-const CATEGORY_LABELS: Record<CaseItem["category"], string> = {
-  image: "AI 图像",
-  video: "AI 视频",
-  web: "AI 编程(UI)",
-  copy: "AI 文案",
-  hardware: "AI 硬件",
-};
-
 const COST_BAND_LABELS: Record<CaseItem["costBand"], string> = {
   low: "低",
   medium: "中",
@@ -93,7 +90,10 @@ function applyCaseFilter<T extends CaseItem>(list: T[], filter: CaseFilter): T[]
 }
 
 export function filterCasesByQuery<
-  T extends Pick<CaseItem, "title" | "summary" | "creator" | "recommendedModels">
+  T extends Pick<
+    CaseItem,
+    "title" | "summary" | "creator" | "recommendedModels" | "tags"
+  >
 >(list: T[], q: string): T[] {
   const normalized = q.trim().toLowerCase();
   if (!normalized) {
@@ -101,9 +101,13 @@ export function filterCasesByQuery<
   }
 
   return list.filter((item) =>
-    [item.title, item.summary, item.creator, ...item.recommendedModels].some(
-      (field) => field.toLowerCase().includes(normalized)
-    )
+    [
+      item.title,
+      item.summary,
+      item.creator,
+      ...item.recommendedModels,
+      ...(item.tags ?? []),
+    ].some((field) => field.toLowerCase().includes(normalized))
   );
 }
 
@@ -336,7 +340,7 @@ async function mapDbCaseRowToCaseItem(
       creatorAvatarUrls[row.creator_name || ""] ||
       undefined,
     summary: row.summary,
-    promptPreview: row.prompt_preview || "该案例暂未提供 Prompt 预览。",
+    promptPreview: row.prompt_preview || MISSING_PROMPT_PREVIEW,
     promptFull: row.prompt_full || row.prompt_preview || "该案例暂未提供完整 Prompt。",
     promptTranslationZh: fallbackEditorial?.promptTranslationZh,
     resultBreakdown: fallbackEditorial?.resultBreakdown,
@@ -350,7 +354,7 @@ async function mapDbCaseRowToCaseItem(
     recommendedModels:
       row.recommended_models && row.recommended_models.length > 0
         ? row.recommended_models
-        : ["待补充模型"],
+        : [MISSING_MODEL],
     costBand: normalizeCostBand(row.cost_band),
     evidenceLevel:
       row.evidence_level === "L1" || row.evidence_level === "L2" ? row.evidence_level : "L0",
@@ -405,6 +409,27 @@ export async function getCaseDetailData(slug: string) {
   }
 
   return enrichCaseItems(caseItems).find((item) => item.slug === slug) || null;
+}
+
+export async function getCaseDetailPageData(slug: string) {
+  const list = (await fetchPublishedCases()) || enrichCaseItems(caseItems);
+  const item = list.find((candidate) => candidate.slug === slug) || null;
+
+  if (!item) {
+    return {
+      item: null,
+      creator: null,
+      relatedCases: [],
+    };
+  }
+
+  const creators = deriveCreatorsFromCases(list);
+
+  return {
+    item,
+    creator: findCreatorByName(creators, item.creator),
+    relatedCases: getRelatedCases(item, list),
+  };
 }
 
 export async function getCaseSlugs(): Promise<string[]> {
