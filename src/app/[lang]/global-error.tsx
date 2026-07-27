@@ -1,13 +1,23 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
+
 export default function GlobalError({
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const isEnglish = useSyncExternalStore(
+    () => () => undefined,
+    () =>
+      window.location.pathname === "/en" ||
+      window.location.pathname.startsWith("/en/"),
+    () => false
+  );
+
   return (
-    <html lang="zh-CN">
+    <html lang={isEnglish ? "en" : "zh-CN"} suppressHydrationWarning>
       <body
         style={{
           margin: 0,
@@ -51,10 +61,14 @@ export default function GlobalError({
               letterSpacing: "-0.04em",
             }}
           >
-            站点遇到了一个全局错误。
+            {isEnglish
+              ? "GoodCase encountered a global error."
+              : "站点遇到了一个全局错误。"}
           </h1>
           <p style={{ marginTop: "16px", color: "#6b6b66", lineHeight: 1.8 }}>
-            请点击下方按钮重试，如果问题持续，请稍后再访问。
+            {isEnglish
+              ? "Try again below. If the problem continues, return later."
+              : "请点击下方按钮重试，如果问题持续，请稍后再访问。"}
           </p>
           <button
             type="button"
@@ -72,7 +86,7 @@ export default function GlobalError({
               cursor: "pointer",
             }}
           >
-            重试
+            {isEnglish ? "Try again" : "重试"}
           </button>
         </div>
       </body>

@@ -40,7 +40,13 @@ export function trackEvent(
       path: window.location.pathname,
       referrer: document.referrer,
       sessionId: getSessionId(),
-      properties,
+      properties: {
+        ...properties,
+        locale: window.location.pathname === "/en" ||
+          window.location.pathname.startsWith("/en/")
+          ? "en"
+          : "zh-CN",
+      },
     }),
     keepalive: true,
   }).catch(() => {

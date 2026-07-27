@@ -1,11 +1,18 @@
 import type { DisplayCaseItem } from "@/lib/cases";
+import type { Locale } from "@/i18n/config";
+import { localizeHref } from "@/i18n/config";
+import { getEnglishCaseTranslation } from "@/i18n/content";
 import { SITE_ORIGIN } from "@/lib/site";
 
-export const PUBLIC_API_HEADERS = {
-  "Content-Type": "application/json; charset=utf-8",
-  "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
-  "Access-Control-Allow-Origin": "*",
-} as const;
+export function getPublicApiHeaders(locale: Locale) {
+  return {
+    "Content-Type": "application/json; charset=utf-8",
+    "Content-Language": locale,
+    "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+    "Access-Control-Allow-Origin": "*",
+    Vary: "Accept-Language",
+  } as const;
+}
 
 export function toAbsoluteUrl(rawUrl: string | null | undefined): string | null {
   if (!rawUrl) {
@@ -20,7 +27,8 @@ export function toAbsoluteUrl(rawUrl: string | null | undefined): string | null 
   return `${SITE_ORIGIN}${normalized}`;
 }
 
-export function toPublicListItem(item: DisplayCaseItem) {
+export function toPublicListItem(item: DisplayCaseItem, locale: Locale) {
+  const hasEnglishTranslation = Boolean(getEnglishCaseTranslation(item.slug));
   return {
     slug: item.slug,
     title: item.title,
@@ -42,6 +50,7 @@ export function toPublicListItem(item: DisplayCaseItem) {
     summary: item.summary,
     promptPreview: item.promptPreview,
     promptTranslationZh: item.promptTranslationZh?.slice(0, 240) || null,
+    promptTranslationEn: item.promptTranslationEn?.slice(0, 240) || null,
     mediaType: item.mediaType,
     mediaUrl: toAbsoluteUrl(item.mediaUrl),
     posterUrl: toAbsoluteUrl(item.posterUrl),
@@ -53,15 +62,19 @@ export function toPublicListItem(item: DisplayCaseItem) {
     costBand: item.costBand,
     evidenceLevel: item.evidenceLevel || null,
     tags: item.tags || [],
-    url: `${SITE_ORIGIN}/cases/${item.slug}`,
+    url: `${SITE_ORIGIN}${localizeHref(locale, `/cases/${item.slug}`)}`,
+    contentLocale: item.contentLocale || "en",
+    availableLocales: hasEnglishTranslation ? ["zh-CN", "en"] : ["zh-CN"],
+    isFallback: locale === "en" && !hasEnglishTranslation,
   };
 }
 
-export function toPublicDetailItem(item: DisplayCaseItem) {
+export function toPublicDetailItem(item: DisplayCaseItem, locale: Locale) {
   return {
-    ...toPublicListItem(item),
+    ...toPublicListItem(item, locale),
     promptFull: item.promptFull,
     promptTranslationZh: item.promptTranslationZh || null,
+    promptTranslationEn: item.promptTranslationEn || null,
     spreadScore: item.spreadScore,
     spreadScoreNote: item.spreadScoreNote,
     sourceHeatNote: item.sourceHeatNote,

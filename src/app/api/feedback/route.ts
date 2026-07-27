@@ -2,6 +2,7 @@ import { getAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { sendOwnerNotification } from "@/lib/owner-notification";
 import { readBoundedJsonObject } from "@/lib/request-json";
 import { absoluteUrl } from "@/lib/site";
+import { normalizeLocale, type Locale } from "@/i18n/config";
 
 const KINDS = new Set(["content", "bug", "suggestion", "other"]);
 const MAX_BODY_BYTES = 16_384;
@@ -10,12 +11,17 @@ function cleanString(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
+function localizedError(locale: Locale, zh: string, en: string) {
+  return locale === "en" ? en : zh;
+}
+
 export async function POST(request: Request) {
   const parsed = await readBoundedJsonObject(request, MAX_BODY_BYTES);
   if (!parsed.ok) {
     return Response.json({ error: parsed.error }, { status: parsed.status });
   }
   const raw = parsed.value;
+  const locale = normalizeLocale(cleanString(raw.locale, 16));
 
   if (cleanString(raw.website, 200)) {
     return Response.json({ ok: true });
@@ -23,7 +29,16 @@ export async function POST(request: Request) {
 
   const message = cleanString(raw.message, 2000);
   if (message.length < 4) {
-    return Response.json({ error: "message is required" }, { status: 400 });
+    return Response.json(
+      {
+        error: localizedError(
+          locale,
+          "反馈内容至少需要 4 个字符。",
+          "Feedback must contain at least 4 characters."
+        ),
+      },
+      { status: 400 }
+    );
   }
 
   const kindCandidate = cleanString(raw.kind, 32);

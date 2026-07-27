@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useLocale, useMessages } from "@/i18n/client";
 
 type FeedbackState = "idle" | "submitting" | "success" | "error";
 
 export function FeedbackForm() {
+  const locale = useLocale();
+  const messages = useMessages();
   const [state, setState] = useState<FeedbackState>("idle");
   const [receiptId, setReceiptId] = useState("");
 
@@ -28,6 +31,7 @@ export function FeedbackForm() {
           contact: formData.get("contact"),
           website: formData.get("website"),
           page: window.location.pathname,
+          locale,
         }),
       });
 
@@ -50,13 +54,15 @@ export function FeedbackForm() {
   if (state === "success") {
     return (
       <div role="status" aria-live="polite" className="gc-empty-state text-left">
-        <p className="text-lg font-semibold text-[var(--ink)]">反馈已收到。</p>
+        <p className="text-lg font-semibold text-[var(--ink)]">
+          {messages.feedbackForm.received}
+        </p>
         <p className="text-sm leading-7 text-[var(--muted)]">
-          这条反馈已经写入 GoodCase 运营收件箱，不会混进 Case 候选库。
+          {messages.feedbackForm.receivedDescription}
         </p>
         {receiptId ? (
           <p className="font-mono text-xs text-[var(--muted)]">
-            收件编号 {receiptId.slice(0, 8)}
+            {messages.feedbackForm.receipt} {receiptId.slice(0, 8)}
           </p>
         ) : null}
         <div>
@@ -68,7 +74,7 @@ export function FeedbackForm() {
               setState("idle");
             }}
           >
-            再写一条
+            {messages.feedbackForm.again}
           </button>
         </div>
       </div>
@@ -78,34 +84,34 @@ export function FeedbackForm() {
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
       <label className="grid gap-2">
-        <span className="gc-stat-label">反馈类型</span>
+        <span className="gc-stat-label">{messages.feedbackForm.kind}</span>
         <select
           name="kind"
           className="min-h-11 border border-[var(--hair)] bg-white px-3 text-sm focus:border-[var(--orange)] focus:outline-none"
         >
-          <option value="content">内容纠错</option>
-          <option value="bug">页面问题</option>
-          <option value="suggestion">产品建议</option>
-          <option value="other">其他</option>
+          <option value="content">{messages.feedbackForm.content}</option>
+          <option value="bug">{messages.feedbackForm.bug}</option>
+          <option value="suggestion">{messages.feedbackForm.suggestion}</option>
+          <option value="other">{messages.feedbackForm.other}</option>
         </select>
       </label>
       <label className="grid gap-2">
-        <span className="gc-stat-label">具体内容</span>
+        <span className="gc-stat-label">{messages.feedbackForm.message}</span>
         <textarea
           name="message"
           required
           rows={5}
           maxLength={2000}
-          placeholder="请告诉我们哪里不对，或你希望 GoodCase 改进什么。"
+          placeholder={messages.feedbackForm.messagePlaceholder}
           className="border border-[var(--hair)] bg-white p-3 text-sm leading-7 focus:border-[var(--orange)] focus:outline-none"
         />
       </label>
       <label className="grid gap-2">
-        <span className="gc-stat-label">联系方式，可选</span>
+        <span className="gc-stat-label">{messages.feedbackForm.contact}</span>
         <input
           name="contact"
           maxLength={160}
-          placeholder="邮箱、微信或 X"
+          placeholder={messages.feedbackForm.contactPlaceholder}
           className="min-h-11 border border-[var(--hair)] bg-white px-3 text-sm focus:border-[var(--orange)] focus:outline-none"
         />
       </label>
@@ -118,7 +124,7 @@ export function FeedbackForm() {
       />
       {state === "error" ? (
         <p role="alert" className="border border-[var(--orange)] bg-[rgba(194,65,12,0.06)] p-3 text-sm">
-          反馈暂时没有提交成功，请稍后重试。
+          {messages.feedbackForm.error}
         </p>
       ) : null}
       <div>
@@ -127,11 +133,13 @@ export function FeedbackForm() {
           disabled={state === "submitting"}
           className="gc-action gc-action-primary disabled:opacity-60"
         >
-          {state === "submitting" ? "提交中…" : "提交反馈"}
+          {state === "submitting"
+            ? messages.feedbackForm.submitting
+            : messages.feedbackForm.submit}
         </button>
       </div>
       <p className="text-xs leading-5 text-[var(--muted)]">
-        仅在你主动填写时保存联系方式；首方访问统计不会读取这里的内容。
+        {messages.feedbackForm.privacy}
       </p>
     </form>
   );

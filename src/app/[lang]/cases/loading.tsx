@@ -1,10 +1,18 @@
+"use client";
+
 import { SiteShell } from "@/components/site-shell";
+import { useLocale } from "@/i18n/client";
 
 const SKELETON_KEYS = ["s1", "s2", "s3", "s4", "s5", "s6"];
 
 export default function CasesLoading() {
+  const locale = useLocale();
   return (
-    <SiteShell footerNote="案例库加载中。">
+    <SiteShell
+      footerNote={
+        locale === "en" ? "Loading the case library." : "案例库加载中。"
+      }
+    >
       <section className="gc-page-hero">
         <div className="grid gap-4">
           <div className="h-3 w-24 animate-pulse bg-[var(--orange)]/30" />

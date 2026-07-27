@@ -1,10 +1,11 @@
 import { ImageResponse } from "next/og";
 import { loadChineseFont } from "@/lib/og-font";
 import { SITE_HOST } from "@/lib/site";
+import { normalizeLocale } from "@/i18n/config";
 
 export const revalidate = 300;
 
-export const alt = "GoodCase.ai 中文 AI Case 证据库";
+export const alt = "GoodCase.ai AI case evidence library";
 export const size = {
   width: 1200,
   height: 630,
@@ -14,9 +15,15 @@ export const contentType = "image/png";
 const TAGLINE_ZH = "从真实作品，回到作者与方法";
 const TAGLINE_EN = "Evidence-first AI case library";
 
-export default async function Image() {
-  const fontData = await loadChineseFont(TAGLINE_ZH);
-  const tagline = fontData ? TAGLINE_ZH : TAGLINE_EN;
+export default async function Image({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const locale = normalizeLocale((await params).lang);
+  const isEnglish = locale === "en";
+  const fontData = isEnglish ? null : await loadChineseFont(TAGLINE_ZH);
+  const tagline = isEnglish ? TAGLINE_EN : fontData ? TAGLINE_ZH : TAGLINE_EN;
 
   return new ImageResponse(
     (

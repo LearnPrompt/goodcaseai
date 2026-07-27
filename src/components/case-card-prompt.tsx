@@ -1,6 +1,7 @@
 "use client";
 
 import { getCaseCardPrompt } from "@/lib/case-presentation";
+import { useLocale, useMessages } from "@/i18n/client";
 import {
   type PromptLanguage,
   usePromptLanguage,
@@ -8,16 +9,47 @@ import {
 
 export function CaseCardPrompt({
   promptPreview,
+  contentLocale = "en",
   promptTranslationZh,
+  promptTranslationEn,
 }: {
   promptPreview?: string | null;
+  contentLocale?: "zh-CN" | "en";
   promptTranslationZh?: string | null;
+  promptTranslationEn?: string | null;
 }) {
-  const hasTranslation = Boolean(promptTranslationZh?.trim());
-  const [language, setLanguage] = usePromptLanguage(hasTranslation);
+  const locale = useLocale();
+  const messages = useMessages();
+  const hasTranslationZh = Boolean(
+    promptTranslationZh?.trim() && contentLocale !== "zh-CN"
+  );
+  const hasTranslationEn = Boolean(
+    promptTranslationEn?.trim() && contentLocale !== "en"
+  );
+  const availableLanguages: PromptLanguage[] = ["original"];
+  if (hasTranslationZh) {
+    availableLanguages.push("zh");
+  }
+  if (hasTranslationEn) {
+    availableLanguages.push("en");
+  }
+  const preferredLanguage: PromptLanguage =
+    locale === "zh-CN" && availableLanguages.includes("zh")
+      ? "zh"
+      : locale === "en" && availableLanguages.includes("en")
+        ? "en"
+        : "original";
+  const [language, setLanguage] = usePromptLanguage(
+    hasTranslationZh,
+    hasTranslationEn,
+    preferredLanguage
+  );
   const prompt = getCaseCardPrompt(
-    promptPreview,
-    language === "zh" ? promptTranslationZh : null
+    language === "zh"
+      ? promptTranslationZh
+      : language === "en"
+        ? promptTranslationEn
+        : promptPreview
   );
 
   if (!prompt.text && !prompt.resourceUrl) {
@@ -28,7 +60,7 @@ export function CaseCardPrompt({
     return (
       <div className="mt-5 border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3">
         <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
-          方法 / Code
+          {messages.card.method} / {messages.card.code}
         </p>
         <a
           href={prompt.resourceUrl}
@@ -36,7 +68,7 @@ export function CaseCardPrompt({
           rel="noreferrer"
           className="gc-action mt-3 inline-flex"
         >
-          查看方法 / View code ↗
+          {messages.card.viewMethod} ↗
         </a>
       </div>
     );
@@ -46,14 +78,11 @@ export function CaseCardPrompt({
     <div className="mt-5 border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
-          提示语 / Prompt
+          {messages.card.prompt}
         </p>
-        {hasTranslation ? (
+        {availableLanguages.length > 1 ? (
           <div className="flex border border-[var(--hair)] bg-white">
-            {[
-              ["zh", "中文"],
-              ["original", "EN"],
-            ].map(([value, label]) => (
+            {availableLanguages.map((value) => (
               <button
                 key={value}
                 type="button"
@@ -65,7 +94,11 @@ export function CaseCardPrompt({
                     : "text-[var(--muted)] hover:bg-[var(--paper)]"
                 }`}
               >
-                {label}
+                {value === "original"
+                  ? messages.prompt.original
+                  : value === "zh"
+                    ? messages.language.chinese
+                    : messages.language.english}
               </button>
             ))}
           </div>

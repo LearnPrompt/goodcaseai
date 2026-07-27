@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { CaseCard } from "@/components/case-card";
 import { FavoriteButton } from "@/components/favorite-button";
 import { LikeButton } from "@/components/like-button";
+import { LocalizedLink as Link } from "@/components/localized-link";
+import { useLocale, useMessages } from "@/i18n/client";
 import { useFavoritedSlugs } from "@/lib/local-favorites";
 
 type PublicCaseItem = {
@@ -14,7 +15,9 @@ type PublicCaseItem = {
   source: string;
   summary: string;
   promptPreview: string | null;
+  contentLocale: "zh-CN" | "en";
   promptTranslationZh: string | null;
+  promptTranslationEn: string | null;
   mediaType: string;
   mediaUrl: string | null;
   posterUrl: string | null;
@@ -32,6 +35,8 @@ function toLocalMediaUrl(rawUrl: string | null): string | null {
 }
 
 export function FavoritesList() {
+  const locale = useLocale();
+  const messages = useMessages();
   const favoritedSlugs = useFavoritedSlugs();
   const [cases, setCases] = useState<PublicCaseItem[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -39,7 +44,7 @@ export function FavoritesList() {
   useEffect(() => {
     let cancelled = false;
 
-    fetch("/api/public/cases?take=50", { cache: "no-store" })
+    fetch(`/api/public/cases?take=50&locale=${locale}`, { cache: "no-store" })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`unexpected status ${response.status}`);
@@ -60,42 +65,44 @@ export function FavoritesList() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   const favoritedCases = (cases ?? []).filter((item) => favoritedSlugs.includes(item.slug));
 
   return (
     <>
       <p className="mb-6 border border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 font-mono text-[11px] leading-6 text-[var(--muted)]">
-        收藏保存在本机浏览器，清除浏览器数据或换设备不会同步。
+        {messages.favorites.localNotice}
       </p>
 
       {favoritedSlugs.length === 0 ? (
         <section className="gc-empty-state">
-          <p className="text-lg font-semibold text-[var(--ink)]">还没有收藏，去案例库逛逛。</p>
+          <p className="text-lg font-semibold text-[var(--ink)]">
+            {messages.favorites.emptyTitle}
+          </p>
           <p className="text-sm leading-7 text-[var(--muted)]">
-            在案例卡片或详情页点 ☆ 收藏，之后回到这里就能快速找到它们。
+            {messages.favorites.emptyDescription}
           </p>
           <div>
             <Link
               href="/cases"
               className="gc-action gc-action-primary"
             >
-              去案例库逛逛
+              {messages.favorites.browse}
             </Link>
           </div>
         </section>
       ) : loadFailed ? (
         <section className="gc-empty-state text-sm leading-7 text-[var(--muted)]">
-          案例数据加载失败，请刷新重试。
+          {messages.favorites.loadFailed}
         </section>
       ) : cases === null ? (
         <section className="gc-empty-state text-sm leading-7 text-[var(--muted)]">
-          正在加载收藏的案例…
+          {messages.favorites.loading}
         </section>
       ) : favoritedCases.length === 0 ? (
         <section className="gc-empty-state text-sm leading-7 text-[var(--muted)]">
-          收藏的案例暂时没有出现在最新案例列表里，去案例库看看有没有新的好案例。
+          {messages.favorites.missing}
         </section>
       ) : (
         <section className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 2xl:grid-cols-3">

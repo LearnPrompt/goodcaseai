@@ -1,5 +1,6 @@
 import type { CaseItem } from "@/lib/mock-data";
 import { averageMeasuredStability } from "@/lib/stability";
+import type { Locale } from "@/i18n/config";
 
 export type CreatorCaseItem = CaseItem & {
   sourceHeatScore: number | null;
@@ -17,7 +18,7 @@ export type CreatorItem = {
   averageStabilityScore: number | null;
   averageSourceHeatScore: number | null;
   tags: string[];
-  highlightedLabel: "编辑精选" | "值得学习";
+  highlightedLabel: string;
   heroCase: CreatorCaseItem;
   representativeCases: CreatorCaseItem[];
 };
@@ -53,7 +54,8 @@ function buildCreatorBio(
   sources: string[],
   heroCase: CaseItem,
   stabilityScore: number | null,
-  sourceHeatScore: number | null
+  sourceHeatScore: number | null,
+  locale: Locale
 ) {
   const primarySource = sources[0] || "多个平台";
   const secondSource = sources[1];
@@ -66,6 +68,24 @@ function buildCreatorBio(
     stabilityScore === null ? "稳定度待复测" : `复现稳定分 ${stabilityScore}%`;
   const signalPhrase =
     sourceHeatScore === null ? stabilityPhrase : `来源热度 ${sourceHeatScore}`;
+
+  if (locale === "en") {
+    const sourceLabel = secondSource
+      ? `publishes across ${primarySource} and ${secondSource}`
+      : `is active on ${primarySource}`;
+    const stabilityLabel =
+      stabilityScore === null
+        ? "awaiting a stability retest"
+        : `with a ${stabilityScore}% stability reference`;
+    const categoryFocus = {
+      image: "AI image making",
+      video: "AI video production",
+      web: "production-ready AI interfaces",
+      copy: "structured AI copywriting",
+      hardware: "AI hardware and software loops",
+    }[category];
+    return `${name} focuses on ${categoryFocus} and ${sourceLabel}. “${heroTitle}” is the current representative case, built with ${leadModel} ${stabilityLabel}.`;
+  }
 
   const templatesByCategory: Record<CaseItem["category"], Array<(n: string) => string>> = {
     image: [
@@ -96,29 +116,46 @@ function buildCreatorBio(
   return templates[pickVariant(name, templates.length)](name);
 }
 
-function buildCreatorTags(cases: CreatorCaseItem[], category: CaseItem["category"]) {
-  const tags = new Set<string>([CATEGORY_LABELS[category]]);
+function buildCreatorTags(
+  cases: CreatorCaseItem[],
+  category: CaseItem["category"],
+  locale: Locale
+) {
+  const categoryLabel =
+    locale === "en"
+      ? {
+          image: "AI Image",
+          video: "AI Video",
+          web: "AI Coding (UI)",
+          copy: "AI Copy",
+          hardware: "AI Hardware",
+        }[category]
+      : CATEGORY_LABELS[category];
+  const tags = new Set<string>([categoryLabel]);
 
   if (cases.some((item) => item.stabilityScore >= 90)) {
-    tags.add("稳定输出");
+    tags.add(locale === "en" ? "Stable output" : "稳定输出");
   }
 
   if (cases.some((item) => (item.sourceHeatScore ?? -1) >= 80)) {
-    tags.add("来源互动高");
+    tags.add(locale === "en" ? "High source heat" : "来源互动高");
   }
 
   if (cases.some((item) => item.costBand === "low")) {
-    tags.add("低成本可学");
+    tags.add(locale === "en" ? "Low-cost method" : "低成本可学");
   }
 
   if (cases.some((item) => item.costBand === "high")) {
-    tags.add("高完成度");
+    tags.add(locale === "en" ? "High finish" : "高完成度");
   }
 
   return Array.from(tags).slice(0, 4);
 }
 
-export function deriveCreatorsFromCases(caseList: CreatorCaseItem[]): CreatorItem[] {
+export function deriveCreatorsFromCases(
+  caseList: CreatorCaseItem[],
+  locale: Locale = "zh-CN"
+): CreatorItem[] {
   const grouped = new Map<string, CreatorCaseItem[]>();
 
   for (const item of caseList) {
@@ -162,8 +199,12 @@ export function deriveCreatorsFromCases(caseList: CreatorCaseItem[]): CreatorIte
         averageSourceHeatScore !== null &&
         (averageStabilityScore === null ||
           averageSourceHeatScore >= averageStabilityScore)
-          ? "编辑精选"
-          : "值得学习";
+          ? locale === "en"
+            ? "Editor’s pick"
+            : "编辑精选"
+          : locale === "en"
+            ? "Worth learning"
+            : "值得学习";
       const avatarUrl = heroCase.creatorAvatarUrl || items.find((item) => item.creatorAvatarUrl)?.creatorAvatarUrl;
 
       return {
@@ -176,14 +217,15 @@ export function deriveCreatorsFromCases(caseList: CreatorCaseItem[]): CreatorIte
           sourceFootprint,
           heroCase,
           averageStabilityScore,
-          averageSourceHeatScore
+          averageSourceHeatScore,
+          locale
         ),
         primaryCategory,
         sourceFootprint,
         totalSourceInteractions,
         averageStabilityScore,
         averageSourceHeatScore,
-        tags: buildCreatorTags(items, primaryCategory),
+        tags: buildCreatorTags(items, primaryCategory, locale),
         highlightedLabel,
         heroCase,
         representativeCases,

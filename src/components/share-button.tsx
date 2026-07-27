@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale, useMessages } from "@/i18n/client";
+import { localizeHref } from "@/i18n/config";
 import { trackEvent } from "@/lib/analytics";
 
 export function ShareButton({
@@ -10,6 +12,8 @@ export function ShareButton({
   caseSlug: string;
   title: string;
 }) {
+  const locale = useLocale();
+  const messages = useMessages();
   const [status, setStatus] = useState<"idle" | "busy" | "hint">("idle");
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -36,8 +40,11 @@ export function ShareButton({
     setStatus("busy");
     trackEvent("case_share", { caseSlug });
 
-    const posterPath = `/api/poster/${caseSlug}`;
-    const caseUrl = `${window.location.origin}/cases/${caseSlug}`;
+    const posterPath = `/api/poster/${caseSlug}?locale=${locale}`;
+    const caseUrl = `${window.location.origin}${localizeHref(
+      locale,
+      `/cases/${caseSlug}`
+    )}`;
 
     // 优先系统分享面板（移动端微信/小红书场景），带海报图片文件。
     try {
@@ -87,11 +94,15 @@ export function ShareButton({
         className="gc-action whitespace-nowrap disabled:opacity-60"
       >
         <span aria-hidden="true">↗</span>
-        <span>{status === "busy" ? "生成中…" : "分享海报"}</span>
+        <span>
+          {status === "busy"
+            ? messages.interaction.generating
+            : messages.interaction.sharePoster}
+        </span>
       </button>
       {status === "hint" ? (
         <p className="text-xs leading-5 text-[var(--muted)]">
-          海报已打开，长按/右键保存；链接已复制
+          {messages.interaction.shareHint}
         </p>
       ) : null}
     </div>
