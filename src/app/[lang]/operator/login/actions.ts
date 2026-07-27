@@ -30,6 +30,7 @@ async function loginFingerprint() {
 export async function loginOperatorWithPassword(formData: FormData) {
   const password = readPassword(formData.get("password"));
   const next = normalizeOperatorNextPath(formData.get("next"));
+  const loginPath = next.startsWith("/en/") ? "/en/operator/login" : "/operator/login";
   const configuredPassword = process.env.GOODCASE_OPERATOR_PASSWORD;
   const sessionSecret = process.env.GOODCASE_OPERATOR_SESSION_SECRET;
   const admin = getAdminSupabaseClient();
@@ -39,7 +40,7 @@ export async function loginOperatorWithPassword(formData: FormData) {
     !admin
   ) {
     redirect(
-      `/operator/login?error=unavailable&next=${encodeURIComponent(next)}`
+      `${loginPath}?error=unavailable&next=${encodeURIComponent(next)}`
     );
   }
 
@@ -54,12 +55,12 @@ export async function loginOperatorWithPassword(formData: FormData) {
 
   if (countError) {
     redirect(
-      `/operator/login?error=unavailable&next=${encodeURIComponent(next)}`
+      `${loginPath}?error=unavailable&next=${encodeURIComponent(next)}`
     );
   }
 
   if ((count ?? 0) >= RATE_LIMIT_MAX) {
-    redirect(`/operator/login?error=locked&next=${encodeURIComponent(next)}`);
+    redirect(`${loginPath}?error=locked&next=${encodeURIComponent(next)}`);
   }
 
   if (!verifySharedOperatorPassword(password, configuredPassword!)) {
@@ -69,7 +70,7 @@ export async function loginOperatorWithPassword(formData: FormData) {
       anonymous_session_id: fingerprint,
       properties: { authMode: "shared-password" },
     });
-    redirect(`/operator/login?error=invalid&next=${encodeURIComponent(next)}`);
+    redirect(`${loginPath}?error=invalid&next=${encodeURIComponent(next)}`);
   }
 
   const cookieStore = await cookies();

@@ -83,7 +83,10 @@ export function verifySharedOperatorSession(
 export function normalizeOperatorNextPath(value: unknown) {
   if (typeof value !== "string") return "/operator";
   const trimmed = value.trim();
-  return trimmed === "/operator" || trimmed.startsWith("/operator?")
+  return trimmed === "/operator" ||
+    trimmed.startsWith("/operator?") ||
+    trimmed === "/en/operator" ||
+    trimmed.startsWith("/en/operator?")
     ? trimmed
     : "/operator";
 }

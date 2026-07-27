@@ -59,7 +59,8 @@ export async function requireOperatorIdentity(nextPath = "/operator") {
   const operator = await getOperatorIdentity();
   if (!operator) {
     const next = normalizeOperatorNextPath(nextPath);
-    redirect(`/operator/login?next=${encodeURIComponent(next)}`);
+    const loginPath = next.startsWith("/en/") ? "/en/operator/login" : "/operator/login";
+    redirect(`${loginPath}?next=${encodeURIComponent(next)}`);
   }
   return operator;
 }

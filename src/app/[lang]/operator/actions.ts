@@ -36,7 +36,10 @@ function readUuid(formData: FormData, name: string) {
 
 function readReturnTo(formData: FormData) {
   const value = readString(formData, "returnTo", 1000);
-  return value === "/operator" || value.startsWith("/operator?")
+  return value === "/operator" ||
+    value.startsWith("/operator?") ||
+    value === "/en/operator" ||
+    value.startsWith("/en/operator?")
     ? value
     : "/operator";
 }
@@ -51,8 +54,92 @@ function finish(
   redirect(`${returnTo}${separator}${params.toString()}`);
 }
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message.slice(0, 180) : "操作失败";
+function isEnglishReturnTo(returnTo: string) {
+  return returnTo === "/en/operator" || returnTo.startsWith("/en/operator?");
+}
+
+function localizedMessage(returnTo: string, zh: string, en: string) {
+  return isEnglishReturnTo(returnTo) ? en : zh;
+}
+
+function translateOperatorError(message: string) {
+  const exact: Record<string, string> = {
+    记录编号无效: "Invalid record ID",
+    操作失败: "Action failed",
+    运营数据库不可用: "Operator database is unavailable",
+    反馈状态无效: "Invalid feedback status",
+    反馈不存在: "Feedback record not found",
+    候选不存在: "Candidate not found",
+    候选状态已变化: "Candidate status has changed",
+    翻译语言无效: "Invalid translation language",
+    翻译状态无效: "Invalid translation status",
+    确认译文前必须填写标题和摘要:
+      "A translated title and summary are required before confirmation",
+    目标语言不能与原文语言相同:
+      "The target language must differ from the source language",
+    "候选状态已变化，可安全重试":
+      "Candidate status has changed; it is safe to retry",
+    "发布 Case 失败": "Failed to publish case",
+    "action 必须是 approve 或 reject":
+      "Action must be approve or reject",
+    "审核备注至少 3 个字符":
+      "Review notes must contain at least 3 characters",
+    "批准公开必须明确 evidence-level=L1 或 L2":
+      "Approval requires evidence level L1 or L2",
+    "缺少可访问的 http(s) 原始来源 source_url":
+      "An accessible HTTP(S) source URL is required",
+    "缺少作者 creator_name": "Creator name is required",
+    标题过短: "Title is too short",
+    "摘要不足，无法解释为什么值得收录":
+      "The summary does not explain why this case is worth keeping",
+    "缺少公开 Prompt 或可复现方法":
+      "A public prompt or reproducible method is required",
+    "缺少可公开展示的真实媒体，不能使用占位图":
+      "A real public media asset is required; placeholders are not accepted",
+    "发布必须是 L1 或 L2 证据":
+      "Publishing requires evidence level L1 or L2",
+    "发布前必须人工确认双语内容":
+      "Bilingual content must be human-confirmed before publishing",
+    "原始来源必须是 http(s) URL":
+      "The original source must be an HTTP(S) URL",
+    缺少有效原始来源: "A valid original source is required",
+    缺少真实媒体: "A real media asset is required",
+    摘要不足: "The summary is too short",
+    "同 slug Case 已存在；默认不会覆盖":
+      "A case with this slug already exists and will not be overwritten",
+    "同 slug Case 已绑定其他候选，禁止改绑":
+      "A case with this slug belongs to another candidate and cannot be reassigned",
+  };
+  if (exact[message]) {
+    return exact[message];
+  }
+  if (message.startsWith("只有 pending 候选可审核，当前状态=")) {
+    return `Only pending candidates can be reviewed; current status=${message.slice(
+      "只有 pending 候选可审核，当前状态=".length
+    )}`;
+  }
+  if (message.startsWith("只有 approved 候选可发布，当前状态=")) {
+    return `Only approved candidates can be published; current status=${message.slice(
+      "只有 approved 候选可发布，当前状态=".length
+    )}`;
+  }
+  if (message.startsWith("审计记录失败：")) {
+    return `Audit log failed: ${message.slice("审计记录失败：".length)}`;
+  }
+  return message;
+}
+
+function errorMessage(error: unknown, returnTo: string) {
+  const message =
+    error instanceof Error ? error.message.slice(0, 180) : "操作失败";
+  if (!isEnglishReturnTo(returnTo)) {
+    return message;
+  }
+
+  return message
+    .split("；")
+    .map((part) => translateOperatorError(part))
+    .join("; ");
 }
 
 async function audit(
@@ -112,10 +199,14 @@ export async function updateFeedbackStatus(formData: FormData) {
     await audit(operator.id, `feedback.${status}`, "feedback", id, { status });
     revalidatePath("/operator");
   } catch (error) {
-    finish(errorMessage(error), "error", returnTo);
+    finish(errorMessage(error, returnTo), "error", returnTo);
   }
 
-  finish("反馈状态已更新", "success", returnTo);
+  finish(
+    localizedMessage(returnTo, "反馈状态已更新", "Feedback status updated"),
+    "success",
+    returnTo
+  );
 }
 
 export async function reviewCandidate(formData: FormData) {
@@ -168,10 +259,103 @@ export async function reviewCandidate(formData: FormData) {
     });
     revalidatePath("/operator");
   } catch (error) {
-    finish(errorMessage(error), "error", returnTo);
+    finish(errorMessage(error, returnTo), "error", returnTo);
   }
 
-  finish("候选审核状态已更新", "success", returnTo);
+  finish(
+    localizedMessage(
+      returnTo,
+      "候选审核状态已更新",
+      "Candidate review status updated"
+    ),
+    "success",
+    returnTo
+  );
+}
+
+export async function updateCandidateTranslation(formData: FormData) {
+  const operator = await requireOperatorIdentity();
+  const returnTo = readReturnTo(formData);
+
+  try {
+    const id = readUuid(formData, "id");
+    const targetLocale = readString(formData, "targetLocale", 16);
+    const status = readString(formData, "translationStatus", 32);
+    const title = readString(formData, "translatedTitle", 160);
+    const summary = readString(formData, "translatedSummary", 4000);
+    const promptFull = readString(formData, "translatedPrompt", 20_000);
+
+    if (!["zh-CN", "en"].includes(targetLocale)) {
+      throw new Error("翻译语言无效");
+    }
+    if (!["untranslated", "machine_draft", "confirmed"].includes(status)) {
+      throw new Error("翻译状态无效");
+    }
+    if (status === "confirmed" && (!title || !summary)) {
+      throw new Error("确认译文前必须填写标题和摘要");
+    }
+
+    const supabase = getAdminSupabaseClient();
+    if (!supabase) {
+      throw new Error("运营数据库不可用");
+    }
+
+    const { data: candidate, error: fetchError } = await supabase
+      .from("case_candidates")
+      .select("id, content_locale, translations")
+      .eq("id", id)
+      .maybeSingle();
+    if (fetchError || !candidate) {
+      throw new Error(fetchError?.message || "候选不存在");
+    }
+    if (candidate.content_locale === targetLocale) {
+      throw new Error("目标语言不能与原文语言相同");
+    }
+
+    const currentTranslations =
+      candidate.translations &&
+      typeof candidate.translations === "object" &&
+      !Array.isArray(candidate.translations)
+        ? candidate.translations
+        : {};
+    const translations = {
+      ...currentTranslations,
+      [targetLocale]: {
+        title,
+        summary,
+        promptFull,
+      },
+    };
+
+    const { data: updated, error: updateError } = await supabase
+      .from("case_candidates")
+      .update({
+        translations,
+        translation_status: status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select("id")
+      .maybeSingle();
+    if (updateError || !updated) {
+      throw new Error(updateError?.message || "候选不存在");
+    }
+
+    await audit(operator.id, "candidate.translation.updated", "candidate", id, {
+      targetLocale,
+      status,
+    });
+    revalidatePath("/operator");
+    revalidatePath("/en/operator");
+  } catch (error) {
+    finish(errorMessage(error, returnTo), "error", returnTo);
+  }
+
+  finish(
+    localizedMessage(returnTo, "候选译文已保存", "Candidate translation saved"),
+    "success",
+    returnTo
+  );
 }
 
 export async function publishCandidate(formData: FormData) {
@@ -188,7 +372,7 @@ export async function publishCandidate(formData: FormData) {
     const { data: candidate, error: fetchError } = await supabase
       .from("case_candidates")
       .select(
-        "id, status, slug, title, category, source_platform, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, evidence_level, tags"
+        "id, status, slug, title, category, source_platform, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, creator_name, summary, prompt_preview, prompt_full, content_locale, translations, translation_status, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, evidence_level, tags"
       )
       .eq("id", id)
       .maybeSingle();
@@ -269,18 +453,23 @@ export async function publishCandidate(formData: FormData) {
     revalidatePath("/cases");
     revalidatePath(`/cases/${candidate.slug}`);
   } catch (error) {
-    finish(errorMessage(error), "error", returnTo);
+    finish(errorMessage(error, returnTo), "error", returnTo);
   }
 
-  finish("Case 已发布", "success", returnTo);
+  finish(
+    localizedMessage(returnTo, "Case 已发布", "Case published"),
+    "success",
+    returnTo
+  );
 }
 
-export async function signOutOperator() {
+export async function signOutOperator(formData: FormData) {
+  const returnTo = readString(formData, "returnTo", 100);
   const cookieStore = await cookies();
   cookieStore.delete(OPERATOR_SESSION_COOKIE);
   const supabase = await getAuthSupabaseClient();
   if (supabase) {
     await supabase.auth.signOut();
   }
-  redirect("/operator/login");
+  redirect(returnTo === "/en/operator/login" ? returnTo : "/operator/login");
 }
