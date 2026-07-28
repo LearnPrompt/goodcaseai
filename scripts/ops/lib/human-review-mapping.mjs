@@ -42,16 +42,93 @@ function matchCandidate(label, candidatesById, candidatesByUrl) {
   return { candidate: matches[0], matchKind: "source_url" };
 }
 
-export function normalizeReviewItems(reviewKey, payload) {
+export function normalizeReviewItems(
+  reviewKey,
+  payload,
+  { sourceItems = [] } = {}
+) {
+  if (payload?.decisions_by_report_index) {
+    const normalized = [];
+    const seenIndexes = new Set();
+    for (const [decision, indexes] of Object.entries(
+      payload.decisions_by_report_index
+    )) {
+      if (!Array.isArray(indexes)) {
+        throw new Error(`${reviewKey}:${decision} 必须是编号数组`);
+      }
+      for (const index of indexes) {
+        if (!Number.isInteger(index) || index < 1 || index > sourceItems.length) {
+          throw new Error(`${reviewKey}:无效报告编号 ${index}`);
+        }
+        if (seenIndexes.has(index)) {
+          throw new Error(`${reviewKey}:重复报告编号 ${index}`);
+        }
+        seenIndexes.add(index);
+        const item = sourceItems[index - 1];
+        normalized.push({
+          reviewKey,
+          code: `#${index}`,
+          id: item.id || "",
+          title: item.title || "",
+          sourceUrl: item.sourceUrl || item.source_url || "",
+          decision,
+        });
+      }
+    }
+    return normalized;
+  }
+
   const items = Array.isArray(payload) ? payload : payload?.items || [];
-  return items.map((item) => ({
-    reviewKey,
-    code: item.code || "",
-    id: item.id || "",
-    title: item.title || "",
-    sourceUrl: item.source_url || "",
-    decision: item.human_decision || item.decision || "",
-  }));
+  return items.map((item) => {
+    const normalized = {
+      reviewKey,
+      code: item.code || "",
+      id: item.id || "",
+      title: item.title || "",
+      sourceUrl: item.source_url || "",
+      decision: item.human_decision || item.decision || "",
+    };
+    if (item.supersedes_review_key) {
+      normalized.supersedesReviewKey = item.supersedes_review_key;
+    }
+    return normalized;
+  });
+}
+
+export function resolveSupersededReviewLabels(labels) {
+  if (!Array.isArray(labels)) {
+    throw new Error("labels 必须是数组。");
+  }
+
+  const labelsByKey = new Map();
+  for (const label of labels) {
+    const key = labelKey(label);
+    if (labelsByKey.has(key)) {
+      throw new Error(`审核标签键重复：${key}`);
+    }
+    labelsByKey.set(key, label);
+  }
+
+  const supersededKeys = new Set();
+  for (const label of labels) {
+    if (!label.supersedesReviewKey) continue;
+    const currentKey = labelKey(label);
+    const superseded = labelsByKey.get(label.supersedesReviewKey);
+    if (!superseded) {
+      throw new Error(
+        `${currentKey} 指向不存在的旧审核：${label.supersedesReviewKey}`
+      );
+    }
+    if (label.supersedesReviewKey === currentKey) {
+      throw new Error(`${currentKey} 不能覆盖自身`);
+    }
+    if (!label.id || !superseded.id || label.id !== superseded.id) {
+      throw new Error(`${currentKey} 与旧审核候选 UUID 不一致`);
+    }
+    supersededKeys.add(label.supersedesReviewKey);
+  }
+
+  return labels.filter((label) => !supersededKeys.has(labelKey(label)));
 }
 
 export function buildHumanReviewPlan(labels, candidates) {

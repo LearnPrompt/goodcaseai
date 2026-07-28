@@ -1,0 +1,146 @@
+{
+  "review_key": "image-pending-2026-07-28",
+  "reviewed_at": "2026-07-28",
+  "summary": {
+    "total": 14,
+    "approve": 10,
+    "reject": 3,
+    "borderline": 1,
+    "skip": 0
+  },
+  "production_state": {
+    "approved_published": 10,
+    "rejected": 3,
+    "pending_hold": 1
+  },
+  "items": [
+    {
+      "code": "D01",
+      "id": "63c2acec-d9a5-4814-b12b-eda6804994a9",
+      "title": "SenseNova U1 Pro 功能页面",
+      "creator": "Lentils",
+      "human_decision": "approve",
+      "source_url": "https://x.com/i/status/2078480576202346900",
+      "import_batch_id": "youmind-2026-07-25"
+    },
+    {
+      "code": "D02",
+      "id": "6319a2bc-4025-4c68-8a12-988a6599c519",
+      "title": "粉色兔子 Kigurumi 杂志封面",
+      "creator": "iX｜AIART/AIMOVIE【2nd】",
+      "human_decision": "borderline",
+      "supersedes_review_key": "image-v1-calibration-2026-07-26:D04",
+      "source_url": "https://x.com/i/status/2078630500525310450",
+      "import_batch_id": "youmind-image-2026-07-25"
+    },
+    {
+      "code": "D03",
+      "id": "a3abdb96-70ff-4aa7-a35d-ef11833f720d",
+      "title": "Redphase Survey 提示词生成器",
+      "creator": "Emily",
+      "human_decision": "approve",
+      "supersedes_review_key": "image-v1-followup-2026-07-26:D02",
+      "source_url": "https://x.com/i/status/2079209581977202731",
+      "import_batch_id": "youmind-image-2026-07-25"
+    },
+    {
+      "code": "D04",
+      "id": "30b0d95d-aa31-4f15-b66b-d892beda0023",
+      "title": "Lumen iOS 健康应用模型",
+      "creator": "Maki@Sunwood AI Labs.",
+      "human_decision": "reject",
+      "source_url": "https://x.com/i/status/2078747382108520806",
+      "import_batch_id": "youmind-2026-07-25"
+    },
+    {
+      "code": "D05",
+      "id": "3723f0bd-b604-4194-aea3-b7000c5ee845",
+      "title": "Apple Design Skill 影响矩阵",
+      "creator": "Maki@Sunwood AI Labs.",
+      "human_decision": "reject",
+      "source_url": "https://x.com/i/status/2078739033946255619",
+      "import_batch_id": "youmind-2026-07-25"
+    },
+    {
+      "code": "D06",
+      "id": "033e3c50-6960-43d6-a052-a8141c15cd8b",
+      "title": "无需提示词室内电商专用产品一键生图细节无损工作流高清放大",
+      "creator": "北洛",
+      "human_decision": "approve",
+      "source_url": "https://www.liblib.art/modelinfo/6b7e46cb84234be5b614d014f6d1a0ed",
+      "import_batch_id": "multisource-p1-2026-07-26"
+    },
+    {
+      "code": "D07",
+      "id": "3a8be9ad-1ffe-49d2-8fb7-bf31b9e5dbe2",
+      "title": "8月最新 电商一键换背景工作流，包含F.1重绘，效果更好",
+      "creator": "设计师学Ai",
+      "human_decision": "approve",
+      "source_url": "https://www.liblib.art/modelinfo/28b27d33a478466d9c2dc7abc17baa13",
+      "import_batch_id": "multisource-p1-2026-07-26"
+    },
+    {
+      "code": "D08",
+      "id": "5e0fd1ee-2c2c-4326-a70d-545af37d0ba7",
+      "title": "Krea 2 Moodboards",
+      "creator": "JMS",
+      "human_decision": "reject",
+      "source_url": "https://comfy.org/workflows/825e6fb23c2c-825e6fb23c2c/",
+      "import_batch_id": "multisource-p1-2026-07-26"
+    },
+    {
+      "code": "D09",
+      "id": "6aa5b9eb-ac6f-4096-a3cd-a5cb27800f5b",
+      "title": "Product poster workflow",
+      "creator": "道友请留步",
+      "human_decision": "approve",
+      "source_url": "https://www.runninghub.ai/post/1929204278349479937",
+      "import_batch_id": "multisource-p1-2026-07-26"
+    },
+    {
+      "code": "D10",
+      "id": "70f877be-8c22-4253-bd3e-4da7fc864f20",
+      "title": "贴纸拼贴 / 创意图像合成/钱包/护照夹",
+      "creator": "野猪A6",
+      "human_decision": "approve",
+      "source_url": "https://www.liblib.art/modelinfo/a104e1357d354686a53df93d0b6aabc9",
+      "import_batch_id": "multisource-p1-2026-07-26"
+    },
+    {
+      "code": "D11",
+      "id": "d3bbd882-90ab-4381-beb0-8db505854a95",
+      "title": "电商高精快速出图（图片可生成任意字体文字）",
+      "creator": "AI大师工作流",
+      "human_decision": "approve",
+      "source_url": "https://www.liblib.art/modelinfo/e934f3a693c14268a758905a7d20ceb4",
+      "import_batch_id": "multisource-p1-2026-07-26"
+    },
+    {
+      "code": "D12",
+      "id": "d559d418-8152-4a7c-b831-2002b73278d5",
+      "title": "Golden Autumn Harvest Poster",
+      "creator": "Isabella",
+      "human_decision": "approve",
+      "source_url": "https://www.runninghub.ai/post/1845725471282753538",
+      "import_batch_id": "multisource-p1-2026-07-26"
+    },
+    {
+      "code": "D13",
+      "id": "dad36a7c-e11e-45b1-815e-8d9d25377e77",
+      "title": "Easy Product Relight",
+      "creator": "Sun",
+      "human_decision": "approve",
+      "source_url": "https://www.runninghub.ai/post/1863434480945135618",
+      "import_batch_id": "multisource-p1-2026-07-26"
+    },
+    {
+      "code": "D14",
+      "id": "ff03f91a-09b2-4a4b-80f6-0fd11ef6998d",
+      "title": "一图万用 电商产品实物拍摄FLUX工作流",
+      "creator": "北洛",
+      "human_decision": "approve",
+      "source_url": "https://www.liblib.art/modelinfo/f2410b240ac14a27ad8ff581e1833654",
+      "import_batch_id": "multisource-p1-2026-07-26"
+    }
+  ]
+}

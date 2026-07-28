@@ -264,7 +264,7 @@ function renderPage(report, reportPath) {
           (!decision || (decision === "undecided" ? !cardDecision : cardDecision === decision));
       });
     }
-    function render() {
+    function render({ scrollToTop = false } = {}) {
       const filtered = filteredCards();
       const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
       currentPage = Math.min(currentPage, totalPages);
@@ -279,22 +279,24 @@ function renderPage(report, reportPath) {
         " 条 · 已审 " + decidedCount + " / " + allCards.length;
       document.querySelector("#previous-page").disabled = currentPage === 1;
       document.querySelector("#next-page").disabled = currentPage === totalPages;
-      window.scrollTo({ top: 0, behavior: "instant" });
+      if (scrollToTop) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
     }
     function resetAndRender() {
       currentPage = 1;
-      render();
+      render({ scrollToTop: true });
     }
     document.querySelectorAll("select").forEach((select) => {
       select.addEventListener("change", resetAndRender);
     });
     document.querySelector("#previous-page").addEventListener("click", () => {
       currentPage = Math.max(1, currentPage - 1);
-      render();
+      render({ scrollToTop: true });
     });
     document.querySelector("#next-page").addEventListener("click", () => {
       currentPage += 1;
-      render();
+      render({ scrollToTop: true });
     });
     allCards.forEach((card) => {
       card.querySelector("[data-copy-prompt]")?.addEventListener("click", (event) => {

@@ -10,7 +10,11 @@
     "undecided": 0,
     "binary_approval_rate": 0.95
   },
-  "production_state": "not_imported",
+  "production_state": {
+    "approved_published": 19,
+    "rejected_not_imported": 1,
+    "topic_seed_not_imported": 0
+  },
   "items": [
     {"code":"W01","id":"x-2026249809506811965","title":"Gemini 3.1 一次生成动效网站","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2026249809506811965"},
     {"code":"W02","id":"x-2024832167164133766","title":"AntiGravity + Gemini 3.1 落地页","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2024832167164133766"},

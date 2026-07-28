@@ -7,6 +7,7 @@ import { validateReview } from "../review/lib/review-candidate.mjs";
 import {
   buildHumanReviewPlan,
   normalizeReviewItems,
+  resolveSupersededReviewLabels,
 } from "./lib/human-review-mapping.mjs";
 
 const APPLY = process.argv.includes("--apply");
@@ -15,9 +16,12 @@ const LABEL_FILES = [
   "scripts/review/data/image-v1-followup-results-2026-07-27.json",
   "scripts/review/data/image-v1-shortlist-results-2026-07-27.json",
   "scripts/review/data/image-v1-final-confirm-results-2026-07-27.json",
+  "scripts/review/data/image-pending-human-labels-2026-07-28.json",
   "scripts/review/data/web-v1-human-labels-2026-07-27.json",
   "scripts/review/data/web-v2-human-labels-2026-07-27.json",
   "scripts/review/data/web-v3-human-labels-2026-07-27.json",
+  "scripts/review/data/web-v4-human-labels-2026-07-27.json",
+  "scripts/review/data/video-v1-human-labels-2026-07-28.json",
 ];
 
 function getArg(name, fallback = "") {
@@ -49,7 +53,17 @@ async function loadLabels() {
     const payload = JSON.parse(await readFile(relativePath, "utf8"));
     const reviewKey =
       payload.review_key || path.basename(relativePath, path.extname(relativePath));
-    labels.push(...normalizeReviewItems(reviewKey, payload));
+    let sourceItems = [];
+    if (payload.decisions_by_report_index) {
+      if (!payload.source_report) {
+        throw new Error(`${reviewKey} 缺少 source_report`);
+      }
+      const sourceReport = JSON.parse(await readFile(payload.source_report, "utf8"));
+      sourceItems = Array.isArray(sourceReport)
+        ? sourceReport
+        : sourceReport.items || [];
+    }
+    labels.push(...normalizeReviewItems(reviewKey, payload, { sourceItems }));
   }
   return labels;
 }
@@ -144,15 +158,17 @@ async function readStatusCounts(supabase) {
 
 async function main() {
   const supabase = getClient();
-  const [labels, candidates] = await Promise.all([
+  const [loadedLabels, candidates] = await Promise.all([
     loadLabels(),
     loadCandidates(supabase),
   ]);
+  const labels = resolveSupersededReviewLabels(loadedLabels);
   const plan = buildHumanReviewPlan(labels, candidates);
   const invalidApprovals = validateApprovals(plan);
   const preview = {
     mode: APPLY ? "apply" : "dry-run",
     labels: labels.length,
+    supersededLabels: loadedLabels.length - labels.length,
     decisions: decisionCounts(labels),
     productionCandidates: candidates.length,
     matched: {

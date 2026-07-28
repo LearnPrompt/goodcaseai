@@ -11,7 +11,11 @@
     "overall_approval_rate": 0.6,
     "binary_approval_rate": 0.727
   },
-  "production_state": "not_imported",
+  "production_state": {
+    "approved_published": 24,
+    "rejected_not_imported": 9,
+    "topic_seed_not_imported": 7
+  },
   "items": [
     {"code":"W3-01","id":"x-2006268255502205406","title":"Blackbox AI：学校管理平台落地页","creator":"@karankendre","human_decision":"topic_seed","source_url":"https://x.com/karankendre/status/2006268255502205406"},
     {"code":"W3-02","id":"x-2005913422790328779","title":"ClipFlow 视频电商 SaaS 落地页","creator":"@karankendre","human_decision":"topic_seed","source_url":"https://x.com/karankendre/status/2005913422790328779"},

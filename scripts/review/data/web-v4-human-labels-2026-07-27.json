@@ -1,0 +1,341 @@
+{
+  "review_key": "web-v4-2026-07-27",
+  "reviewed_at": "2026-07-27",
+  "source_report": "tmp/supply-reports/2026-07-27-web-v4-calibration.json",
+  "summary": {
+    "total": 40,
+    "approve": 14,
+    "reject": 23,
+    "topic_seed": 3,
+    "undecided": 0,
+    "overall_approval_rate": 0.35,
+    "binary_approval_rate": 0.378
+  },
+  "production_state": {
+    "approved_published": 14,
+    "rejected_not_imported": 23,
+    "topic_seed_not_imported": 3
+  },
+  "items": [
+    {
+      "code": "W4-01",
+      "id": "x-2021520082661499387",
+      "title": "高端住宅翻新机构落地页",
+      "creator": "@karankendre",
+      "human_decision": "reject",
+      "source_url": "https://x.com/karankendre/status/2021520082661499387"
+    },
+    {
+      "code": "W4-02",
+      "id": "x-2068957493561045032",
+      "title": "3D 超市包装式创意机构官网",
+      "creator": "@Oluwaphilemon1",
+      "human_decision": "approve",
+      "source_url": "https://x.com/Oluwaphilemon1/status/2068957493561045032"
+    },
+    {
+      "code": "W4-03",
+      "id": "x-2043011240046530732",
+      "title": "暗黑奢华太空主题 React 网站",
+      "creator": "@aiedge_",
+      "human_decision": "topic_seed",
+      "source_url": "https://x.com/aiedge_/status/2043011240046530732"
+    },
+    {
+      "code": "W4-04",
+      "id": "x-2067578193910038890",
+      "title": "Claymorphism 3D 个人作品集",
+      "creator": "@shushant_l",
+      "human_decision": "topic_seed",
+      "source_url": "https://x.com/shushant_l/status/2067578193910038890"
+    },
+    {
+      "code": "W4-05",
+      "id": "x-2045381925553201173",
+      "title": "浓缩咖啡订阅服务落地页",
+      "creator": "@nikhilbhima",
+      "human_decision": "approve",
+      "source_url": "https://x.com/nikhilbhima/status/2045381925553201173"
+    },
+    {
+      "code": "W4-06",
+      "id": "x-2072142373698797716",
+      "title": "Claude Sonnet 个人内容网站",
+      "creator": "@DeepakNesss",
+      "human_decision": "approve",
+      "source_url": "https://x.com/DeepakNesss/status/2072142373698797716"
+    },
+    {
+      "code": "W4-07",
+      "id": "x-2044234253215395936",
+      "title": "本地持久化任务追踪 Web App",
+      "creator": "@AnandButani",
+      "human_decision": "reject",
+      "source_url": "https://x.com/AnandButani/status/2044234253215395936"
+    },
+    {
+      "code": "W4-08",
+      "id": "x-2040296305679839279",
+      "title": "AI 编程去模板化 Skill 落地页",
+      "creator": "@arjunkshah21",
+      "human_decision": "approve",
+      "source_url": "https://x.com/arjunkshah21/status/2040296305679839279"
+    },
+    {
+      "code": "W4-09",
+      "id": "x-2072378105117941854",
+      "title": "电影感 FIFA 世界杯网站",
+      "creator": "@ianiketnagapure",
+      "human_decision": "approve",
+      "source_url": "https://x.com/ianiketnagapure/status/2072378105117941854"
+    },
+    {
+      "code": "W4-10",
+      "id": "x-2038413163645841453",
+      "title": "Oren Studio 哥本哈根建筑事务所官网",
+      "creator": "@DrilonAjdinii",
+      "human_decision": "approve",
+      "source_url": "https://x.com/DrilonAjdinii/status/2038413163645841453"
+    },
+    {
+      "code": "W4-11",
+      "id": "x-2041070492434751644",
+      "title": "Git 分支对比设计页",
+      "creator": "@MohdBilalArshad",
+      "human_decision": "reject",
+      "source_url": "https://x.com/MohdBilalArshad/status/2041070492434751644"
+    },
+    {
+      "code": "W4-12",
+      "id": "x-2079835670156128295",
+      "title": "Canva 产品经理单页作品集",
+      "creator": "@Ayo_Lag",
+      "human_decision": "reject",
+      "source_url": "https://x.com/Ayo_Lag/status/2079835670156128295"
+    },
+    {
+      "code": "W4-13",
+      "id": "x-1992661234261561686",
+      "title": "MCP360 暗色健身房官网",
+      "creator": "@0fficialRohit",
+      "human_decision": "approve",
+      "source_url": "https://x.com/0fficialRohit/status/1992661234261561686"
+    },
+    {
+      "code": "W4-14",
+      "id": "x-1908877453000339560",
+      "title": "背景移除 SaaS 落地页",
+      "creator": "@almasmlk",
+      "human_decision": "reject",
+      "source_url": "https://x.com/almasmlk/status/1908877453000339560"
+    },
+    {
+      "code": "W4-15",
+      "id": "x-1955346691323793822",
+      "title": "ONLYFROGS 创意网站完整工作流",
+      "creator": "@Bunnyyxtan",
+      "human_decision": "reject",
+      "source_url": "https://x.com/Bunnyyxtan/status/1955346691323793822"
+    },
+    {
+      "code": "W4-16",
+      "id": "x-2006664848432673046",
+      "title": "GLM 4.7 时尚品牌网站迭代",
+      "creator": "@nummanali",
+      "human_decision": "approve",
+      "source_url": "https://x.com/nummanali/status/2006664848432673046"
+    },
+    {
+      "code": "W4-17",
+      "id": "x-1991900001501610464",
+      "title": "Gemini 3 一次重做产品落地页",
+      "creator": "@vybhavbhadri",
+      "human_decision": "reject",
+      "source_url": "https://x.com/vybhavbhadri/status/1991900001501610464"
+    },
+    {
+      "code": "W4-18",
+      "id": "x-2023208206265376972",
+      "title": "Kimi 食物热量分析网站",
+      "creator": "@CanopyWave_CW",
+      "human_decision": "reject",
+      "source_url": "https://x.com/CanopyWave_CW/status/2023208206265376972"
+    },
+    {
+      "code": "W4-19",
+      "id": "x-2019079758789726628",
+      "title": "模糊色块动画落地页",
+      "creator": "@AvalaunchHQ",
+      "human_decision": "approve",
+      "source_url": "https://x.com/AvalaunchHQ/status/2019079758789726628"
+    },
+    {
+      "code": "W4-20",
+      "id": "x-2049174624366137642",
+      "title": "GLM 5.1 一次生成创意网站",
+      "creator": "@webdevamin",
+      "human_decision": "reject",
+      "source_url": "https://x.com/webdevamin/status/2049174624366137642"
+    },
+    {
+      "code": "W4-21",
+      "id": "x-1905607920286396640",
+      "title": "Lovable 创意机构 Hero",
+      "creator": "@gbadamosixxl",
+      "human_decision": "reject",
+      "source_url": "https://x.com/gbadamosixxl/status/1905607920286396640"
+    },
+    {
+      "code": "W4-22",
+      "id": "x-1939004821526454650",
+      "title": "Claude 单人 SaaS 全流程 Mega Prompt",
+      "creator": "@alex_prompter",
+      "human_decision": "reject",
+      "source_url": "https://x.com/alex_prompter/status/1939004821526454650"
+    },
+    {
+      "code": "W4-23",
+      "id": "x-1959271356350009522",
+      "title": "Grok 单人 SaaS 全流程 Mega Prompt",
+      "creator": "@that_ai_bro",
+      "human_decision": "reject",
+      "source_url": "https://x.com/that_ai_bro/status/1959271356350009522"
+    },
+    {
+      "code": "W4-24",
+      "id": "x-2065992579502747850",
+      "title": "早期互联网风个人档案页",
+      "creator": "@Kashberg_0",
+      "human_decision": "approve",
+      "source_url": "https://x.com/Kashberg_0/status/2065992579502747850"
+    },
+    {
+      "code": "W4-25",
+      "id": "x-2061334430103535727",
+      "title": "3D 发票打印机 SaaS 组件",
+      "creator": "@uxsweta",
+      "human_decision": "approve",
+      "source_url": "https://x.com/uxsweta/status/2061334430103535727"
+    },
+    {
+      "code": "W4-26",
+      "id": "x-2065041466951712940",
+      "title": "极简 AI 顾问个人作品集",
+      "creator": "@shushant_l",
+      "human_decision": "approve",
+      "source_url": "https://x.com/shushant_l/status/2065041466951712940"
+    },
+    {
+      "code": "W4-27",
+      "id": "x-2075940477946249515",
+      "title": "东京软件机构落地页",
+      "creator": "@DevBySami",
+      "human_decision": "approve",
+      "source_url": "https://x.com/DevBySami/status/2075940477946249515"
+    },
+    {
+      "code": "W4-28",
+      "id": "x-2079690934787383657",
+      "title": "2026 冬奥运动员与赛事中心",
+      "creator": "@YoloLabsAI",
+      "human_decision": "reject",
+      "source_url": "https://x.com/YoloLabsAI/status/2079690934787383657"
+    },
+    {
+      "code": "W4-29",
+      "id": "x-2075493786214690876",
+      "title": "会学习偏好的定价页面探索器",
+      "creator": "@chddaniel",
+      "human_decision": "reject",
+      "source_url": "https://x.com/chddaniel/status/2075493786214690876"
+    },
+    {
+      "code": "W4-30",
+      "id": "x-2076363513803784208",
+      "title": "宠物食品电影感滚动网页",
+      "creator": "@johannesasgeir",
+      "human_decision": "approve",
+      "source_url": "https://x.com/johannesasgeir/status/2076363513803784208"
+    },
+    {
+      "code": "W4-31",
+      "id": "x-1940130431254634504",
+      "title": "消除 AI 网站模板感的设计系统",
+      "creator": "@JCodesMore",
+      "human_decision": "reject",
+      "source_url": "https://x.com/JCodesMore/status/1940130431254634504"
+    },
+    {
+      "code": "W4-32",
+      "id": "x-2006855707442954260",
+      "title": "自学习落地页方案目录",
+      "creator": "@the_agenteers",
+      "human_decision": "reject",
+      "source_url": "https://x.com/the_agenteers/status/2006855707442954260"
+    },
+    {
+      "code": "W4-33",
+      "id": "x-1955960744622612758",
+      "title": "童话场景到沉浸式落地页工作流",
+      "creator": "@WasimShips",
+      "human_decision": "topic_seed",
+      "source_url": "https://x.com/WasimShips/status/1955960744622612758"
+    },
+    {
+      "code": "W4-34",
+      "id": "x-1931440446125006916",
+      "title": "AI 解决方案市场平台",
+      "creator": "@NabhaniMehdi",
+      "human_decision": "reject",
+      "source_url": "https://x.com/NabhaniMehdi/status/1931440446125006916"
+    },
+    {
+      "code": "W4-35",
+      "id": "x-1787627585158938736",
+      "title": "黑金 Royalcore 室内设计网站视觉",
+      "creator": "@WorldEverett",
+      "human_decision": "reject",
+      "source_url": "https://x.com/WorldEverett/status/1787627585158938736"
+    },
+    {
+      "code": "W4-36",
+      "id": "x-2003407421520191694",
+      "title": "GLM 4.7 多游戏中心",
+      "creator": "@cobrax91310",
+      "human_decision": "reject",
+      "source_url": "https://x.com/cobrax91310/status/2003407421520191694"
+    },
+    {
+      "code": "W4-37",
+      "id": "x-1993370841804161238",
+      "title": "Gemini 学习管理系统落地页",
+      "creator": "@adityadeshlahre",
+      "human_decision": "reject",
+      "source_url": "https://x.com/adityadeshlahre/status/1993370841804161238"
+    },
+    {
+      "code": "W4-38",
+      "id": "x-1993070524058993025",
+      "title": "Claude Opus 高端定宽落地页",
+      "creator": "@virgilerietsch",
+      "human_decision": "reject",
+      "source_url": "https://x.com/virgilerietsch/status/1993070524058993025"
+    },
+    {
+      "code": "W4-39",
+      "id": "x-1992691747986850142",
+      "title": "Gemini 个人音乐清单社区",
+      "creator": "@adityadeshlahre",
+      "human_decision": "reject",
+      "source_url": "https://x.com/adityadeshlahre/status/1992691747986850142"
+    },
+    {
+      "code": "W4-40",
+      "id": "x-2005292658827440633",
+      "title": "AntiGravity 一晚生成销售页",
+      "creator": "@JulianGoldieSEO",
+      "human_decision": "reject",
+      "source_url": "https://x.com/JulianGoldieSEO/status/2005292658827440633"
+    }
+  ]
+}

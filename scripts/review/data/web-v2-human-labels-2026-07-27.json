@@ -11,7 +11,11 @@
     "overall_approval_rate": 0.85,
     "binary_approval_rate": 1
   },
-  "production_state": "not_imported",
+  "production_state": {
+    "approved_published": 17,
+    "rejected_not_imported": 0,
+    "topic_seed_not_imported": 3
+  },
   "items": [
     {"code":"W2-01","id":"x-2051754118302126256","title":"PEEKABOO 儿童应用落地页","creator":"@bas_fijneman","human_decision":"topic_seed","source_url":"https://x.com/bas_fijneman/status/2051754118302126256"},
     {"code":"W2-02","id":"x-2079488114192441838","title":"Qwen 3.8 全屏视频动效 Hero","creator":"@exploraX_","human_decision":"approve","source_url":"https://x.com/exploraX_/status/2079488114192441838"},

@@ -395,8 +395,11 @@ function renderPage(rows, batch, stats, recommendations = new Map()) {
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const batch = getArg("--batch", "youmind-2026-07-25");
-const reviewKey = getArg("--review-key", batch);
+const batchArg = getArg("--batch", "");
+const category = getArg("--category", "");
+const batch = batchArg || (category ? "" : "youmind-2026-07-25");
+const scopeLabel = batch || `${category}-pending-all-batches`;
+const reviewKey = getArg("--review-key", scopeLabel);
 const port = Number(getArg("--port", "4318"));
 const limit = Number(getArg("--limit", "20"));
 const maxPerCreator = Number(getArg("--max-per-creator", "2"));
@@ -430,6 +433,12 @@ if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
 if (!Number.isInteger(maxPerCreator) || maxPerCreator < 1 || maxPerCreator > 20) {
   throw new Error(`无效 max-per-creator：${maxPerCreator}`);
 }
+if (
+  category &&
+  !["image", "video", "web", "copy", "hardware"].includes(category)
+) {
+  throw new Error(`无效 category：${category}`);
+}
 if (includeIds.length > 200) {
   throw new Error(`include-ids 不能超过 200 条：${includeIds.length}`);
 }
@@ -461,19 +470,25 @@ const requestedIds =
 const supabase = createClient(url, serviceRole, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
-const { data, error } = await supabase
+let candidatesQuery = supabase
   .from("case_candidates")
   .select(
     "id,title,status,evidence_level,source_platform,source_url,source_metrics_captured_at,creator_name,summary,prompt_preview,prompt_full,media_kind,media_url,poster_url,source_like_count,source_comment_count,source_share_count,source_save_count,tags,created_at"
   )
-  .eq("import_batch_id", batch)
   .order("created_at", { ascending: true });
+if (batch) {
+  candidatesQuery = candidatesQuery.eq("import_batch_id", batch);
+}
+if (category) {
+  candidatesQuery = candidatesQuery.eq("category", category);
+}
+const { data, error } = await candidatesQuery;
 
 if (error) {
   throw new Error(`读取候选失败：${error.message}`);
 }
 if (!data?.length) {
-  throw new Error(`批次没有候选：${batch}`);
+  throw new Error(`范围没有候选：${scopeLabel}`);
 }
 
 const selectedData = filterCandidatesByIds(data, requestedIds);
