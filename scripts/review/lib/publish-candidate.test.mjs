@@ -21,6 +21,7 @@ test("buildCasePayload carries the source candidate id and evidence", () => {
     source_published_at: "2026-07-20T00:00:00.000Z",
     source_metrics_captured_at: "2026-07-21T00:00:00.000Z",
     creator_name: "Example",
+    creator_avatar_url: "https://pbs.twimg.com/profile_images/1/example.jpg",
     summary: "Summary",
     prompt_preview: "Preview",
     prompt_full: "Full",
@@ -46,6 +47,10 @@ test("buildCasePayload carries the source candidate id and evidence", () => {
   });
 
   assert.equal(payload.source_candidate_id, "candidate-1");
+  assert.equal(
+    payload.creator_avatar_url,
+    "https://pbs.twimg.com/profile_images/1/example.jpg"
+  );
   assert.equal(payload.evidence_level, "L2");
   assert.equal(payload.source_like_count, 100);
   assert.equal(payload.content_locale, "en");

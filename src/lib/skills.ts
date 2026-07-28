@@ -9,6 +9,13 @@ export type SkillCaseInput = {
   category: CaseCategory;
   creator: string;
   tags?: string[];
+  sourceUrl?: string;
+  summary?: string;
+  promptPreview?: string;
+  promptFull?: string;
+  mediaType?: "image" | "video";
+  mediaUrl?: string;
+  posterUrl?: string;
 };
 
 export type SkillCreatorEvidence = {

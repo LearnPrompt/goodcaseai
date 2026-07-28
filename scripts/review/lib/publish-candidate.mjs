@@ -13,6 +13,7 @@ export function buildCasePayload(candidate) {
     source_published_at: candidate.source_published_at,
     source_metrics_captured_at: candidate.source_metrics_captured_at,
     creator_name: candidate.creator_name,
+    creator_avatar_url: candidate.creator_avatar_url || null,
     summary: candidate.summary,
     prompt_preview: candidate.prompt_preview,
     prompt_full: candidate.prompt_full,

@@ -97,6 +97,9 @@ function mapCandidate(raw, importBatchId) {
       raw.source_metrics_captured_at ?? raw.sourceMetricsCapturedAt
     ),
     creator_name: String(raw.creator_name || raw.creator || "").trim() || null,
+    creator_avatar_url:
+      String(raw.creator_avatar_url || raw.creatorAvatarUrl || "").trim() ||
+      null,
     summary: String(raw.summary || "").trim() || "暂无摘要",
     prompt_preview: String(raw.prompt_preview || raw.promptPreview || "").trim() || null,
     prompt_full: String(raw.prompt_full || raw.promptFull || "").trim() || null,

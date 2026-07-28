@@ -5,6 +5,7 @@ import {
   existsSync,
 } from "node:fs";
 import path from "node:path";
+import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { deriveSkillCatalog } from "../../src/lib/skills.ts";
 import {
@@ -22,7 +23,16 @@ const manifestPath = path.join(
   "generated",
   "installable-skills.json"
 );
-const skillCreatorRoot = process.env.SKILL_CREATOR_ROOT;
+const skillCreatorRoot = [
+  process.env.SKILL_CREATOR_ROOT,
+  path.join(homedir(), ".agents", "skills", "skill-creator"),
+  path.join(homedir(), ".codex", "skills", ".system", "skill-creator"),
+].find(
+  (candidate) =>
+    candidate &&
+    existsSync(path.join(candidate, "scripts", "init_skill.py")) &&
+    existsSync(path.join(candidate, "scripts", "package_skill.py"))
+);
 
 function requireEnvironment(name) {
   const value = process.env[name]?.trim();
@@ -41,7 +51,7 @@ async function fetchPublishedCases() {
     const query = new URL("/rest/v1/cases", baseUrl);
     query.searchParams.set(
       "select",
-      "slug,title,category,creator_name,tags,source_url"
+      "slug,title,category,creator_name,tags,source_url,summary,prompt_preview,prompt_full,media_kind,media_url,poster_url"
     );
     query.searchParams.set("is_published", "eq.true");
     query.searchParams.set("order", "slug.asc");
@@ -87,6 +97,12 @@ async function fetchPublishedCases() {
         creator: row.creator_name || "Anonymous creator",
         tags: row.tags || [],
         sourceUrl: row.source_url || "",
+        summary: row.summary || "",
+        promptPreview: row.prompt_preview || "",
+        promptFull: row.prompt_full || "",
+        mediaType: row.media_kind || "image",
+        mediaUrl: row.media_url || "",
+        posterUrl: row.poster_url || "",
       },
     ];
   });
