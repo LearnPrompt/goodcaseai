@@ -9,11 +9,10 @@ export function SiteHeader() {
   const messages = useMessages();
   const navItems = [
     { href: "/cases", label: messages.nav.cases },
+    { href: "/skills", label: messages.nav.skills },
     { href: "/creators", label: messages.nav.creators },
     { href: "/favorites", label: messages.nav.favorites },
     { href: "/submit", label: messages.nav.submit },
-    { href: "/changelog", label: messages.nav.changelog },
-    { href: "/connect#feedback", label: messages.nav.feedback },
   ];
 
   return (

@@ -12,6 +12,12 @@ import {
   getSkillSlugs,
 } from "@/lib/cases";
 import { slugifyCreatorName } from "@/lib/creator-slug";
+import {
+  getInstallableSkillPackage,
+  getSkillDownloadPath,
+  getSkillInstallCommand,
+  getSkillSourceUrl,
+} from "@/lib/installable-skills";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 300;
@@ -89,6 +95,7 @@ export default async function SkillDetailPage({
 
   const visibleCases = skill.cases.slice(0, 12);
   const visibleCreators = skill.creators.slice(0, 12);
+  const installablePackage = getInstallableSkillPackage(skill.slug);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "LearningResource",
@@ -157,6 +164,63 @@ export default async function SkillDetailPage({
           </div>
         </div>
       </PageHero>
+
+      {installablePackage ? (
+        <section className="grid gap-5 border-b border-[var(--hair)] py-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.45fr)]">
+          <article className="border border-[var(--orange)] bg-[var(--orange)] p-5 text-white sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-white/75">
+                {isEnglish ? "Verified installable Agent Skill" : "已验证 · 可安装 Agent Skill"}
+              </p>
+              <span className="border border-white/50 px-2 py-1 font-mono text-[10px] uppercase">
+                SKILL.md + .skill
+              </span>
+            </div>
+            <h2 className="mt-5 text-3xl font-medium leading-none tracking-[-0.04em]">
+              {isEnglish ? "Install into your agent." : "把这套方法装进你的 Agent。"}
+            </h2>
+            <pre className="mt-5 overflow-x-auto border border-white/30 bg-black/20 p-4 font-mono text-xs leading-6 text-white">
+              <code>{getSkillInstallCommand(skill.slug)}</code>
+            </pre>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a
+                className="gc-action border-white bg-white text-[var(--ink)] hover:bg-[var(--ink)] hover:text-white"
+                href={getSkillDownloadPath(skill.slug)}
+                download
+              >
+                {isEnglish ? "Download .skill" : "下载 .skill"} ↓
+              </a>
+              <a
+                className="inline-flex min-h-11 items-center justify-center border border-white bg-transparent px-4 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white hover:text-[var(--ink)]"
+                href={getSkillSourceUrl(skill.slug)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {isEnglish ? "Inspect source" : "查看源码"} ↗
+              </a>
+            </div>
+          </article>
+
+          <aside className="gc-panel-muted p-5 sm:p-6">
+            <p className="gc-eyebrow">
+              {isEnglish ? "Installation contract" : "安装合约"}
+            </p>
+            <ul className="mt-4 grid gap-3 text-sm leading-7 text-[var(--muted)]">
+              <li>✓ {isEnglish ? "Standard SKILL.md frontmatter" : "标准 SKILL.md frontmatter"}</li>
+              <li>✓ {isEnglish ? "Inputs, workflow, output, verification, safety" : "输入、流程、输出、验收、安全边界"}</li>
+              <li>✓ {isEnglish ? "Bundled Case evidence and attribution" : "内置 Case 证据与作者署名"}</li>
+              <li>✓ {isEnglish ? "Validated and packaged by skill-creator" : "已通过 skill-creator 校验与打包"}</li>
+            </ul>
+            {skill.kind === "creator_method" ? (
+              <p className="mt-5 border-t border-[var(--hair)] pt-4 text-xs leading-6 text-[var(--muted)]">
+                {isEnglish
+                  ? "This is an unofficial evidence-derived synthesis, not an official Skill published or endorsed by the creator."
+                  : "这是基于公开证据的非官方归纳，不代表作者本人发布或背书。"}
+              </p>
+            ) : null}
+          </aside>
+        </section>
+      ) : null}
 
       <section className="grid gap-5 border-b border-[var(--hair)] py-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.45fr)]">
         <article className="gc-panel p-5 sm:p-6">
