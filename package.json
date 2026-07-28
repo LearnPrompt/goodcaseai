@@ -19,6 +19,7 @@
     "ops:reconcile": "node --env-file=.env.local scripts/ops/reconcile-production-data.mjs",
     "ops:domain-ready": "node scripts/ops/check-domain-readiness.mjs",
     "ops:i18n-smoke": "node scripts/ops/check-i18n-pages.mjs",
+    "ops:translate-cases": "node --env-file=.env.local scripts/ops/backfill-case-translations.mjs",
     "import:candidates": "node scripts/ingest-candidates.mjs",
     "review:candidates": "node scripts/review-candidates.mjs",
     "publish:cases": "node scripts/publish-approved-cases.mjs"
@@ -40,5 +41,9 @@
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "8.5.23",
+    "sharp": "0.35.3"
   }
 }

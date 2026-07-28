@@ -609,21 +609,17 @@ export async function getCaseSlugs(): Promise<string[]> {
     return caseItems.map((item) => item.slug);
   }
 
-  try {
-    const { data, error } = await withTimeout(
-      supabase.from("cases").select("slug").eq("is_published", true)
-    );
-
-    if (!error && data && data.length > 0) {
-      return data
-        .map((item) => item.slug)
-        .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
-    }
-  } catch {
-    // Supabase timeout — fall through to mock data
+  const { data, error } = await withTimeout(
+    supabase.from("cases").select("slug").eq("is_published", true),
+    12_000
+  );
+  if (error) {
+    throw new Error(`Failed to load sitemap case slugs: ${error.message}`);
   }
 
-  return caseItems.map((item) => item.slug);
+  return (data || [])
+    .map((item) => item.slug)
+    .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
 }
 
 export async function getHomeData(locale: Locale = "zh-CN") {

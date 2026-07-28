@@ -1,12 +1,11 @@
 import type { MetadataRoute } from "next";
-import { getCaseSlugs, getCreatorListData } from "@/lib/cases";
+import { getSitemapData } from "@/lib/sitemap-data";
 import { SITE_ORIGIN } from "@/lib/site";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [caseSlugs, creators] = await Promise.all([
-    getCaseSlugs(),
-    getCreatorListData(),
-  ]);
+  const { caseSlugs, creatorSlugs } = await getSitemapData();
 
   function localizedEntries(
     path: string,
@@ -43,9 +42,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     localizedEntries(`/cases/${encodeURIComponent(slug)}`, "weekly", 0.7)
   );
 
-  const creatorRoutes: MetadataRoute.Sitemap = creators.flatMap((creator) =>
+  const creatorRoutes: MetadataRoute.Sitemap = creatorSlugs.flatMap((slug) =>
     localizedEntries(
-      `/creators/${encodeURIComponent(creator.slug)}`,
+      `/creators/${encodeURIComponent(slug)}`,
       "weekly",
       0.6
     )

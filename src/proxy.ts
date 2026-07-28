@@ -6,7 +6,9 @@ import {
   splitLocalePathname,
 } from "@/i18n/config";
 
+const PRIMARY_ORIGIN = "https://goodcase.ai";
 const LEGACY_HOST = "goodcase.ai";
+const WWW_HOST = "www.goodcase.ai";
 const INTERNAL_LOCALE_REWRITE_HEADER = "x-goodcase-internal-locale-rewrite";
 
 function getCanonicalOrigin() {
@@ -26,6 +28,14 @@ export function proxy(request: NextRequest) {
   const enabled = process.env.GOODCASE_ENABLE_LEGACY_REDIRECT === "true";
   const canonicalOrigin = getCanonicalOrigin();
   const requestHost = request.headers.get("host")?.split(":")[0]?.toLowerCase();
+
+  if (requestHost === WWW_HOST) {
+    const destination = new URL(
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+      enabled && canonicalOrigin ? canonicalOrigin : PRIMARY_ORIGIN
+    );
+    return NextResponse.redirect(destination, 301);
+  }
 
   if (enabled && canonicalOrigin && requestHost === LEGACY_HOST) {
     const destination = new URL(
