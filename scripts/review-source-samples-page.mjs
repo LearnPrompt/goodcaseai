@@ -1,13 +1,28 @@
 #!/usr/bin/env node
 
 import http from "node:http";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  normalizeDecisions,
+  storageKeyForReport,
+} from "./review/lib/review-decisions.mjs";
 
 function getArg(name, fallback) {
   const prefix = `${name}=`;
   const value = process.argv.find((item) => item.startsWith(prefix));
   return value ? value.slice(prefix.length) : fallback;
+}
+
+async function readJsonBody(request) {
+  let body = "";
+  for await (const chunk of request) {
+    body += chunk;
+    if (body.length > 100_000) {
+      throw new Error("请求内容过大");
+    }
+  }
+  return JSON.parse(body);
 }
 
 function escapeHtml(value) {
@@ -127,7 +142,7 @@ function renderPage(report, reportPath) {
     )
     .join("");
   const status = report.sources.map(renderSourceStatus).join("");
-  const storageKey = `goodcase-source-review:${report.runDate}:${report.generatedAt}`;
+  const storageKey = storageKeyForReport(report);
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -195,7 +210,7 @@ function renderPage(report, reportPath) {
       <h1>GOODCASE <strong>${escapeHtml(pageTitle)}</strong></h1>
       <span>${report.stats.total} 条 · ${escapeHtml(report.runDate)}</span>
     </div>
-    <p class="notice">本页不连接 Supabase。决定只保存在当前浏览器，可随时清除；只有你明确把编号发给 Codex 后，才会考虑进入正式 pending。</p>
+    <p class="notice">本页不连接 Supabase。决定会自动保存到本机审核文件；只有你明确交给 Codex 录入后，才会考虑进入正式 pending。</p>
     <div class="toolbar">
       <select id="source-filter" aria-label="来源筛选"><option value="">全部来源</option>${sourceOptions}</select>
       <select id="type-filter" aria-label="类型筛选">
@@ -213,7 +228,7 @@ function renderPage(report, reportPath) {
       <button type="button" id="previous-page">← 上一页</button>
       <strong id="page-status"></strong>
       <button type="button" id="next-page">下一页 →</button>
-      <button type="button" class="copy" id="copy-decisions">复制审核决定</button>
+      <button type="button" class="copy" id="save-decisions">保存审核决定</button>
     </div>
   </header>
   <section class="overview">
@@ -228,20 +243,33 @@ function renderPage(report, reportPath) {
     const decisions = JSON.parse(localStorage.getItem(storageKey) || "{}");
     const pageSize = 12;
     let currentPage = 1;
+    let saveTimer;
 
-    async function copyText(text) {
+    async function persistDecisions({ announce = false } = {}) {
+      const button = document.querySelector("#save-decisions");
+      if (announce) button.textContent = "保存中…";
       try {
-        if (!navigator.clipboard?.writeText) return false;
-        return await Promise.race([
-          navigator.clipboard
-            .writeText(text)
-            .then(() => true)
-            .catch(() => false),
-          new Promise((resolve) => setTimeout(() => resolve(false), 800)),
-        ]);
+        const response = await fetch("/api/review-decisions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storageKey, decisions }),
+        });
+        if (!response.ok) throw new Error("保存失败");
+        const result = await response.json();
+        button.textContent = "已保存 " + result.decided + " / " + result.total;
+        setTimeout(() => { button.textContent = "保存审核决定"; }, 1600);
+        return true;
       } catch {
+        button.textContent = "保存失败，请重试";
         return false;
       }
+    }
+
+    function queueSave() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        void persistDecisions();
+      }, 250);
     }
 
     function decisionFor(card) {
@@ -315,24 +343,17 @@ function renderPage(report, reportPath) {
         if (button.dataset.value) decisions[card.dataset.index] = button.dataset.value;
         else delete decisions[card.dataset.index];
         localStorage.setItem(storageKey, JSON.stringify(decisions));
+        queueSave();
         render();
       });
     });
-    document.querySelector("#copy-decisions").addEventListener("click", async (event) => {
-      const grouped = { include: [], seed: [], reject: [] };
-      Object.entries(decisions).forEach(([index, value]) => grouped[value]?.push("#" + index));
-      const parts = [
-        grouped.include.length ? "拟录入 " + grouped.include.join("、") : "",
-        grouped.seed.length ? "保留线索 " + grouped.seed.join("、") : "",
-        grouped.reject.length ? "不收录 " + grouped.reject.join("、") : "",
-      ].filter(Boolean);
-      const text = parts.length ? parts.join("\\n") : "尚未做审核决定";
-      event.currentTarget.textContent = "复制中…";
-      const copied = await copyText(text);
-      event.currentTarget.textContent = copied ? "已复制" : "复制失败";
-      setTimeout(() => { event.currentTarget.textContent = "复制审核决定"; }, 1200);
+    document.querySelector("#save-decisions").addEventListener("click", () => {
+      void persistDecisions({ announce: true });
     });
     render();
+    if (Object.keys(decisions).length > 0) {
+      void persistDecisions();
+    }
   </script>
 </body>
 </html>`;
@@ -353,10 +374,59 @@ const report = JSON.parse(await readFile(reportPath, "utf8"));
 if (!Array.isArray(report.items) || !Array.isArray(report.sources)) {
   throw new Error(`报告格式无效：${reportPath}`);
 }
+const decisionsPath = path.resolve(
+  getArg(
+    "--decisions-file",
+    reportPath.replace(/\.json$/i, "") + "-decisions.json"
+  )
+);
+const storageKey = storageKeyForReport(report);
 const page = renderPage(report, reportPath);
-const server = http.createServer((request, response) => {
+let saveCounter = 0;
+const server = http.createServer(async (request, response) => {
   if (request.url === "/favicon.ico") {
     response.writeHead(204).end();
+    return;
+  }
+  if (request.url === "/api/review-decisions" && request.method === "POST") {
+    try {
+      const payload = await readJsonBody(request);
+      if (payload.storageKey !== storageKey) {
+        throw new Error("审核批次不匹配");
+      }
+      const decisions = normalizeDecisions(payload.decisions, report.items.length);
+      const counts = { include: 0, seed: 0, reject: 0 };
+      Object.values(decisions).forEach((decision) => {
+        counts[decision] += 1;
+      });
+      const saved = {
+        version: 1,
+        reportPath,
+        storageKey,
+        savedAt: new Date().toISOString(),
+        total: report.items.length,
+        decided: Object.keys(decisions).length,
+        counts,
+        decisions,
+      };
+      await mkdir(path.dirname(decisionsPath), { recursive: true });
+      const temporaryPath = `${decisionsPath}.${process.pid}.${++saveCounter}.tmp`;
+      await writeFile(temporaryPath, `${JSON.stringify(saved, null, 2)}\n`, {
+        mode: 0o600,
+      });
+      await rename(temporaryPath, decisionsPath);
+      response.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+      });
+      response.end(JSON.stringify({ decided: saved.decided, total: saved.total }));
+    } catch (error) {
+      response.writeHead(400, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+      });
+      response.end(JSON.stringify({ error: error.message }));
+    }
     return;
   }
   if (request.url !== "/") {
@@ -367,7 +437,7 @@ const server = http.createServer((request, response) => {
     "Content-Type": "text/html; charset=utf-8",
     "Cache-Control": "no-store",
     "Content-Security-Policy":
-      "default-src 'none'; img-src https: data:; media-src https:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; frame-ancestors 'none'",
+      "default-src 'none'; img-src https: data:; media-src https:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
   });
   response.end(page);

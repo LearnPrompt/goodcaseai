@@ -17,6 +17,7 @@ const LABEL_FILES = [
   "scripts/review/data/image-v1-shortlist-results-2026-07-27.json",
   "scripts/review/data/image-v1-final-confirm-results-2026-07-27.json",
   "scripts/review/data/image-pending-human-labels-2026-07-28.json",
+  "scripts/review/data/image-v5-human-labels-2026-07-28.json",
   "scripts/review/data/web-v1-human-labels-2026-07-27.json",
   "scripts/review/data/web-v2-human-labels-2026-07-27.json",
   "scripts/review/data/web-v3-human-labels-2026-07-27.json",
