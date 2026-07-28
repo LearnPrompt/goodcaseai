@@ -1,15 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CaseCardPrompt } from "@/components/case-card-prompt";
+import {
+  CATEGORY_LABELS,
+  getCaseCardSummary,
+} from "@/lib/case-presentation";
 import { formatStabilityScore } from "@/lib/stability";
-
-const categoryLabels: Record<string, string> = {
-  image: "AI 图像",
-  video: "AI 视频",
-  web: "AI 编程",
-  copy: "AI 文案",
-  hardware: "AI 硬件",
-};
 
 export type CaseCardItem = {
   slug: string;
@@ -18,6 +15,8 @@ export type CaseCardItem = {
   source: string;
   creator?: string;
   summary: string;
+  promptPreview?: string | null;
+  promptTranslationZh?: string | null;
   mediaType: string;
   mediaUrl: string | null;
   posterUrl?: string | null;
@@ -32,7 +31,10 @@ export function CaseCard({
   item: CaseCardItem;
   actions?: ReactNode;
 }) {
-  const label = categoryLabels[item.category] || item.category;
+  const label =
+    CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] ||
+    item.category;
+  const summary = getCaseCardSummary(item.summary);
 
   return (
     <article className="gc-card group flex h-full flex-col overflow-hidden">
@@ -75,17 +77,24 @@ export function CaseCard({
             {item.title}
           </h2>
         </Link>
-        <p className="mt-3 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
-          {item.summary}
-        </p>
+        {summary ? (
+          <p className="mt-3 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
+            {summary}
+          </p>
+        ) : null}
+
+        <CaseCardPrompt
+          promptPreview={item.promptPreview}
+          promptTranslationZh={item.promptTranslationZh}
+        />
 
         <div className="mt-5 grid grid-cols-2 gap-2">
           <div className="gc-stat">
-            <div className="gc-stat-label">Source heat</div>
+            <div className="gc-stat-label">来源热度 / Source Heat</div>
             <div className="gc-stat-value">{item.sourceHeatScore ?? "—"}</div>
           </div>
           <div className="gc-stat">
-            <div className="gc-stat-label">Stability</div>
+            <div className="gc-stat-label">稳定度 / Stability</div>
             <div className="gc-stat-value">
               {formatStabilityScore(item.stabilityScore)}
             </div>

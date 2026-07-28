@@ -41,6 +41,7 @@ export function toPublicListItem(item: DisplayCaseItem) {
     creator: item.creator,
     summary: item.summary,
     promptPreview: item.promptPreview,
+    promptTranslationZh: item.promptTranslationZh?.slice(0, 240) || null,
     mediaType: item.mediaType,
     mediaUrl: toAbsoluteUrl(item.mediaUrl),
     posterUrl: toAbsoluteUrl(item.posterUrl),
@@ -60,6 +61,7 @@ export function toPublicDetailItem(item: DisplayCaseItem) {
   return {
     ...toPublicListItem(item),
     promptFull: item.promptFull,
+    promptTranslationZh: item.promptTranslationZh || null,
     spreadScore: item.spreadScore,
     spreadScoreNote: item.spreadScoreNote,
     sourceHeatNote: item.sourceHeatNote,
