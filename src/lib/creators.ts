@@ -1,6 +1,10 @@
 import type { CaseItem } from "@/lib/mock-data";
 import { averageMeasuredStability } from "@/lib/stability";
 import type { Locale } from "@/i18n/config";
+import {
+  normalizeCreatorIdentity,
+  slugifyCreatorName,
+} from "@/lib/creator-slug";
 
 export type CreatorCaseItem = CaseItem & {
   sourceHeatScore: number | null;
@@ -30,15 +34,6 @@ const CATEGORY_LABELS: Record<CaseItem["category"], string> = {
   copy: "AI 文案",
   hardware: "AI 硬件",
 };
-
-function slugifyCreatorName(name: string) {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "-");
-}
 
 function pickVariant(seed: string, count: number) {
   let hash = 0;
@@ -156,17 +151,27 @@ export function deriveCreatorsFromCases(
   caseList: CreatorCaseItem[],
   locale: Locale = "zh-CN"
 ): CreatorItem[] {
-  const grouped = new Map<string, CreatorCaseItem[]>();
+  const grouped = new Map<
+    string,
+    { name: string; items: CreatorCaseItem[] }
+  >();
 
   for (const item of caseList) {
-    const key = item.creator.trim();
-    const existing = grouped.get(key) || [];
-    existing.push(item);
-    grouped.set(key, existing);
+    const rawName = item.creator.normalize("NFKC").trim();
+    const key = normalizeCreatorIdentity(rawName);
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.items.push(item);
+    } else {
+      grouped.set(key, {
+        name: rawName.replace(/^@(?=[a-z0-9_])/i, ""),
+        items: [item],
+      });
+    }
   }
 
-  return Array.from(grouped.entries())
-    .map(([name, items]) => {
+  return Array.from(grouped.values())
+    .map(({ name, items }) => {
       const representativeCases = [...items]
         .sort(
           (a, b) =>
@@ -249,5 +254,10 @@ export function findCreatorBySlug(creators: CreatorItem[], slug: string) {
 }
 
 export function findCreatorByName(creators: CreatorItem[], name: string) {
-  return creators.find((item) => item.name === name) || null;
+  const identity = normalizeCreatorIdentity(name);
+  return (
+    creators.find(
+      (item) => normalizeCreatorIdentity(item.name) === identity
+    ) || null
+  );
 }
