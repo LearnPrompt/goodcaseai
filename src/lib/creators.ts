@@ -16,6 +16,7 @@ export type CreatorItem = {
   name: string;
   avatarUrl?: string;
   bio: string;
+  caseCount: number;
   primaryCategory: CaseItem["category"];
   sourceFootprint: string[];
   totalSourceInteractions: number;
@@ -225,6 +226,7 @@ export function deriveCreatorsFromCases(
           averageSourceHeatScore,
           locale
         ),
+        caseCount: items.length,
         primaryCategory,
         sourceFootprint,
         totalSourceInteractions,

@@ -18,6 +18,12 @@ import {
   formatStabilityScore,
   hasMeasuredStability,
 } from "@/lib/stability";
+import {
+  deriveSkillCatalog,
+  findSkillBySlug,
+  getCaseSkillLinks,
+  getCreatorMethods,
+} from "@/lib/skills";
 import type { Locale } from "@/i18n/config";
 import { getEnglishCaseTranslation } from "@/i18n/content";
 
@@ -591,15 +597,26 @@ export async function getCaseDetailPageData(
       item: null,
       creator: null,
       relatedCases: [],
+      caseSkills: [],
+      relatedCaseSkills: new Map(),
     };
   }
 
   const creators = deriveCreatorsFromCases(list, locale);
+  const skillCatalog = deriveSkillCatalog(list, locale);
+  const relatedCases = getRelatedCases(item, list);
 
   return {
     item,
     creator: findCreatorByName(creators, item.creator),
-    relatedCases: getRelatedCases(item, list),
+    relatedCases,
+    caseSkills: getCaseSkillLinks(skillCatalog, item.slug, true),
+    relatedCaseSkills: new Map(
+      relatedCases.map((relatedCase) => [
+        relatedCase.slug,
+        getCaseSkillLinks(skillCatalog, relatedCase.slug),
+      ])
+    ),
   };
 }
 
@@ -667,6 +684,55 @@ export async function getCreatorDetailData(
 ) {
   const creators = await getCreatorListData(locale);
   return findCreatorBySlug(creators, slug);
+}
+
+export async function getCreatorDetailPageData(
+  slug: string,
+  locale: Locale = "zh-CN"
+) {
+  const list =
+    (await fetchPublishedCases(locale)) || enrichCaseItems(caseItems, locale);
+  const creators = deriveCreatorsFromCases(list, locale);
+  const creator = findCreatorBySlug(creators, slug);
+
+  if (!creator) {
+    return {
+      creator: null,
+      methods: [],
+      representativeCaseSkills: new Map(),
+    };
+  }
+
+  const skillCatalog = deriveSkillCatalog(list, locale);
+  return {
+    creator,
+    methods: getCreatorMethods(skillCatalog, creator.name),
+    representativeCaseSkills: new Map(
+      creator.representativeCases.map((item) => [
+        item.slug,
+        getCaseSkillLinks(skillCatalog, item.slug),
+      ])
+    ),
+  };
+}
+
+export async function getSkillCatalogData(locale: Locale = "zh-CN") {
+  const list =
+    (await fetchPublishedCases(locale)) || enrichCaseItems(caseItems, locale);
+  return deriveSkillCatalog(list, locale);
+}
+
+export async function getSkillDetailData(
+  slug: string,
+  locale: Locale = "zh-CN"
+) {
+  const catalog = await getSkillCatalogData(locale);
+  return findSkillBySlug(catalog, slug);
+}
+
+export async function getSkillSlugs() {
+  const catalog = await getSkillCatalogData();
+  return catalog.allSkills.map((skill) => skill.slug);
 }
 
 export async function getCreatorForCase(

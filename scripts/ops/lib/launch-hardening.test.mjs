@@ -38,7 +38,11 @@ test("www requests permanently redirect without losing path or query", () => {
 test("sitemap reads current case data at request time", () => {
   assert.match(sitemap, /export const dynamic = "force-dynamic"/);
   assert.match(sitemap, /getSitemapData/);
-  assert.match(sitemapData, /select", "slug,creator_name"/);
+  assert.match(
+    sitemapData,
+    /"slug,title,category,creator_name,tags"/
+  );
+  assert.match(sitemapData, /deriveSkillCatalog/);
   assert.match(sitemapData, /SUPABASE_SERVICE_ROLE_KEY/);
 });
 

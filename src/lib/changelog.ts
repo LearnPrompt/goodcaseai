@@ -7,6 +7,17 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-07-28",
+    title: "从 Case 派生作者方法与通用 Skill",
+    items: [
+      "Case 卡片上的作者署名现在可以直接进入创作者页，作者 Case 数按全部已发布作品统计。",
+      "同类方法至少出现在 3 个 Case、覆盖 2 位作者后，才会形成跨作者通用 Skill。",
+      "同一作者至少有 3 个 Case 重复出现同类做法，才会形成作者方法；来源热度不参与生成门槛。",
+      "Skill 有独立可分享证据页，但不进入一级导航，也不成为新的投稿类型。",
+    ],
+    tags: ["功能", "透明度"],
+  },
+  {
     date: "2026-07-27",
     title: "运营数据和 Agent 入口补齐",
     items: [
@@ -89,6 +100,17 @@ export const CHANGELOG: ChangelogEntry[] = [
 ];
 
 export const CHANGELOG_EN: ChangelogEntry[] = [
+  {
+    date: "2026-07-28",
+    title: "Creator methods and shared Skills derived from Cases",
+    items: [
+      "Creator credits on Case cards now link directly to creator pages, whose Case count covers all published work.",
+      "A shared Skill appears only after the same method is evidenced by at least three Cases across two creators.",
+      "A creator method requires at least three matching Cases by the same creator; source popularity is not part of the threshold.",
+      "Skills have shareable evidence pages but remain outside the primary navigation and are not a separate submission type.",
+    ],
+    tags: ["Features", "Transparency"],
+  },
   {
     date: "2026-07-27",
     title: "Operator metrics and agent entry points",

@@ -515,7 +515,7 @@ export default async function Home({
               </div>
               <p className="mt-6 text-sm leading-7 text-[var(--mute)]">{creator.bio}</p>
               <div className="mt-auto grid grid-cols-3 gap-2 pt-6">
-                <MiniMetric label="Cases" value={creator.representativeCases.length} />
+                <MiniMetric label="Cases" value={creator.caseCount} />
                 <MiniMetric
                   label={isEnglish ? "Heat" : "热度"}
                   value={creator.averageSourceHeatScore ?? "—"}

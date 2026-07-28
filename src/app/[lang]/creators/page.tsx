@@ -124,7 +124,7 @@ export default async function CreatorsPage({
             <div className="mt-5 grid grid-cols-3 gap-2">
               <div className="gc-stat">
                 <div className="gc-stat-label">{messages.common.cases}</div>
-                <div className="gc-stat-value">{creator.representativeCases.length}</div>
+                <div className="gc-stat-value">{creator.caseCount}</div>
               </div>
               <div className="gc-stat">
                 <div className="gc-stat-label">{messages.common.sourceHeat}</div>

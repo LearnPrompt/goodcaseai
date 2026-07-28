@@ -8,7 +8,11 @@ import { LocalizedLink as Link } from "@/components/localized-link";
 import { SUPPORTED_LOCALES, localizeHref } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
-import { getCreatorDetailData, getCreatorListData } from "@/lib/cases";
+import {
+  getCreatorDetailData,
+  getCreatorDetailPageData,
+  getCreatorListData,
+} from "@/lib/cases";
 import { formatStabilityScore } from "@/lib/stability";
 
 export const revalidate = 300;
@@ -80,7 +84,8 @@ export default async function CreatorDetailPage({
   const messages = getMessages(locale);
   const isEnglish = locale === "en";
   const { slug } = await params;
-  const creator = await getCreatorDetailData(slug, locale);
+  const { creator, methods, representativeCaseSkills } =
+    await getCreatorDetailPageData(slug, locale);
 
   if (!creator) {
     notFound();
@@ -114,7 +119,7 @@ export default async function CreatorDetailPage({
         </div>
         <div>
           <div className="gc-stat-label">{messages.common.cases}</div>
-          <div className="gc-stat-value">{creator.representativeCases.length}</div>
+          <div className="gc-stat-value">{creator.caseCount}</div>
           <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
             {creator.sourceFootprint.join(" / ")}
           </div>
@@ -152,6 +157,55 @@ export default async function CreatorDetailPage({
         </div>
       </PageHero>
 
+      {methods.length > 0 ? (
+        <section className="gc-section">
+          <div className="gc-section-head">
+            <p className="gc-section-id">
+              {isEnglish ? "Creator methods" : "作者标志性方法"}
+            </p>
+            <div>
+              <h2 className="gc-section-title">
+                {isEnglish
+                  ? "Repeated work becomes a method."
+                  : "不是给作者贴标签，而是从重复作品里找方法。"}
+              </h2>
+              <p className="gc-section-sub">
+                {isEnglish
+                  ? "A creator method appears only when the same pattern is evidenced by at least three published cases. Popularity alone does not create one."
+                  : "只有同一作者至少 3 个已发布 Case 重复出现同类做法，才会形成作者方法；作者热度本身不能生成方法。"}
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {methods.map((method) => (
+              <Link
+                key={method.slug}
+                href={`/skills/${method.slug}`}
+                className="gc-card group p-5 sm:p-6"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="gc-chip gc-chip-accent">
+                    {isEnglish ? "Creator method" : "作者方法"}
+                  </span>
+                  <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
+                    {method.caseCount} Cases
+                  </span>
+                </div>
+                <h3 className="mt-5 text-2xl font-semibold tracking-[-0.03em]">
+                  {method.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+                  {method.description}
+                </p>
+                <span className="mt-5 block text-sm font-semibold transition group-hover:text-[var(--orange)]">
+                  {isEnglish ? "Open method evidence" : "查看方法证据"} →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="gc-section">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--hair)] pb-6">
           <div>
@@ -173,7 +227,13 @@ export default async function CreatorDetailPage({
         </div>
         <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
           {creator.representativeCases.map((item) => (
-            <CaseCard key={item.slug} item={item} />
+            <CaseCard
+              key={item.slug}
+              item={{
+                ...item,
+                skills: representativeCaseSkills.get(item.slug) ?? [],
+              }}
+            />
           ))}
         </div>
       </section>
