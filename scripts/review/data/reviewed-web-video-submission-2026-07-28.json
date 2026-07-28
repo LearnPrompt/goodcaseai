@@ -1,0 +1,28 @@
+{
+  "submitted_at": "2026-07-28",
+  "import_batch_id": "reviewed-web-video-20260728-v1",
+  "source_label_files": [
+    "scripts/review/data/web-v1-human-labels-2026-07-27.json",
+    "scripts/review/data/web-v2-human-labels-2026-07-27.json",
+    "scripts/review/data/web-v3-human-labels-2026-07-27.json",
+    "scripts/review/data/web-v4-human-labels-2026-07-27.json",
+    "scripts/review/data/video-v1-human-labels-2026-07-28.json"
+  ],
+  "backup_path": "tmp/db-backups/2026-07-28-before-reviewed-web-video-v1",
+  "submitted": {
+    "total": 195,
+    "web": 74,
+    "video": 121
+  },
+  "production_state": {
+    "pending": 0,
+    "approved": 0,
+    "published": 195
+  },
+  "checks": {
+    "duplicate_source_urls": 0,
+    "missing_core_fields": 0,
+    "mapping_conflicts": 0,
+    "invalid_approvals": 0
+  }
+}

@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildRecommendationReviewPlan,
   buildDailyReviewQueue,
+  filterCandidatesByIds,
   reviewReadinessIssues,
   sourceInteractionCount,
 } from "./review-queue.mjs";
@@ -88,5 +90,56 @@ test("daily queue caps repeated creators", () => {
   assert.deepEqual(
     queue.rows.map((item) => item.id),
     ["a-1", "b-1"]
+  );
+});
+
+test("candidate id filter keeps the requested review subset", () => {
+  const rows = [
+    candidate({ id: "a" }),
+    candidate({ id: "b" }),
+    candidate({ id: "c" }),
+  ];
+
+  assert.deepEqual(
+    filterCandidatesByIds(rows, ["c", "a"]).map((item) => item.id),
+    ["a", "c"]
+  );
+  assert.equal(filterCandidatesByIds(rows).length, 3);
+});
+
+test("recommendation review plan maps decisions and respects group order", () => {
+  const plan = buildRecommendationReviewPlan(
+    [
+      { id: "reject-1", recommendation: "pre_reject", rule: "generic_portrait" },
+      { id: "border-1", recommendation: "borderline", rule: "needs_visual_check" },
+      { id: "approve-1", recommendation: "review_first", rule: "reusable_template" },
+    ],
+    ["borderline", "pre_reject"]
+  );
+
+  assert.deepEqual(plan, [
+    {
+      id: "border-1",
+      recommendation: "borderline",
+      recommended_decision: "borderline",
+      rule: "needs_visual_check",
+    },
+    {
+      id: "reject-1",
+      recommendation: "pre_reject",
+      recommended_decision: "reject",
+      rule: "generic_portrait",
+    },
+  ]);
+});
+
+test("recommendation review plan rejects duplicate ids", () => {
+  assert.throws(
+    () =>
+      buildRecommendationReviewPlan([
+        { id: "same", recommendation: "pre_reject" },
+        { id: "same", recommendation: "borderline" },
+      ]),
+    /id 重复/
   );
 });

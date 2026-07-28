@@ -1,0 +1,40 @@
+{
+  "review_key": "web-v1-2026-07-27",
+  "reviewed_at": "2026-07-27",
+  "source_report": "tmp/supply-reports/2026-07-27-web-v1-calibration.json",
+  "summary": {
+    "total": 20,
+    "approve": 19,
+    "reject": 1,
+    "topic_seed": 0,
+    "undecided": 0,
+    "binary_approval_rate": 0.95
+  },
+  "production_state": {
+    "approved_published": 19,
+    "rejected_not_imported": 1,
+    "topic_seed_not_imported": 0
+  },
+  "items": [
+    {"code":"W01","id":"x-2026249809506811965","title":"Gemini 3.1 一次生成动效网站","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2026249809506811965"},
+    {"code":"W02","id":"x-2024832167164133766","title":"AntiGravity + Gemini 3.1 落地页","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2024832167164133766"},
+    {"code":"W03","id":"x-2042188738818957631","title":"Claude + Nano Banana + Kling 动画网站","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2042188738818957631"},
+    {"code":"W04","id":"x-2036138516070146225","title":"Google Stitch 对比 Claude 网页生成","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2036138516070146225"},
+    {"code":"W05","id":"x-2033967195924144341","title":"Nano Banana + Veo 3 + Lovable 动效站","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2033967195924144341"},
+    {"code":"W06","id":"x-2059294558299766837","title":"ChatGPT Image 设计转 React Native 网站","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2059294558299766837"},
+    {"code":"W07","id":"x-1998052721493258363","title":"四模型 Lovable 网页 Prompt 对比","creator":"@damienghader","human_decision":"reject","source_url":"https://x.com/damienghader/status/1998052721493258363"},
+    {"code":"W08","id":"x-2038564207101436210","title":"Gemini vs Claude：Velorah 电动房车落地页","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2038564207101436210"},
+    {"code":"W09","id":"x-2054291040379842795","title":"GPT Image 2 + Veo 3 + Lovable 营销站","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2054291040379842795"},
+    {"code":"W10","id":"x-2037902313910899150","title":"Nano Banana + Kling + Claude 电影感 Hero","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2037902313910899150"},
+    {"code":"W11","id":"x-2077366050828751274","title":"Claude + Fable：Aethera Fintech 落地页","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2077366050828751274"},
+    {"code":"W12","id":"x-2067218410350797295","title":"Grok Imagine + Grok Build：Veldara Hero","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2067218410350797295"},
+    {"code":"W13","id":"x-2027664654252839271","title":"Nano Banana + Flow + AntiGravity 动效网站","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2027664654252839271"},
+    {"code":"W14","id":"x-2040894867153338643","title":"Claude 自动生成单页动效站","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2040894867153338643"},
+    {"code":"W15","id":"x-2065418614627602509","title":"Claude Mythos：Lithos 地质品牌 Hero","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2065418614627602509"},
+    {"code":"W16","id":"x-2072997540451258848","title":"Fable 与 Opus 同 Prompt 滚动页对比","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2072997540451258848"},
+    {"code":"W17","id":"x-2044721965215174664","title":"Kimi K2 网站 Creative Brief","creator":"@Motion_Viz","human_decision":"approve","source_url":"https://x.com/Motion_Viz/status/2044721965215174664"},
+    {"code":"W18","id":"x-2027889115166085484","title":"Gemini 3.1 暗色科技网站 Prompt","creator":"@aiedge_","human_decision":"approve","source_url":"https://x.com/aiedge_/status/2027889115166085484"},
+    {"code":"W19","id":"x-2029971732443058437","title":"太空旅行全屏动画 Hero","creator":"@viktoroddy","human_decision":"approve","source_url":"https://x.com/viktoroddy/status/2029971732443058437"},
+    {"code":"W20","id":"x-2017239599391625501","title":"品牌策略师式网站结构 Prompt","creator":"@JayPROb01","human_decision":"approve","source_url":"https://x.com/JayPROb01/status/2017239599391625501"}
+  ]
+}

@@ -49,6 +49,7 @@ export function decodeHtml(value) {
     .replaceAll("&amp;", "&")
     .replaceAll("&lt;", "<")
     .replaceAll("&gt;", ">")
+    .replaceAll("&nbsp;", " ")
     .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
     .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
       String.fromCodePoint(Number.parseInt(code, 16))
@@ -186,6 +187,59 @@ export function extractIdeogramGalleryItems(html) {
     }
   }
   return items;
+}
+
+export function extractComfyWorkflowCards(html) {
+  const decoded = decodeHtml(html);
+  const chunks = decoded.split('[0,{"name":[0,"').slice(1);
+  const rows = [];
+  const seen = new Set();
+
+  for (const chunk of chunks) {
+    const current = chunk.split("}],[0,{")[0];
+    const name = current.match(/^([^"]+)/)?.[1] || "";
+    const shareId = current.match(/"shareId":\[0,"([^"]+)/)?.[1] || "";
+    const title =
+      current.match(/"title":\[0,"([\s\S]*?)"\],"description"/)?.[1] || "";
+    const description =
+      current.match(/"description":\[0,"([\s\S]*?)"\],"mediaType"/)?.[1] || "";
+    const mediaType =
+      current.match(/"mediaType":\[0,"([^"]+)/)?.[1] || "image";
+    const mediaUrl =
+      current.match(/"thumbnails":\[1,\[\[0,"([^"]+)/)?.[1] || "";
+    const username =
+      current.match(/"username":\[0,"([^"]+)/)?.[1] || "";
+    const creator =
+      current.match(/"creatorDisplayName":\[0,"([^"]+)/)?.[1] || "";
+    const model =
+      current.match(/"models":\[1,\[\[0,"([^"]+)/)?.[1] || "";
+
+    if (
+      !name ||
+      !shareId ||
+      !title ||
+      !mediaUrl ||
+      !username ||
+      seen.has(shareId)
+    ) {
+      continue;
+    }
+
+    seen.add(shareId);
+    rows.push({
+      name,
+      shareId,
+      title: title.replaceAll('\\"', '"').trim(),
+      description: description.replaceAll('\\"', '"').trim(),
+      mediaType,
+      mediaUrl,
+      username,
+      creator: creator.replaceAll('\\"', '"').trim(),
+      model,
+    });
+  }
+
+  return rows;
 }
 
 export function hasBlockedTerms(value) {

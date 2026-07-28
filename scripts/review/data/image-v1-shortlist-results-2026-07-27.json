@@ -1,0 +1,31 @@
+{
+  "review_key": "image-v1-shortlist-2026-07-27",
+  "reviewed_at": "2026-07-27",
+  "summary": {
+    "total": 17,
+    "approve": 9,
+    "reject": 8,
+    "borderline": 0,
+    "skip": 0,
+    "shortlist_approval_rate": 0.529
+  },
+  "items": [
+    {"code":"D01","id":"77eea73d-df3a-4ef7-8382-4cd0b10f8046","title":"悬浮美食商业广告活动","human_decision":"approve","source_url":"https://x.com/i/status/2077676593284354149"},
+    {"code":"D02","id":"8c3f319a-52d1-4c36-8981-d1ed6079ede4","title":"专业零食包装样机","human_decision":"approve","source_url":"https://x.com/i/status/2079211001132573098"},
+    {"code":"D03","id":"f92e1704-a268-48be-be35-4c1d080d7342","title":"City Aesthetic Morning Poster Collage","human_decision":"approve","source_url":"https://x.com/i/status/2080377942639603720"},
+    {"code":"D04","id":"88d029d2-9957-45c6-b681-4c6c75514d69","title":"奢华腕表高山主题广告项目","human_decision":"reject","source_url":"https://x.com/i/status/2077758761469624408"},
+    {"code":"D05","id":"8e8f9146-8fa7-476a-a815-4cbe9c936c24","title":"Batch Product Poster Proposal Generator","human_decision":"approve","source_url":"https://x.com/i/status/2080480065998192970"},
+    {"code":"D06","id":"e63a59c4-a38e-4f5a-9bc8-5864689cee07","title":"Voxel 杂志立体艺术","human_decision":"approve","source_url":"https://x.com/i/status/2079934742581887010"},
+    {"code":"D07","id":"e9646feb-0afa-48ec-960e-ca47def69a23","title":"黑白偶像漫画预告海报","human_decision":"reject","source_url":"https://x.com/i/status/2080289282431078607"},
+    {"code":"D08","id":"08be3543-020b-451f-8397-ea42e75a45ae","title":"极简克莱因蓝排版海报","human_decision":"approve","source_url":"https://x.com/i/status/2079273202224685296"},
+    {"code":"D09","id":"0a9c5b6e-17dc-40b1-a3d8-49e0225f12f5","title":"高端太阳镜商业项目","human_decision":"approve","source_url":"https://x.com/i/status/2079586138130657751"},
+    {"code":"D10","id":"eb0d8406-a56f-4463-9afb-164dfb086a7a","title":"Japanese Pediatric Disease Infographic","human_decision":"reject","source_url":"https://x.com/i/status/2080426338159403074"},
+    {"code":"D11","id":"6a7442c9-a904-49a2-9d3f-b53033dbb959","title":"定制人偶吸塑包装","human_decision":"reject","source_url":"https://x.com/i/status/2079180508345639204"},
+    {"code":"D12","id":"bbe0ac9f-a6d5-410a-896d-97a8a2e740e0","title":"光泽感 AI Logo 重设计展示行","human_decision":"approve","source_url":"https://x.com/i/status/2079316848747876823"},
+    {"code":"D13","id":"06e239b8-e96b-47de-80b5-56d851249db9","title":"三国演义立体书场景","human_decision":"reject","source_url":"https://x.com/i/status/2078186990097555916"},
+    {"code":"D14","id":"1b1601bd-295c-43ba-aed2-dec0f903adf0","title":"平等合作商业信息图","human_decision":"reject","source_url":"https://x.com/i/status/2079714924801233158"},
+    {"code":"D15","id":"3841bb71-58e5-4b50-93ba-1b5cd87bb965","title":"Human Fragments 编辑海报","human_decision":"approve","source_url":"https://x.com/i/status/2080284587369042155"},
+    {"code":"D16","id":"8240b321-9ba4-469a-95e3-e003e4cff168","title":"高端运动广告海报","human_decision":"reject","source_url":"https://x.com/i/status/2080252097765994975"},
+    {"code":"D17","id":"e8135b09-8cde-45f6-8abc-f273afb3c0a9","title":"AI Vibe Coding 演进图谱","human_decision":"reject","source_url":"https://x.com/i/status/2080102913133990140"}
+  ]
+}

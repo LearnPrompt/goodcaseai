@@ -28,7 +28,10 @@ function renderMedia(item) {
     return '<div class="media-empty">没有可展示媒体</div>';
   }
   if (item.mediaKind === "video") {
-    return `<video controls preload="none" src="${escapeHtml(item.mediaUrl)}"></video>`;
+    const poster = item.posterUrl
+      ? ` poster="${escapeHtml(item.posterUrl)}"`
+      : "";
+    return `<video controls preload="metadata"${poster} src="${escapeHtml(item.mediaUrl)}"></video>`;
   }
   return `<img loading="lazy" src="${escapeHtml(item.mediaUrl)}" alt="${escapeHtml(item.title)}">`;
 }
@@ -61,6 +64,11 @@ function renderCard(item, index) {
           ${badge("原页", checks.source)}
           ${badge("作者", checks.author)}
           ${badge("结果", checks.result)}
+          ${
+            Object.hasOwn(checks, "prompt")
+              ? badge("Prompt", checks.prompt)
+              : ""
+          }
           ${badge("方法", checks.method)}
           ${badge("许可", checks.license)}
         </div>
@@ -74,8 +82,12 @@ function renderCard(item, index) {
         </div>
         ${
           item.promptText
-            ? `<details><summary>完整 Prompt</summary><pre>${escapeHtml(item.promptText)}</pre></details>`
-            : ""
+            ? `<details class="prompt-details">
+                <summary>完整 Prompt（站内展开）</summary>
+                <button type="button" data-copy-prompt>复制 Prompt</button>
+                <pre>${escapeHtml(item.promptText)}</pre>
+              </details>`
+            : `<p class="prompt-missing">⚠ 当前没有抓到可直接复制的完整 Prompt，按边界样本审核。</p>`
         }
         ${
           item.method
@@ -105,6 +117,7 @@ function renderSourceStatus(source) {
 }
 
 function renderPage(report, reportPath) {
+  const pageTitle = report.title || "多来源影子审核";
   const cards = report.items.map(renderCard).join("");
   const sourceOptions = report.sources
     .filter((source) => source.collected > 0)
@@ -120,7 +133,7 @@ function renderPage(report, reportPath) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GoodCase 多来源影子审核</title>
+  <title>GoodCase ${escapeHtml(pageTitle)}</title>
   <style>
     :root { color-scheme:light; --ink:#101010; --paper:#f4f1ea; --orange:#ff5a1f; --green:#176b45; --red:#a83232; --line:#cac6bd; }
     * { box-sizing:border-box; }
@@ -160,6 +173,8 @@ function renderPage(report, reportPath) {
     .actions { margin:16px 0; }
     details { margin-top:13px; border-top:1px solid var(--line); padding-top:12px; }
     summary { cursor:pointer; font-weight:800; }
+    .prompt-details button { margin-top:12px; border-color:var(--orange); color:var(--orange); }
+    .prompt-missing { margin:16px 0 0; padding:12px; border:1px solid var(--red); color:var(--red); font-weight:700; }
     pre { margin:12px 0 0; padding:14px; max-height:330px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; background:#f5f5f5; border:1px solid var(--line); font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; }
     .decision { margin-top:20px; padding-top:16px; border-top:1px solid var(--ink); }
     .decision button.active[data-value="include"] { background:var(--green); border-color:var(--green); color:#fff; }
@@ -177,7 +192,7 @@ function renderPage(report, reportPath) {
 <body>
   <header>
     <div class="brand">
-      <h1>GOODCASE <strong>多来源影子审核</strong></h1>
+      <h1>GOODCASE <strong>${escapeHtml(pageTitle)}</strong></h1>
       <span>${report.stats.total} 条 · ${escapeHtml(report.runDate)}</span>
     </div>
     <p class="notice">本页不连接 Supabase。决定只保存在当前浏览器，可随时清除；只有你明确把编号发给 Codex 后，才会考虑进入正式 pending。</p>
@@ -214,6 +229,21 @@ function renderPage(report, reportPath) {
     const pageSize = 12;
     let currentPage = 1;
 
+    async function copyText(text) {
+      try {
+        if (!navigator.clipboard?.writeText) return false;
+        return await Promise.race([
+          navigator.clipboard
+            .writeText(text)
+            .then(() => true)
+            .catch(() => false),
+          new Promise((resolve) => setTimeout(() => resolve(false), 800)),
+        ]);
+      } catch {
+        return false;
+      }
+    }
+
     function decisionFor(card) {
       return decisions[card.dataset.index] || "";
     }
@@ -234,37 +264,51 @@ function renderPage(report, reportPath) {
           (!decision || (decision === "undecided" ? !cardDecision : cardDecision === decision));
       });
     }
-    function render() {
+    function render({ scrollToTop = false } = {}) {
       const filtered = filteredCards();
       const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
       currentPage = Math.min(currentPage, totalPages);
       const visible = new Set(filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize));
+      const decidedCount = Object.keys(decisions).length;
       allCards.forEach((card) => {
         card.hidden = !visible.has(card);
         paintDecision(card);
       });
       document.querySelector("#page-status").textContent =
-        "第 " + currentPage + " / " + totalPages + " 页 · " + filtered.length + " 条";
+        "第 " + currentPage + " / " + totalPages + " 页 · " + filtered.length +
+        " 条 · 已审 " + decidedCount + " / " + allCards.length;
       document.querySelector("#previous-page").disabled = currentPage === 1;
       document.querySelector("#next-page").disabled = currentPage === totalPages;
-      window.scrollTo({ top: 0, behavior: "instant" });
+      if (scrollToTop) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
     }
     function resetAndRender() {
       currentPage = 1;
-      render();
+      render({ scrollToTop: true });
     }
     document.querySelectorAll("select").forEach((select) => {
       select.addEventListener("change", resetAndRender);
     });
     document.querySelector("#previous-page").addEventListener("click", () => {
       currentPage = Math.max(1, currentPage - 1);
-      render();
+      render({ scrollToTop: true });
     });
     document.querySelector("#next-page").addEventListener("click", () => {
       currentPage += 1;
-      render();
+      render({ scrollToTop: true });
     });
     allCards.forEach((card) => {
+      card.querySelector("[data-copy-prompt]")?.addEventListener("click", (event) => {
+        const promptNode = card.querySelector(".prompt-details pre");
+        if (!promptNode) return;
+        const range = document.createRange();
+        range.selectNodeContents(promptNode);
+        window.getSelection()?.removeAllRanges();
+        window.getSelection()?.addRange(range);
+        event.currentTarget.textContent = "已选中，请 ⌘C";
+        setTimeout(() => { event.currentTarget.textContent = "复制 Prompt"; }, 2400);
+      });
       card.querySelector(".decision").addEventListener("click", (event) => {
         const button = event.target.closest("button[data-value]");
         if (!button) return;
@@ -283,8 +327,9 @@ function renderPage(report, reportPath) {
         grouped.reject.length ? "不收录 " + grouped.reject.join("、") : "",
       ].filter(Boolean);
       const text = parts.length ? parts.join("\\n") : "尚未做审核决定";
-      await navigator.clipboard.writeText(text);
-      event.currentTarget.textContent = "已复制";
+      event.currentTarget.textContent = "复制中…";
+      const copied = await copyText(text);
+      event.currentTarget.textContent = copied ? "已复制" : "复制失败";
       setTimeout(() => { event.currentTarget.textContent = "复制审核决定"; }, 1200);
     });
     render();

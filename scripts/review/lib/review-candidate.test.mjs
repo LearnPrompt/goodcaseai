@@ -28,6 +28,19 @@ test("approve accepts a pending candidate with L1 evidence", () => {
   assert.equal(result.ok, true);
 });
 
+test("approve accepts a legitimate one-character creator name", () => {
+  const result = validateReview(
+    { ...validCandidate, creator_name: "K" },
+    {
+      action: "approve",
+      note: "来源和方法已人工核对",
+      evidenceLevel: "L1",
+    }
+  );
+
+  assert.equal(result.ok, true);
+});
+
 test("approve rejects L0 and missing provenance", () => {
   const result = validateReview(
     {
