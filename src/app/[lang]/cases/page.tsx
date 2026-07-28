@@ -170,10 +170,11 @@ export default async function CasesPage({
           </div>
         </section>
       ) : (
-      <section className="grid gap-0 border-l border-t border-[var(--hair)] md:grid-cols-2 2xl:grid-cols-3">
+      <section className="grid gap-0 border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
         {caseItems.map((item) => (
           <CaseCard
             key={item.slug}
+            variant="gallery"
             item={{
               ...item,
               skills: getCaseSkillLinks(skillCatalog, item.slug),

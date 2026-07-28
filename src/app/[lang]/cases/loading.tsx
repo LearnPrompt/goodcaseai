@@ -27,13 +27,13 @@ export default function CasesLoading() {
         ))}
       </section>
 
-      <section className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 2xl:grid-cols-3">
+      <section className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
         {SKELETON_KEYS.map((key) => (
           <article
             key={key}
             className="flex h-full flex-col overflow-hidden border border-[var(--hair)] bg-white"
           >
-            <div className="aspect-[4/3] animate-pulse border-b border-[var(--hair)] bg-[var(--concrete)]" />
+            <div className="aspect-[16/10] animate-pulse border-b border-[var(--hair)] bg-[var(--concrete)]" />
             <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">
               <div className="flex flex-wrap gap-2">
                 <div className="h-6 w-16 animate-pulse bg-black/10" />
