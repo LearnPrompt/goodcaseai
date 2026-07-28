@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useLocale, useMessages } from "@/i18n/client";
 import { persistLocale } from "@/i18n/browser";
 import {
@@ -10,15 +11,15 @@ import {
 export function LanguageSwitcher() {
   const locale = useLocale();
   const messages = useMessages();
+  const pathname = usePathname();
 
-  const switchLanguage = (nextLocale: Locale) => {
-    if (nextLocale === locale) {
-      return;
-    }
-
+  const prepareLanguageSwitch = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    nextLocale: Locale
+  ) => {
     persistLocale(nextLocale);
     const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.location.assign(localizeHref(nextLocale, currentHref));
+    event.currentTarget.href = localizeHref(nextLocale, currentHref);
   };
 
   return (
@@ -29,22 +30,34 @@ export function LanguageSwitcher() {
       {[
         ["zh-CN", messages.language.chinese, messages.language.switchToChinese],
         ["en", messages.language.english, messages.language.switchToEnglish],
-      ].map(([value, label, ariaLabel]) => (
-        <button
-          key={value}
-          type="button"
-          aria-label={ariaLabel}
-          aria-pressed={locale === value}
-          onClick={() => switchLanguage(value as Locale)}
-          className={`border-r border-[var(--hair)] px-3 last:border-r-0 ${
-            locale === value
-              ? "bg-[var(--ink)] text-[var(--paper)]"
-              : "text-[var(--muted)] transition hover:bg-[var(--paper-2)]"
-          }`}
-        >
-          {label}
-        </button>
-      ))}
+      ].map(([value, label, ariaLabel]) => {
+        const targetLocale = value as Locale;
+        const className = `inline-flex items-center border-r border-[var(--hair)] px-3 last:border-r-0 ${
+          locale === targetLocale
+            ? "bg-[var(--ink)] text-[var(--paper)]"
+            : "text-[var(--muted)] transition hover:bg-[var(--paper-2)]"
+        }`;
+
+        return locale === targetLocale ? (
+          <span
+            key={value}
+            aria-current="page"
+            className={className}
+          >
+            {label}
+          </span>
+        ) : (
+          <a
+            key={value}
+            href={localizeHref(targetLocale, pathname)}
+            aria-label={ariaLabel}
+            onClick={(event) => prepareLanguageSwitch(event, targetLocale)}
+            className={className}
+          >
+            {label}
+          </a>
+        );
+      })}
     </div>
   );
 }
