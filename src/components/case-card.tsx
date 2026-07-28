@@ -1,11 +1,11 @@
+"use client";
+
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { CaseCardPrompt } from "@/components/case-card-prompt";
-import {
-  CATEGORY_LABELS,
-  getCaseCardSummary,
-} from "@/lib/case-presentation";
+import { LocalizedLink as Link } from "@/components/localized-link";
+import { useMessages } from "@/i18n/client";
+import { getCaseCardSummary } from "@/lib/case-presentation";
 import { formatStabilityScore } from "@/lib/stability";
 
 export type CaseCardItem = {
@@ -16,7 +16,9 @@ export type CaseCardItem = {
   creator?: string;
   summary: string;
   promptPreview?: string | null;
+  contentLocale?: "zh-CN" | "en";
   promptTranslationZh?: string | null;
+  promptTranslationEn?: string | null;
   mediaType: string;
   mediaUrl: string | null;
   posterUrl?: string | null;
@@ -31,8 +33,9 @@ export function CaseCard({
   item: CaseCardItem;
   actions?: ReactNode;
 }) {
+  const messages = useMessages();
   const label =
-    CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] ||
+    messages.category[item.category as keyof typeof messages.category] ||
     item.category;
   const summary = getCaseCardSummary(item.summary);
 
@@ -85,16 +88,18 @@ export function CaseCard({
 
         <CaseCardPrompt
           promptPreview={item.promptPreview}
+          contentLocale={item.contentLocale}
           promptTranslationZh={item.promptTranslationZh}
+          promptTranslationEn={item.promptTranslationEn}
         />
 
         <div className="mt-5 grid grid-cols-2 gap-2">
           <div className="gc-stat">
-            <div className="gc-stat-label">来源热度 / Source Heat</div>
+            <div className="gc-stat-label">{messages.card.sourceHeat}</div>
             <div className="gc-stat-value">{item.sourceHeatScore ?? "—"}</div>
           </div>
           <div className="gc-stat">
-            <div className="gc-stat-label">稳定度 / Stability</div>
+            <div className="gc-stat-label">{messages.card.stability}</div>
             <div className="gc-stat-value">
               {formatStabilityScore(item.stabilityScore)}
             </div>
@@ -104,7 +109,7 @@ export function CaseCard({
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hair)] pt-4">
           {actions}
           <Link href={`/cases/${item.slug}`} className="gc-action ml-auto">
-            查看 Case →
+            {messages.common.viewCase} →
           </Link>
         </div>
       </div>

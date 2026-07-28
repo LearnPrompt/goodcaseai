@@ -1,6 +1,8 @@
 "use client";
 
 import { trackEvent } from "@/lib/analytics";
+import { useLocale, useMessages } from "@/i18n/client";
+import { localizeHref } from "@/i18n/config";
 
 type SearchBoxProps = {
   defaultQuery?: string;
@@ -8,9 +10,12 @@ type SearchBoxProps = {
 };
 
 export function SearchBox({ defaultQuery = "", filter }: SearchBoxProps) {
+  const locale = useLocale();
+  const messages = useMessages();
+
   return (
     <form
-      action="/cases"
+      action={localizeHref(locale, "/cases")}
       method="get"
       className="flex w-full max-w-2xl gap-2"
       onSubmit={(event) => {
@@ -30,15 +35,15 @@ export function SearchBox({ defaultQuery = "", filter }: SearchBoxProps) {
         type="search"
         name="q"
         defaultValue={defaultQuery}
-        placeholder="搜索标题、摘要或创作者"
-        aria-label="搜索案例"
+        placeholder={messages.search.placeholder}
+        aria-label={messages.search.ariaLabel}
         className="min-h-11 w-full border border-[var(--hair)] bg-white px-4 text-sm text-[var(--ink)] placeholder:text-[var(--muted)] focus:border-[var(--orange)] focus:outline-none"
       />
       <button
         type="submit"
         className="gc-action whitespace-nowrap border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]"
       >
-        搜索
+        {messages.search.submit}
       </button>
     </form>
   );

@@ -16,6 +16,9 @@ export function buildCasePayload(candidate) {
     summary: candidate.summary,
     prompt_preview: candidate.prompt_preview,
     prompt_full: candidate.prompt_full,
+    content_locale: candidate.content_locale || "zh-CN",
+    translations: candidate.translations || {},
+    translation_status: candidate.translation_status || "untranslated",
     media_kind: candidate.media_kind,
     media_url: candidate.media_url,
     poster_url: candidate.poster_url,
@@ -82,6 +85,9 @@ export function validatePublishCandidate(candidate) {
   }
   if (!["L1", "L2"].includes(candidate.evidence_level)) {
     errors.push("发布必须是 L1 或 L2 证据");
+  }
+  if (candidate.translation_status !== "confirmed") {
+    errors.push("发布前必须人工确认双语内容");
   }
   try {
     const source = new URL(candidate.source_url);

@@ -12,13 +12,13 @@ export type AnalyticsEventName = (typeof ANALYTICS_EVENT_NAMES)[number];
 
 const EVENT_NAME_SET = new Set<string>(ANALYTICS_EVENT_NAMES);
 const PROPERTY_ALLOWLIST: Record<AnalyticsEventName, ReadonlySet<string>> = {
-  page_view: new Set(),
-  case_open: new Set(["caseSlug"]),
-  case_search: new Set(["hasQuery", "queryLength", "filter"]),
-  case_share: new Set(["caseSlug"]),
-  outbound_learnprompt: new Set(["target"]),
-  case_submit: new Set(["category"]),
-  app_error: new Set(["digest"]),
+  page_view: new Set(["locale"]),
+  case_open: new Set(["caseSlug", "locale"]),
+  case_search: new Set(["hasQuery", "queryLength", "filter", "locale"]),
+  case_share: new Set(["caseSlug", "locale"]),
+  outbound_learnprompt: new Set(["target", "locale"]),
+  case_submit: new Set(["category", "locale"]),
+  app_error: new Set(["digest", "locale"]),
 };
 
 function cleanString(value: unknown, maxLength: number) {

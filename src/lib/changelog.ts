@@ -87,3 +87,86 @@ export const CHANGELOG: ChangelogEntry[] = [
     tags: ["规划"],
   },
 ];
+
+export const CHANGELOG_EN: ChangelogEntry[] = [
+  {
+    date: "2026-07-27",
+    title: "Operator metrics and agent entry points",
+    items: [
+      "The operator page now summarizes anonymous visits, case activity, submissions, public evidence, and hidden historical data from the last 30 days.",
+      "Test feedback is explicitly marked and archived separately from real user suggestions.",
+      "Added /llms.txt so agents can discover the public API, RSS, Skill, and evidence-use rules from one address.",
+      "The public API and case library now support AI copy and AI hardware categories consistently.",
+    ],
+    tags: ["Operations", "Open"],
+  },
+  {
+    date: "2026-07-25",
+    title: "Agent access moved to the top and brand icons aligned",
+    items: [
+      "Agent Access is now the orange primary action in the header and home hero.",
+      "Changelog and Feedback moved into the top navigation; the footer now contains only the brand and page note.",
+      "Browser favicon, Apple icon, and the in-product thumbs-up mark now use one identity.",
+    ],
+    tags: ["Experience", "Brand"],
+  },
+  {
+    date: "2026-07-23",
+    title: "The popularity ranking became a traceable Source Heat Ranking",
+    items: [
+      "Source Heat reads likes, comments, reposts, saves, and capture time from the original post instead of using a static popularity score.",
+      "Interactions use likes + 2×comments + 3×reposts + 4×saves; the final score combines within-platform interaction percentile, velocity, and data completeness.",
+      "Cross-platform ranking is normalized within each platform first; missing fields remain null rather than being penalized as zero.",
+      "Cases without a verifiable interaction snapshot can remain public but do not enter the ranking.",
+    ],
+    tags: ["Data", "Transparency"],
+  },
+  {
+    date: "2026-07-11",
+    title: "Search, favorites, RSS, Connect, and share posters",
+    items: [
+      "The case library now supports keyword search across models, methods, and creators.",
+      "Favorites are stored locally in the browser and require no account.",
+      "Added an RSS feed at /feed.xml, with new cases delivered automatically.",
+      "Added the Connect page for Skill, RSS, and API access.",
+      "Every case can generate a QR-coded share poster.",
+    ],
+    tags: ["Features"],
+  },
+  {
+    date: "2026-07-10",
+    title: "Open API and Skill launched",
+    items: [
+      "Released a free public API with anonymous access for case lists and case details.",
+      "Released the GoodCase Skill so AI assistants can search and compare cases in conversation.",
+    ],
+    tags: ["Open"],
+  },
+  {
+    date: "2026-07-09",
+    title: "Cases no longer require registration",
+    items: [
+      "Removed the login wall so every public case is readable without an account.",
+      "Full prompts and retest records are public; likes remain a local interest marker.",
+    ],
+    tags: ["Experience"],
+  },
+  {
+    date: "2026-05-17",
+    title: "GoodCase launched",
+    items: [
+      "The first 12 real AI cases launched across video, coding, and image creation.",
+      "Each case surfaces source heat, stability, creators, prompts, and reproducibility signals.",
+    ],
+    tags: ["Launch"],
+  },
+  {
+    date: "2026-07-11",
+    title: "Next",
+    items: [
+      "Stability scores will increasingly come from Lab retests instead of manual labels.",
+      "The submission workflow will continue to improve as more reproducible cases arrive.",
+    ],
+    tags: ["Roadmap"],
+  },
+];

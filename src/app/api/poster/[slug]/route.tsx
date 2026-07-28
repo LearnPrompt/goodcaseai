@@ -2,6 +2,7 @@
 import { ImageResponse } from "next/og";
 import { renderSVG } from "uqr";
 import { getCaseDetailData } from "@/lib/cases";
+import { localizeHref, normalizeLocale } from "@/i18n/config";
 import { loadChineseFont } from "@/lib/og-font";
 
 export const revalidate = 3600;
@@ -79,36 +80,42 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const item = await getCaseDetailData(slug);
+  const locale = normalizeLocale(new URL(request.url).searchParams.get("locale"));
+  const isEnglish = locale === "en";
+  const item = await getCaseDetailData(slug, locale);
 
   if (!item) {
     return new Response("Not found", { status: 404 });
   }
 
   const origin = new URL(request.url).origin;
-  const caseUrl = `${origin}/cases/${slug}`;
+  const caseUrl = `${origin}${localizeHref(locale, `/cases/${slug}`)}`;
   const siteHost = new URL(caseUrl).host;
 
   const categoryKey = item.category;
   // 非 BMP 花体字符（如 𝕏 U+1D54F）不在中文字体子集内，会渲染成豆腐块
   const summary = truncate(item.summary.replace(/𝕏/g, "X"), 40);
   const models = item.recommendedModels.slice(0, 2);
-  const costLabel = COST_BAND_LABELS[item.costBand] || "成本中";
+  const costLabel = isEnglish
+    ? item.costBand.toUpperCase()
+    : COST_BAND_LABELS[item.costBand] || "成本中";
 
   // 视频案例用封面图，图片案例直接用主图。
   const heroSrc = item.mediaType === "video" ? item.posterUrl : item.mediaUrl;
   const [fontData, heroImage] = await Promise.all([
-    loadChineseFont(
-      `${item.title}${summary}${CATEGORY_LABELS[categoryKey]}${models.join(
-        ""
-      )}${costLabel}好案例完整Prompt公开扫码看案例·`
-    ),
+    isEnglish
+      ? Promise.resolve(null)
+      : loadChineseFont(
+          `${item.title}${summary}${CATEGORY_LABELS[categoryKey]}${models.join(
+            ""
+          )}${costLabel}好案例完整Prompt公开扫码看案例·`
+        ),
     loadHeroImage(heroSrc, origin),
   ]);
 
-  const zh = Boolean(fontData);
-  const displayTitle = zh ? item.title : slug.replace(/-/g, " ");
-  const displayCategory = zh
+  const zh = !isEnglish && Boolean(fontData);
+  const displayTitle = isEnglish || zh ? item.title : slug.replace(/-/g, " ");
+  const displayCategory = !isEnglish && zh
     ? CATEGORY_LABELS[categoryKey]
     : CATEGORY_LABELS_EN[categoryKey];
 
@@ -221,7 +228,11 @@ export async function GET(
               lineHeight: 1.4,
             }}
           >
-            {zh ? summary : "A curated AI case from GoodCase.ai"}
+            {isEnglish
+              ? summary
+              : zh
+                ? summary
+                : "A curated AI case from GoodCase.ai"}
           </div>
 
           <div style={{ display: "flex", gap: "12px" }}>
@@ -250,7 +261,7 @@ export async function GET(
                 padding: "8px 18px",
               }}
             >
-              {zh ? costLabel : item.costBand.toUpperCase()}
+              {costLabel}
             </div>
           </div>
         </div>
@@ -294,7 +305,7 @@ export async function GET(
                   letterSpacing: "-0.01em",
                 }}
               >
-                {zh ? `${siteHost} · 好案例` : siteHost}
+                {isEnglish ? siteHost : `${siteHost} · 好案例`}
               </div>
             </div>
             <div
@@ -304,7 +315,7 @@ export async function GET(
                 color: "#c2410c",
               }}
             >
-              {zh ? "完整 Prompt 公开" : "Full prompt is public"}
+              {isEnglish ? "Full prompt is public" : "完整 Prompt 公开"}
             </div>
           </div>
 
@@ -328,7 +339,7 @@ export async function GET(
                 letterSpacing: "0.06em",
               }}
             >
-              {zh ? "扫码看案例" : "SCAN TO VIEW"}
+              {isEnglish ? "SCAN TO VIEW" : "扫码看案例"}
             </div>
           </div>
         </div>

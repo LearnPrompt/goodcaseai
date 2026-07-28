@@ -24,6 +24,15 @@ test("buildCasePayload carries the source candidate id and evidence", () => {
     summary: "Summary",
     prompt_preview: "Preview",
     prompt_full: "Full",
+    content_locale: "en",
+    translations: {
+      "zh-CN": {
+        title: "案例 1",
+        summary: "摘要",
+        promptFull: "完整提示语",
+      },
+    },
+    translation_status: "confirmed",
     media_kind: "video",
     media_url: "/media/example.mp4",
     poster_url: "/media/example.jpg",
@@ -39,6 +48,9 @@ test("buildCasePayload carries the source candidate id and evidence", () => {
   assert.equal(payload.source_candidate_id, "candidate-1");
   assert.equal(payload.evidence_level, "L2");
   assert.equal(payload.source_like_count, 100);
+  assert.equal(payload.content_locale, "en");
+  assert.equal(payload.translation_status, "confirmed");
+  assert.equal(payload.translations["zh-CN"].title, "案例 1");
   assert.equal(payload.source_save_count, null);
   assert.equal(
     payload.source_metrics_captured_at,
@@ -122,6 +134,7 @@ test("publishing requires approved, traceable, non-placeholder evidence", () => 
     summary: "这是一段足够说明价值的案例摘要。",
     prompt_full: "A reproducible prompt with enough detail.",
     prompt_preview: null,
+    translation_status: "confirmed",
   };
   assert.equal(validatePublishCandidate(valid).ok, true);
 
@@ -131,10 +144,12 @@ test("publishing requires approved, traceable, non-placeholder evidence", () => 
     evidence_level: "L0",
     source_url: null,
     media_url: "/media/placeholder.png",
+    translation_status: "untranslated",
   });
   assert.equal(invalid.ok, false);
   assert.match(invalid.errors.join("\n"), /approved/);
   assert.match(invalid.errors.join("\n"), /L1 或 L2/);
   assert.match(invalid.errors.join("\n"), /原始来源/);
   assert.match(invalid.errors.join("\n"), /真实媒体/);
+  assert.match(invalid.errors.join("\n"), /双语内容/);
 });

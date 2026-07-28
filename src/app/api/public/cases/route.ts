@@ -1,7 +1,8 @@
 import type { NextRequest } from "next/server";
 import { filterCasesByQuery, getCaseListData } from "@/lib/cases";
 import type { CaseCategory } from "@/lib/mock-data";
-import { PUBLIC_API_HEADERS, toPublicListItem } from "../_lib/public-case";
+import { normalizeLocale } from "@/i18n/config";
+import { getPublicApiHeaders, toPublicListItem } from "../_lib/public-case";
 
 const VALID_CATEGORIES: readonly CaseCategory[] = [
   "image",
@@ -30,12 +31,19 @@ function parseTake(rawTake: string | null): number {
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+  const locale = normalizeLocale(searchParams.get("locale"));
+  const headers = getPublicApiHeaders(locale);
 
   const rawCategory = searchParams.get("category");
   if (rawCategory && !VALID_CATEGORIES.includes(rawCategory as CaseCategory)) {
     return Response.json(
-      { error: "invalid category (must be one of: image, video, web, copy)" },
-      { status: 400, headers: PUBLIC_API_HEADERS }
+      {
+        error:
+          locale === "en"
+            ? "Invalid category. Use image, video, web, copy, or hardware."
+            : "分类无效，请使用 image、video、web、copy 或 hardware。",
+      },
+      { status: 400, headers }
     );
   }
 
@@ -43,7 +51,7 @@ export async function GET(request: NextRequest) {
   const take = parseTake(searchParams.get("take"));
 
   // getCaseListData 的 filter 参数不支持 copy，统一拉全量后在内存过滤，保持单一数据路径。
-  let list = await getCaseListData("all");
+  let list = await getCaseListData("all", locale);
 
   if (rawCategory) {
     list = list.filter((item) => item.category === rawCategory);
@@ -53,10 +61,10 @@ export async function GET(request: NextRequest) {
     list = filterCasesByQuery(list, q);
   }
 
-  const items = list.slice(0, take).map(toPublicListItem);
+  const items = list.slice(0, take).map((item) => toPublicListItem(item, locale));
 
   return Response.json(
-    { count: items.length, items },
-    { status: 200, headers: PUBLIC_API_HEADERS }
+    { count: items.length, locale, items },
+    { status: 200, headers }
   );
 }

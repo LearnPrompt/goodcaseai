@@ -31,6 +31,16 @@ export type OperatorCandidate = {
   summary: string;
   prompt_preview: string | null;
   prompt_full: string | null;
+  content_locale: "zh-CN" | "en";
+  translations: Record<
+    string,
+    {
+      title?: string;
+      summary?: string;
+      promptFull?: string;
+    }
+  >;
+  translation_status: "untranslated" | "machine_draft" | "confirmed";
   media_kind: string | null;
   media_url: string;
   poster_url: string | null;
@@ -46,7 +56,7 @@ export type OperatorCandidate = {
 
 const PAGE_SIZE = 25;
 const candidateFields =
-  "id, slug, title, category, source_platform, source_url, creator_name, summary, prompt_preview, prompt_full, media_kind, media_url, poster_url, evidence_level, tags, status, submitted_via, contact, import_batch_id, review_note, created_at";
+  "id, slug, title, category, source_platform, source_url, creator_name, summary, prompt_preview, prompt_full, content_locale, translations, translation_status, media_kind, media_url, poster_url, evidence_level, tags, status, submitted_via, contact, import_batch_id, review_note, created_at";
 const feedbackFields = "id, kind, message, contact, page, status, created_at";
 
 function candidateCountQuery(status: string) {

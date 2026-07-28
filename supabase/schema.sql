@@ -24,6 +24,9 @@ create table if not exists public.cases (
   summary text not null,
   prompt_preview text,
   prompt_full text,
+  content_locale text not null default 'zh-CN',
+  translations jsonb not null default '{}'::jsonb,
+  translation_status text not null default 'untranslated',
   media_kind text not null,
   media_url text not null,
   poster_url text,
@@ -40,6 +43,9 @@ create table if not exists public.cases (
 
 alter table public.cases
   add column if not exists prompt_full text,
+  add column if not exists content_locale text not null default 'zh-CN',
+  add column if not exists translations jsonb not null default '{}'::jsonb,
+  add column if not exists translation_status text not null default 'untranslated',
   add column if not exists remake_count int not null default 0,
   add column if not exists recommended_models text[] not null default '{}'::text[],
   add column if not exists cost_band text not null default 'medium',
@@ -85,6 +91,9 @@ create table if not exists public.case_candidates (
   summary text not null,
   prompt_preview text,
   prompt_full text,
+  content_locale text not null default 'zh-CN',
+  translations jsonb not null default '{}'::jsonb,
+  translation_status text not null default 'untranslated',
   media_kind text not null,
   media_url text not null,
   poster_url text,
@@ -122,6 +131,9 @@ alter table public.case_candidates
   add column if not exists summary text,
   add column if not exists prompt_preview text,
   add column if not exists prompt_full text,
+  add column if not exists content_locale text not null default 'zh-CN',
+  add column if not exists translations jsonb not null default '{}'::jsonb,
+  add column if not exists translation_status text not null default 'untranslated',
   add column if not exists media_kind text,
   add column if not exists media_url text,
   add column if not exists poster_url text,
@@ -218,6 +230,54 @@ begin
         and (source_share_count is null or source_share_count >= 0)
         and (source_save_count is null or source_save_count >= 0)
       );
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'cases_content_locale_check'
+  ) then
+    alter table public.cases
+      add constraint cases_content_locale_check
+      check (content_locale in ('zh-CN', 'en'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'case_candidates_content_locale_check'
+  ) then
+    alter table public.case_candidates
+      add constraint case_candidates_content_locale_check
+      check (content_locale in ('zh-CN', 'en'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'cases_translation_status_check'
+  ) then
+    alter table public.cases
+      add constraint cases_translation_status_check
+      check (translation_status in ('untranslated', 'machine_draft', 'confirmed'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'case_candidates_translation_status_check'
+  ) then
+    alter table public.case_candidates
+      add constraint case_candidates_translation_status_check
+      check (translation_status in ('untranslated', 'machine_draft', 'confirmed'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'cases_translations_object_check'
+  ) then
+    alter table public.cases
+      add constraint cases_translations_object_check
+      check (jsonb_typeof(translations) = 'object');
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'case_candidates_translations_object_check'
+  ) then
+    alter table public.case_candidates
+      add constraint case_candidates_translations_object_check
+      check (jsonb_typeof(translations) = 'object');
   end if;
 end
 $$;
