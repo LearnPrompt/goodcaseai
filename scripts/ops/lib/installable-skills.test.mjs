@@ -27,6 +27,11 @@ test("Skill renderer produces a strict executable bundle", () => {
         category: "video",
         creator: "Alice",
         sourceUrl: "https://example.com/source",
+        summary: "A clear motion study with one subject and a continuous camera path.",
+        promptFull: "Keep the same subject while the camera tracks from left to right.",
+        mediaType: "video",
+        mediaUrl: "/media/goodcase/case-one.mp4",
+        posterUrl: "/media/goodcase/case-one.jpg",
       },
     ],
     creators: [{ name: "Alice", caseCount: 1 }],
@@ -39,9 +44,18 @@ test("Skill renderer produces a strict executable bundle", () => {
   assert.match(files["SKILL.md"], /## Inputs/);
   assert.match(files["SKILL.md"], /## Workflow/);
   assert.match(files["SKILL.md"], /## Verification/);
+  assert.match(files["SKILL.md"], /## Required evidence gate/);
+  assert.match(files["SKILL.md"], /Preserve \/ Replace \/ Avoid/);
+  assert.match(files["SKILL.md"], /Read `references\/cases\.md` before drafting/);
   assert.match(files["SKILL.md"], /reference image/);
+  assert.doesNotMatch(files["SKILL.md"], /when the user asks/);
   assert.doesNotMatch(files["SKILL.md"], /TODO/);
   assert.match(files["references/cases.md"], /GoodCase evidence/);
+  assert.match(files["references/cases.md"], /Prompt excerpt/);
+  assert.match(
+    files["references/cases.md"],
+    /https:\/\/goodcase\.ai\/media\/goodcase\/case-one\.mp4/
+  );
 });
 
 test("invalid Agent Skill names are rejected", () => {
@@ -67,6 +81,13 @@ test("installable manifest only lists complete packaged Skills", () => {
     assert.equal(existsSync(skillMd), true, skillMd);
     assert.equal(existsSync(evidence), true, evidence);
     assert.equal(existsSync(archive), true, archive);
-    assert.match(readFileSync(skillMd, "utf8"), new RegExp(`name: ${item.slug}`));
+    const skillSource = readFileSync(skillMd, "utf8");
+    const evidenceSource = readFileSync(evidence, "utf8");
+    assert.match(skillSource, new RegExp(`name: ${item.slug}`));
+    assert.match(skillSource, /## Required evidence gate/);
+    assert.doesNotMatch(skillSource, /when the user asks/);
+    assert.match(evidenceSource, /## Operating rule/);
+    assert.match(evidenceSource, /Prompt excerpt/);
+    assert.match(evidenceSource, /\[finished media\]\(https:\/\//);
   }
 });

@@ -33,7 +33,7 @@ async function main() {
   let query = supabase
     .from("case_candidates")
     .select(
-      "id, slug, title, category, source_platform, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, creator_name, summary, prompt_preview, prompt_full, content_locale, translations, translation_status, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, evidence_level, tags, import_batch_id"
+      "id, slug, title, category, source_platform, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, creator_name, creator_avatar_url, summary, prompt_preview, prompt_full, content_locale, translations, translation_status, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, evidence_level, tags, import_batch_id"
     )
     .eq("status", "approved")
     .order("created_at", { ascending: true });

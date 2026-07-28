@@ -21,6 +21,7 @@ create table if not exists public.cases (
   source_published_at timestamptz,
   source_metrics_captured_at timestamptz,
   creator_name text,
+  creator_avatar_url text,
   summary text not null,
   prompt_preview text,
   prompt_full text,
@@ -56,6 +57,7 @@ alter table public.cases
   add column if not exists source_save_count int,
   add column if not exists source_published_at timestamptz,
   add column if not exists source_metrics_captured_at timestamptz,
+  add column if not exists creator_avatar_url text,
   add column if not exists evidence_level text not null default 'L0',
   add column if not exists tags text[] not null default '{}'::text[],
   add column if not exists is_published boolean not null default true;
@@ -88,6 +90,7 @@ create table if not exists public.case_candidates (
   source_published_at timestamptz,
   source_metrics_captured_at timestamptz,
   creator_name text,
+  creator_avatar_url text,
   summary text not null,
   prompt_preview text,
   prompt_full text,
@@ -128,6 +131,7 @@ alter table public.case_candidates
   add column if not exists source_published_at timestamptz,
   add column if not exists source_metrics_captured_at timestamptz,
   add column if not exists creator_name text,
+  add column if not exists creator_avatar_url text,
   add column if not exists summary text,
   add column if not exists prompt_preview text,
   add column if not exists prompt_full text,
@@ -180,6 +184,32 @@ begin
     alter table public.case_candidates
       add constraint case_candidates_cost_band_check
       check (cost_band in ('low', 'medium', 'high'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'cases_creator_avatar_url_check'
+  ) then
+    alter table public.cases
+      add constraint cases_creator_avatar_url_check
+      check (
+        creator_avatar_url is null
+        or creator_avatar_url ~ '^https://'
+      );
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'case_candidates_creator_avatar_url_check'
+  ) then
+    alter table public.case_candidates
+      add constraint case_candidates_creator_avatar_url_check
+      check (
+        creator_avatar_url is null
+        or creator_avatar_url ~ '^https://'
+      );
   end if;
 
   if not exists (

@@ -41,6 +41,7 @@ type DbCaseRow = {
   source_published_at: string | null;
   source_metrics_captured_at: string | null;
   creator_name: string | null;
+  creator_avatar_url: string | null;
   summary: string;
   prompt_preview: string | null;
   prompt_full: string | null;
@@ -84,6 +85,12 @@ type DerivedCaseFields = BaseDerivedCaseFields &
 export type DisplayCaseItem = CaseItem & DerivedCaseFields;
 
 const MEDIA_PLACEHOLDER = "/media/placeholder.png";
+const DB_CASE_COLUMNS =
+  "id, slug, title, category, source_platform, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, creator_name, creator_avatar_url, summary, prompt_preview, prompt_full, content_locale, translations, translation_status, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, evidence_level, tags, created_at";
+const DB_CASE_COLUMNS_WITHOUT_AVATAR = DB_CASE_COLUMNS.replace(
+  ", creator_avatar_url",
+  ""
+);
 
 const COST_BAND_LABELS: Record<CaseItem["costBand"], string> = {
   low: "低",
@@ -493,6 +500,7 @@ async function mapDbCaseRowToCaseItem(
     sourceMetricsCapturedAt: row.source_metrics_captured_at || undefined,
     creator: row.creator_name || "匿名作者",
     creatorAvatarUrl:
+      row.creator_avatar_url ||
       fallbackEditorial?.creatorAvatarUrl ||
       creatorAvatarUrls[row.creator_name || ""] ||
       undefined,
@@ -536,23 +544,42 @@ async function fetchPublishedCases(
   }
 
   try {
-    const query = supabase
-      .from("cases")
-      .select(
-        "id, slug, title, category, source_platform, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, creator_name, summary, prompt_preview, prompt_full, content_locale, translations, translation_status, media_kind, media_url, poster_url, remake_count, stability_score, favorite_score, recommended_models, cost_band, evidence_level, tags, created_at"
-      )
-      .eq("is_published", true)
-      .order("created_at", { ascending: false });
+    const load = (columns: string) =>
+      withTimeout(
+        supabase
+          .from("cases")
+          .select(columns)
+          .eq("is_published", true)
+          .order("created_at", { ascending: false })
+      );
 
-    const { data, error } = await withTimeout(query);
+    const initial = await load(DB_CASE_COLUMNS);
+    let data = initial.data as unknown as DbCaseRow[] | null;
+    let error = initial.error;
+    if (
+      error &&
+      (error.code === "42703" || error.code === "PGRST204") &&
+      error.message.includes("creator_avatar_url")
+    ) {
+      const fallback = await load(DB_CASE_COLUMNS_WITHOUT_AVATAR);
+      const fallbackRows = fallback.data as unknown as Array<
+        Omit<DbCaseRow, "creator_avatar_url">
+      > | null;
+      data = fallbackRows
+        ? fallbackRows.map((item) => ({
+            ...item,
+            creator_avatar_url: null,
+          }))
+        : null;
+      error = fallback.error;
+    }
 
     if (error || !data || data.length === 0) {
       return null;
     }
 
-    const rows = data as DbCaseRow[];
     const items = await Promise.all(
-      rows.map((item) => mapDbCaseRowToCaseItem(item, locale))
+      data.map((item) => mapDbCaseRowToCaseItem(item, locale))
     );
     return enrichCaseItems(items, locale);
   } catch {
