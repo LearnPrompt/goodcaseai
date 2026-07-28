@@ -10,6 +10,7 @@ import { localizeHref } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 import { filterCasesByQuery, getCaseListData, type CaseFilter } from "@/lib/cases";
+import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
 
 export const revalidate = 300;
 
@@ -70,10 +71,9 @@ export default async function CasesPage({
   const queryParams = await searchParams;
   const activeFilter = normalizeFilter(queryParams.filter);
   const query = queryParams.q?.trim() || "";
-  const caseItems = filterCasesByQuery(
-    await getCaseListData(activeFilter, locale),
-    query
-  );
+  const filteredCases = await getCaseListData(activeFilter, locale);
+  const skillCatalog = deriveSkillCatalog(filteredCases, locale);
+  const caseItems = filterCasesByQuery(filteredCases, query);
 
   return (
     <SiteShell
@@ -174,7 +174,10 @@ export default async function CasesPage({
         {caseItems.map((item) => (
           <CaseCard
             key={item.slug}
-            item={item}
+            item={{
+              ...item,
+              skills: getCaseSkillLinks(skillCatalog, item.slug),
+            }}
             actions={
                 <div className="flex flex-wrap items-center gap-2">
                   <LikeButton

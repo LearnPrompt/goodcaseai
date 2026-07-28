@@ -6,6 +6,8 @@ import { CaseCardPrompt } from "@/components/case-card-prompt";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { useMessages } from "@/i18n/client";
 import { getCaseCardSummary } from "@/lib/case-presentation";
+import { slugifyCreatorName } from "@/lib/creator-slug";
+import type { SkillLink } from "@/lib/skills";
 import { formatStabilityScore } from "@/lib/stability";
 
 export type CaseCardItem = {
@@ -24,6 +26,7 @@ export type CaseCardItem = {
   posterUrl?: string | null;
   stabilityScore: number;
   sourceHeatScore: number | null;
+  skills?: SkillLink[];
 };
 
 export function CaseCard({
@@ -38,6 +41,7 @@ export function CaseCard({
     messages.category[item.category as keyof typeof messages.category] ||
     item.category;
   const summary = getCaseCardSummary(item.summary);
+  const creatorSlug = item.creator ? slugifyCreatorName(item.creator) : "";
 
   return (
     <article className="gc-card group flex h-full flex-col overflow-hidden">
@@ -72,7 +76,16 @@ export function CaseCard({
         <div className="flex flex-wrap items-center gap-2">
           <span className="gc-chip gc-chip-accent">{label}</span>
           <span className="gc-chip">{item.source}</span>
-          {item.creator ? <span className="gc-chip">{item.creator}</span> : null}
+          {item.creator && creatorSlug ? (
+            <Link
+              href={`/creators/${creatorSlug}`}
+              className="gc-chip transition hover:border-[var(--ink)] hover:text-[var(--ink)]"
+            >
+              {item.creator} →
+            </Link>
+          ) : item.creator ? (
+            <span className="gc-chip">{item.creator}</span>
+          ) : null}
         </div>
 
         <Link href={`/cases/${item.slug}`} className="mt-5 block">
@@ -84,6 +97,20 @@ export function CaseCard({
           <p className="mt-3 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
             {summary}
           </p>
+        ) : null}
+
+        {item.skills?.length ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {item.skills.map((skill) => (
+              <Link
+                key={skill.slug}
+                href={`/skills/${skill.slug}`}
+                className="gc-chip transition hover:border-[var(--orange)] hover:text-[var(--orange)]"
+              >
+                Skill · {skill.title}
+              </Link>
+            ))}
+          </div>
         ) : null}
 
         <CaseCardPrompt

@@ -107,10 +107,13 @@ export default async function CaseDetailPage({
   const messages = getMessages(locale);
   const isEnglish = locale === "en";
   const { slug } = await params;
-  const { item, creator, relatedCases } = await getCaseDetailPageData(
-    slug,
-    locale
-  );
+  const {
+    item,
+    creator,
+    relatedCases,
+    caseSkills,
+    relatedCaseSkills,
+  } = await getCaseDetailPageData(slug, locale);
 
   if (!item) {
     notFound();
@@ -252,14 +255,59 @@ export default async function CaseDetailPage({
           costBand={costBandLabel(item.costBand, locale)}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 text-sm">
-          <span className="text-[var(--muted)]">
-            {messages.prompt.noSkill}
-          </span>
-          <Link href="/connect#feedback" className="gc-action">
-            {messages.prompt.requestSkill} →
-          </Link>
-        </div>
+        {caseSkills.length > 0 ? (
+          <div className="gc-panel-muted p-5 sm:p-6">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="gc-eyebrow">Derived Skill</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
+                  {isEnglish
+                    ? "Reusable methods evidenced by this Case."
+                    : "这个 Case 可以学走的方法。"}
+                </h2>
+              </div>
+              <p className="max-w-xl text-sm leading-7 text-[var(--muted)]">
+                {isEnglish
+                  ? "Skills are derived from repeated patterns in published cases. They are not a separate submission type."
+                  : "Skill 只从多个已发布 Case 的重复模式中派生，不是另一套投稿内容。"}
+              </p>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {caseSkills.map((skill) => (
+                <Link
+                  key={skill.slug}
+                  href={`/skills/${skill.slug}`}
+                  className="group border border-[var(--hair)] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[var(--ink)]"
+                >
+                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--orange)]">
+                    {skill.kind === "creator_method"
+                      ? isEnglish
+                        ? "Creator method"
+                        : "作者方法"
+                      : isEnglish
+                        ? "Shared skill"
+                        : "通用 Skill"}
+                  </span>
+                  <span className="mt-2 block text-lg font-semibold">
+                    {skill.title}
+                  </span>
+                  <span className="mt-3 block text-sm font-semibold text-[var(--muted)] transition group-hover:text-[var(--ink)]">
+                    {isEnglish ? "View evidence" : "查看证据"} →
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 text-sm">
+            <span className="text-[var(--muted)]">
+              {messages.prompt.noSkill}
+            </span>
+            <Link href="/connect#feedback" className="gc-action">
+              {messages.prompt.requestSkill} →
+            </Link>
+          </div>
+        )}
 
         {creator ? (
           <article className="gc-panel grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
@@ -312,7 +360,13 @@ export default async function CaseDetailPage({
         {relatedCases.length > 0 ? (
           <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 2xl:grid-cols-3">
             {relatedCases.map((relatedCase) => (
-              <CaseCard key={relatedCase.slug} item={relatedCase} />
+              <CaseCard
+                key={relatedCase.slug}
+                item={{
+                  ...relatedCase,
+                  skills: relatedCaseSkills.get(relatedCase.slug) ?? [],
+                }}
+              />
             ))}
           </div>
         ) : null}

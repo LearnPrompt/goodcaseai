@@ -5,7 +5,7 @@ import { SITE_ORIGIN } from "@/lib/site";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const { caseSlugs, creatorSlugs } = await getSitemapData();
+  const { caseSlugs, creatorSlugs, skillSlugs } = await getSitemapData();
 
   function localizedEntries(
     path: string,
@@ -50,5 +50,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     )
   );
 
-  return [...staticRoutes, ...caseRoutes, ...creatorRoutes];
+  const skillRoutes: MetadataRoute.Sitemap = skillSlugs.flatMap((slug) =>
+    localizedEntries(`/skills/${encodeURIComponent(slug)}`, "weekly", 0.55)
+  );
+
+  return [...staticRoutes, ...caseRoutes, ...creatorRoutes, ...skillRoutes];
 }
