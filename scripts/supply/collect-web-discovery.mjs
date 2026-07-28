@@ -119,7 +119,7 @@ async function main() {
   );
   const runDate = getArg("--date", tokyoDate());
   const outputDir = path.resolve(
-    getArg("--output-dir", "tmp/supply-reports/web-v5")
+    getArg("--output-dir", "tmp/supply-reports/web-v6")
   );
   const supabase = createClient(url, serviceRole, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -154,7 +154,7 @@ async function main() {
     mode: "shadow",
     runDate,
     generatedAt: new Date().toISOString(),
-    title: "网页榜 V5 自动发现",
+    title: "网页榜 V6 严格发现",
     stats: {
       total: items.length,
       fetched: tweets.length,
@@ -179,6 +179,9 @@ async function main() {
     policy: {
       promptScope: "main_post_only",
       requireMedia: true,
+      requireExplicitCompletePrompt: true,
+      requireSingleWebResult: true,
+      rejectTutorialsListsComparisons: true,
       excludeProductionUrls: true,
       maxPerCreator,
     },
