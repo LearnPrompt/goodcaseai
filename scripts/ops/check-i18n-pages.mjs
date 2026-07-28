@@ -131,12 +131,24 @@ check(
   "English canonical",
   englishHome.body.includes('<link rel="canonical" href="https://goodcase.ai/en"')
 );
+check(
+  "English page links back to Chinese",
+  englishHome.body.includes('href="/"') &&
+    englishHome.body.includes('aria-label="切换到中文"')
+);
 for (const locale of ["zh-CN", "en", "x-default"]) {
   check(
     `${locale} hreflang`,
     englishHome.body.includes(`hrefLang="${locale}"`)
   );
 }
+
+const chineseHome = await read("/");
+check(
+  "Chinese page links to English",
+  chineseHome.body.includes('href="/en"') &&
+    chineseHome.body.includes('aria-label="Switch to English"')
+);
 
 const englishFeed = await read("/en/feed.xml");
 check(
