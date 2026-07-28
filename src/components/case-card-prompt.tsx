@@ -12,11 +12,13 @@ export function CaseCardPrompt({
   contentLocale = "en",
   promptTranslationZh,
   promptTranslationEn,
+  compact = false,
 }: {
   promptPreview?: string | null;
   contentLocale?: "zh-CN" | "en";
   promptTranslationZh?: string | null;
   promptTranslationEn?: string | null;
+  compact?: boolean;
 }) {
   const locale = useLocale();
   const messages = useMessages();
@@ -58,7 +60,11 @@ export function CaseCardPrompt({
 
   if (prompt.resourceUrl) {
     return (
-      <div className="mt-5 border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3">
+      <div
+        className={`border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 ${
+          compact ? "mt-4" : "mt-5"
+        }`}
+      >
         <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
           {messages.card.method} / {messages.card.code}
         </p>
@@ -75,12 +81,16 @@ export function CaseCardPrompt({
   }
 
   return (
-    <div className="mt-5 border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3">
+    <div
+      className={`border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 ${
+        compact ? "mt-4" : "mt-5"
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
           {messages.card.prompt}
         </p>
-        {availableLanguages.length > 1 ? (
+        {!compact && availableLanguages.length > 1 ? (
           <div className="flex border border-[var(--hair)] bg-white">
             {availableLanguages.map((value) => (
               <button
@@ -104,7 +114,11 @@ export function CaseCardPrompt({
           </div>
         ) : null}
       </div>
-      <p className="mt-2 line-clamp-3 font-mono text-[11px] leading-5 text-[var(--ink)]">
+      <p
+        className={`mt-2 font-mono text-[11px] leading-5 text-[var(--ink)] ${
+          compact ? "line-clamp-2" : "line-clamp-3"
+        }`}
+      >
         {prompt.text}
       </p>
     </div>
