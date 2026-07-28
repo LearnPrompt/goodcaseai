@@ -1,6 +1,6 @@
 # GoodCase 全站中英文切换开发计划
 
-日期：2026-07-28  
+日期：2026-07-28
 状态：已按 Idea King 审核结论实施，进入 PR 验收
 目标分支：`feat/full-site-i18n-20260728`
 
@@ -21,13 +21,13 @@ needs-attention — 可以做，但不能继续把 Prompt 的 `localStorage` 切
 
 ## 攻击点 (Attack Points, by severity)
 
-1. **P1 evidence：只用客户端状态会制造假双语。** 无 JavaScript、搜索引擎、微信分享抓取和首次加载仍会得到中文 metadata 或错误 `lang`。  
+1. **P1 evidence：只用客户端状态会制造假双语。** 无 JavaScript、搜索引擎、微信分享抓取和首次加载仍会得到中文 metadata 或错误 `lang`。
    → 证伪实验：无 Cookie、禁用 JavaScript，直接请求 `/en/cases/real-case-01-umesh-ai`；HTML 首包必须已经是英文，包含 `lang="en"`、英文 title/description、英文 canonical/alternate 和英文可见正文。
 
-2. **P1 evidence：把界面语言与 Prompt 原文绑定，会丢失证据。** 英文 UI 不等于原 Prompt 是英文；自动覆盖原文会破坏 Case 的可追溯性。  
+2. **P1 evidence：把界面语言与 Prompt 原文绑定，会丢失证据。** 英文 UI 不等于原 Prompt 是英文；自动覆盖原文会破坏 Case 的可追溯性。
    → 证伪实验：准备“英文原文+中文译文”“中文原文+英文译文”“只有原文”三种 fixture，在中英文界面分别打开；六种组合都必须显示正确默认文本，并始终能返回原文。
 
-3. **P1 evidence：只翻正常页面必然漏掉系统面。** 当前硬编码文本分散在 404、错误页、加载态、表单校验、运营动作、海报、OG、RSS、公开 API 和生成式 Creator 文案中。  
+3. **P1 evidence：只翻正常页面必然漏掉系统面。** 当前硬编码文本分散在 404、错误页、加载态、表单校验、运营动作、海报、OG、RSS、公开 API 和生成式 Creator 文案中。
    → 证伪实验：建立完整路由/输出矩阵和词典键一致性测试；故意在英文 404 或海报中塞入一条中文硬编码，测试必须失败。
 
 ## 幸存结论 (What Survives)
@@ -356,10 +356,10 @@ git diff --check
 
 ## 未解疑问 (Open Questions)
 
-- 英文是否需要独立可索引 URL？推荐答案：**需要，使用 `/en/...`，中文保留现有路径。**  
+- 英文是否需要独立可索引 URL？推荐答案：**需要，使用 `/en/...`，中文保留现有路径。**
   impact：如果只要本机切换、不要英文 SEO，可以改成 Cookie-only，工作量会下降，但分享、搜索收录、OG 和无 JS 首包都不是真正英文。
 
 ## 工期
 
-估算：单人配合 AI 开发约 **6–8 个开发日**。  
+估算：单人配合 AI 开发约 **6–8 个开发日**。
 这是实现估算，不是上线承诺；最大变量是首批 12 个 Case 的人工翻译与验收质量。
