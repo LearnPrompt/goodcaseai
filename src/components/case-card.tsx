@@ -45,6 +45,11 @@ export function CaseCard({
     item.category;
   const summary = getCaseCardSummary(item.summary);
   const creatorSlug = item.creator ? slugifyCreatorName(item.creator) : "";
+  const galleryBackdropUrl = isGallery
+    ? item.mediaType === "image"
+      ? item.mediaUrl
+      : item.posterUrl
+    : null;
 
   return (
     <article className="gc-card group flex h-full flex-col overflow-hidden">
@@ -54,6 +59,23 @@ export function CaseCard({
           isGallery ? "aspect-[16/10]" : "aspect-[4/3]"
         }`}
       >
+        {galleryBackdropUrl ? (
+          <>
+            <Image
+              src={galleryBackdropUrl}
+              alt=""
+              aria-hidden="true"
+              fill
+              sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
+              className="pointer-events-none z-0 scale-125 object-cover opacity-70 blur-2xl saturate-125"
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.10)_0%,transparent_55%),linear-gradient(to_top,rgba(0,0,0,0.38)_0%,rgba(0,0,0,0.03)_35%,rgba(0,0,0,0.16)_100%)]"
+            />
+          </>
+        ) : null}
+
         {item.mediaUrl ? (
           item.mediaType === "image" ? (
             <Image
@@ -63,7 +85,7 @@ export function CaseCard({
               sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
               className={`transition duration-300 ${
                 isGallery
-                  ? "object-contain group-hover:scale-[1.015]"
+                  ? "z-20 object-contain group-hover:scale-[1.015]"
                   : "object-cover grayscale group-hover:grayscale-0"
               }`}
             />
@@ -75,7 +97,7 @@ export function CaseCard({
               poster={item.posterUrl || undefined}
               className={`h-full w-full transition duration-300 ${
                 isGallery
-                  ? "object-contain group-hover:scale-[1.015]"
+                  ? "relative z-20 object-contain group-hover:scale-[1.015]"
                   : "object-cover grayscale group-hover:grayscale-0"
               }`}
             >
