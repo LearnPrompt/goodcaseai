@@ -152,12 +152,11 @@ export default async function ConnectPage({
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
             {isEnglish
-              ? "The Skill reads the same public API as the site. Clone the repository, then copy the directory into your agent’s skills folder:"
-              : "Skill 与站点共用公开 API。先从 GitHub 获取仓库，再把目录复制到你所用 Agent 的 skills 目录："}
+              ? "The Skill reads the same public API as the site. Install it through the same cross-agent installer used by the LearnPrompt Skill Workshop:"
+              : "Skill 与站点共用公开 API，并使用 LearnPrompt Skill 工坊同款跨 Agent 安装器："}
           </p>
           <div className="mt-4">
-            <CodeBlock>{`git clone --depth=1 https://github.com/LearnPrompt/goodcaseai.git
-cp -R goodcaseai/skills/goodcase ~/.claude/skills/goodcase`}</CodeBlock>
+            <CodeBlock>{`npx skills add LearnPrompt/goodcaseai --skill goodcase --global --copy --yes --full-depth`}</CodeBlock>
           </div>
           <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
             {isEnglish

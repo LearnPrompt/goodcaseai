@@ -31,6 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     ...localizedEntries("/", "daily", 1),
     ...localizedEntries("/cases", "daily", 0.9),
+    ...localizedEntries("/skills", "daily", 0.85),
     ...localizedEntries("/creators", "daily", 0.8),
     ...localizedEntries("/changelog", "weekly", 0.5),
     ...localizedEntries("/connect", "monthly", 0.5),

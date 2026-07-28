@@ -9,6 +9,7 @@ export const zhCNMessages = {
   nav: {
     ariaLabel: "主导航",
     cases: "案例",
+    skills: "Skills",
     creators: "创作者",
     favorites: "收藏",
     submit: "投稿",
@@ -167,6 +168,7 @@ export const enMessages = {
   nav: {
     ariaLabel: "Primary navigation",
     cases: "Cases",
+    skills: "Skills",
     creators: "Creators",
     favorites: "Favorites",
     submit: "Submit",

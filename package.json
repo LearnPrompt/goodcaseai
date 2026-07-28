@@ -20,6 +20,7 @@
     "ops:domain-ready": "node scripts/ops/check-domain-readiness.mjs",
     "ops:i18n-smoke": "node scripts/ops/check-i18n-pages.mjs",
     "ops:translate-cases": "node --env-file=.env.local scripts/ops/backfill-case-translations.mjs",
+    "skills:generate": "node --env-file=.env.local scripts/skills/generate-installable-skills.mjs",
     "import:candidates": "node scripts/ingest-candidates.mjs",
     "review:candidates": "node scripts/review-candidates.mjs",
     "publish:cases": "node scripts/publish-approved-cases.mjs"
