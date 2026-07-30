@@ -13,6 +13,8 @@ GoodCase.ai 把作品、作者、方法、原始来源与复测证据放回同�
 
 **看清什么真有效，关注持续产出的人。**
 
+长期维护与换机接手请先读：[远程开发交接（2026-07-30）](./docs/REMOTE-DEVELOPMENT-HANDOFF-2026-07-30.md)。
+
 ## Showcase
 
 ![GoodCase.ai 首页](public/readme/home.png)
