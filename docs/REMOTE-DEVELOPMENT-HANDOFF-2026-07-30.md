@@ -22,9 +22,10 @@
 
 | 项目 | 已核对状态 |
 | --- | --- |
-| GitHub `main` | `445676b38cc7742bfaa07b8b5717bbc5aaee6b7c` |
-| 最新 Production | 同一 SHA；Vercel 于 `2026-07-28T15:06:04.225Z` READY |
-| 24 小时稳定性 | 2026-07-30 复检为 `42.8h observed` |
+| 最后功能基线 | PR #14，`445676b38cc7742bfaa07b8b5717bbc5aaee6b7c` |
+| 线上交接 | PR #15 已把本文和脱敏环境模板合入 `main`；后续文档提交也会产生新 SHA |
+| Production | 2026-07-30 线上同步后已重新构建并 READY；远程机必须用下文命令读取最新 SHA 与 READY 时间 |
+| 24 小时稳定性 | 功能基线曾复检为 `42.8h observed`；任何后续 Production 都要从新的 READY 时间重新计算 |
 | 主站 | `https://goodcase.ai` 返回 `200` |
 | Sitemap | `200`；311 个唯一 Case、208 个唯一 Creator、24 个唯一 Skill |
 | `www` 跳转 | `www.goodcase.ai/en/cases/example?from=www` 返回保留路径与查询参数的 `301` |
@@ -88,11 +89,12 @@ Production aliases 包括 `goodcase.ai`、`www.goodcase.ai`、`goodcase.carlwow.
 | #13 | 24 个可安装、证据驱动的 Skills | merged |
 | #14 | Skill 回挂 Case、Creator 头像补全 | merged |
 
-### 7 月 29–30 日：备案与稳定性
+### 7 月 29–30 日：备案、稳定性与远程交接
 
 - 备案材料已提交，火山引擎订单已完成“提交管局中”，当前页面明确显示“等待短信核验”。
 - 收到工信部短信后必须在 24 小时内完成短信核验；完成后才进入管局审核。
-- 新 Production 自 `2026-07-28T15:06:04.225Z` 起已通过 42.8 小时稳定性复检。
+- PR #14 的 Production 自 `2026-07-28T15:06:04.225Z` 起通过了 42.8 小时稳定性复检。
+- PR #15 将远程交接文档与脱敏 `.env.example` 合入 `main`，触发了新的 Production；正式稳定窗口因此重新起算。
 - `goodcase.carlwow.com` 当前仍无法解析；微信真机打开、分享、视频和投稿未验收；`.ai` 301 不得提前开启。
 
 ## 4. 当前系统结构
@@ -204,11 +206,11 @@ vercel list --environment production --status READY --format json
 node scripts/ops/check-domain-readiness.mjs \
   --target-origin=https://goodcase.ai \
   --expected-ip=76.76.21.21 \
-  --stable-since=2026-07-28T15:06:04.225Z \
+  --stable-since=<latest-production-ready-iso> \
   --json
 ```
 
-域名脚本退出码 `2` 不一定表示网站坏了；当前预期 blocker 是备案获批和微信真机证据。
+先从 `vercel list` 的最新 Production 取得真实 READY 时间，再替换占位符。域名脚本退出码 `2` 不一定表示网站坏了；当前预期 blocker 是备案获批、微信真机证据或尚未满 24 小时的最新部署。
 
 ## 7. 环境变量边界
 
