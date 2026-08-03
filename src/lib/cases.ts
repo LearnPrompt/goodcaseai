@@ -20,6 +20,7 @@ import {
   formatStabilityScore,
   hasMeasuredStability,
 } from "@/lib/stability";
+import { isNearDuplicateText } from "@/lib/text-similarity";
 import {
   deriveSkillCatalog,
   findSkillBySlug,
@@ -191,6 +192,24 @@ function readStoredTranslation(
         : undefined,
     resultBreakdown,
   };
+}
+
+/**
+ * 译文和原文几乎一样时直接丢掉。
+ * 大量 Case 的原文本来就是英文，机器又译了一份英文，切换按钮点下去是空操作；
+ * 这里在服务端判掉，PromptViewer / CaseCardPrompt 的 availableLanguages
+ * 就只剩 original，按钮组自然不渲染。
+ */
+function dropRedundantTranslation(
+  original: string,
+  translation: string | null | undefined
+) {
+  const value = translation?.trim();
+  if (!value) {
+    return undefined;
+  }
+
+  return isNearDuplicateText(original, value) ? undefined : value;
 }
 
 function toPublicAssetPath(rawPath: string | null) {
@@ -425,20 +444,23 @@ function enrichCaseItemBase(
   locale: Locale
 ): CaseItem & BaseDerivedCaseFields {
   const translation = getEnglishCaseTranslation(item.slug);
+  // 静态兜底数据也要过同一道冗余判定，和数据库路径保持一致。
+  const promptTranslationZh = dropRedundantTranslation(
+    item.promptFull,
+    translation?.promptTranslationZh || item.promptTranslationZh
+  );
+  const promptTranslationEn = dropRedundantTranslation(
+    item.promptFull,
+    item.promptTranslationEn
+  );
   const localizedItem =
-    locale === "en" && translation
-      ? { ...item, ...translation }
-      : {
-          ...item,
-          promptTranslationZh:
-            translation?.promptTranslationZh || item.promptTranslationZh,
-        };
+    locale === "en" && translation ? { ...item, ...translation } : { ...item };
 
   return {
     ...localizedItem,
     contentLocale: item.contentLocale || "en",
-    promptTranslationZh:
-      translation?.promptTranslationZh || item.promptTranslationZh,
+    promptTranslationZh,
+    promptTranslationEn,
     creatorAvatarUrl: item.creatorAvatarUrl || creatorAvatarUrls[item.creator],
     likedCount: 0,
     promptPublicNote: buildPromptPublicNote(localizedItem, locale),
@@ -487,6 +509,8 @@ async function mapDbCaseRowToCaseItem(
   const mediaUrl = await resolveUsableMediaPath(row.media_url);
   const posterUrl = await resolveUsableMediaPath(row.poster_url);
   const mediaType = normalizeMediaType(row.media_kind, row.media_url);
+  const promptFull =
+    row.prompt_full || row.prompt_preview || "该案例暂未提供完整 Prompt。";
 
   return {
     slug: row.slug,
@@ -508,14 +532,19 @@ async function mapDbCaseRowToCaseItem(
       undefined,
     summary: localized?.summary || row.summary,
     promptPreview: row.prompt_preview || MISSING_PROMPT_PREVIEW,
-    promptFull: row.prompt_full || row.prompt_preview || "该案例暂未提供完整 Prompt。",
+    promptFull,
     contentLocale,
     promptTranslationZh:
       contentLocale === "zh-CN"
         ? undefined
-        : chinese?.promptFull || fallbackEditorial?.promptTranslationZh,
+        : dropRedundantTranslation(
+            promptFull,
+            chinese?.promptFull || fallbackEditorial?.promptTranslationZh
+          ),
     promptTranslationEn:
-      contentLocale === "en" ? undefined : english?.promptFull,
+      contentLocale === "en"
+        ? undefined
+        : dropRedundantTranslation(promptFull, english?.promptFull),
     resultBreakdown:
       localized?.resultBreakdown || fallbackEditorial?.resultBreakdown,
     mediaType,

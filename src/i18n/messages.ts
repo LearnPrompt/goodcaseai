@@ -86,7 +86,7 @@ export const zhCNMessages = {
     empty: "这个模型下还没有已发布的 Case。",
   },
   prompt: {
-    bilingual: "Prompt · 原文 / 翻译",
+    bilingual: "Prompt",
     original: "原文",
     chineseTranslation: "中文翻译",
     englishTranslation: "英文翻译",
@@ -266,7 +266,7 @@ export const enMessages = {
     empty: "No published cases for this model yet.",
   },
   prompt: {
-    bilingual: "Prompt · Original / Translation",
+    bilingual: "Prompt",
     original: "Original",
     chineseTranslation: "Chinese",
     englishTranslation: "English",
