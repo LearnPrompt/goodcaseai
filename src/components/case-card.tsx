@@ -78,10 +78,6 @@ export function CaseCard({
   const publishedDate = formatCardPublishedDate(item.sourcePublishedAt, locale);
   // 列表卡片一律优先本地缩略图：外链原图动辄几 MB，一页 24 张会拖垮首屏。
   const cardMediaUrl = item.thumbnailUrl || item.mediaUrl || "";
-  const galleryBackdropUrl = isGallery
-    ? item.thumbnailUrl ||
-      (item.mediaType === "image" ? item.mediaUrl : item.posterUrl)
-    : null;
 
   return (
     <article className="gc-card group flex h-full flex-col overflow-hidden">
@@ -91,23 +87,6 @@ export function CaseCard({
           isGallery ? "aspect-[16/10]" : "aspect-[4/3]"
         }`}
       >
-        {galleryBackdropUrl ? (
-          <>
-            <Image
-              src={galleryBackdropUrl}
-              alt=""
-              aria-hidden="true"
-              fill
-              sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
-              className="pointer-events-none z-0 scale-125 object-cover opacity-70 blur-2xl saturate-125"
-            />
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.10)_0%,transparent_55%),linear-gradient(to_top,rgba(0,0,0,0.38)_0%,rgba(0,0,0,0.03)_35%,rgba(0,0,0,0.16)_100%)]"
-            />
-          </>
-        ) : null}
-
         {item.mediaUrl ? (
           item.mediaType === "image" || item.thumbnailUrl ? (
             <Image
@@ -115,11 +94,7 @@ export function CaseCard({
               alt={item.title}
               fill
               sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
-              className={`transition duration-300 ${
-                isGallery
-                  ? "z-20 object-contain group-hover:scale-[1.015]"
-                  : "object-cover grayscale group-hover:grayscale-0"
-              }`}
+              className="object-cover grayscale transition duration-300 group-hover:scale-[1.015] group-hover:grayscale-0"
             />
           ) : (
             <video
@@ -127,11 +102,7 @@ export function CaseCard({
               playsInline
               preload="none"
               poster={item.posterUrl || undefined}
-              className={`h-full w-full transition duration-300 ${
-                isGallery
-                  ? "relative z-20 object-contain group-hover:scale-[1.015]"
-                  : "object-cover grayscale group-hover:grayscale-0"
-              }`}
+              className="h-full w-full object-cover grayscale transition duration-300 group-hover:scale-[1.015] group-hover:grayscale-0"
             >
               <source src={item.mediaUrl} type="video/mp4" />
             </video>
@@ -167,7 +138,7 @@ export function CaseCard({
           <h2
             className={`font-semibold tracking-[-0.035em] text-[var(--ink)] ${
               isGallery
-                ? "line-clamp-2 min-h-[2.35em] text-xl leading-[1.16] sm:text-2xl"
+                ? "line-clamp-2 text-xl leading-[1.16] sm:text-2xl"
                 : "text-2xl leading-[1.02] sm:text-3xl"
             }`}
           >
@@ -231,13 +202,13 @@ export function CaseCard({
         <div
           className={`grid grid-cols-2 ${
             isGallery
-              ? "mt-4 gap-px border border-[var(--concrete)] bg-[var(--concrete)]"
+              ? "mt-5 gap-px border border-[var(--concrete)] bg-[var(--concrete)]"
               : "mt-5 gap-2"
           }`}
         >
           <div
             className={
-              isGallery ? "bg-[var(--paper-2)] px-3 py-2" : "gc-stat"
+              isGallery ? "bg-white px-3 py-2" : "gc-stat"
             }
           >
             <div className="gc-stat-label">{messages.card.sourceHeat}</div>
@@ -251,7 +222,7 @@ export function CaseCard({
           </div>
           <div
             className={
-              isGallery ? "bg-[var(--paper-2)] px-3 py-2" : "gc-stat"
+              isGallery ? "bg-white px-3 py-2" : "gc-stat"
             }
           >
             <div className="gc-stat-label">{messages.card.stability}</div>

@@ -59,6 +59,7 @@ function MediaTile({
   showCategory = true,
   vivid = false,
   useThumbnail = false,
+  hoverReveal = false,
 }: {
   item: DisplayCaseItem;
   locale: Locale;
@@ -70,11 +71,17 @@ function MediaTile({
   vivid?: boolean;
   /** 小尺寸位置用本地 400px 缩略图；首屏大图仍走原图保清晰度。 */
   useThumbnail?: boolean;
+  /** 默认灰度，指针悬停时还原本色，不需要点击。 */
+  hoverReveal?: boolean;
 }) {
-  const mediaClassName = vivid
-    ? "object-cover"
-    : "object-cover opacity-90 grayscale";
-  const washClassName = vivid
+  const mediaClassName = hoverReveal
+    ? "object-cover grayscale transition duration-300 group-hover:grayscale-0"
+    : vivid
+      ? "object-cover"
+      : "object-cover opacity-90 grayscale";
+  const washClassName = hoverReveal
+    ? "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.18),transparent_46%,rgba(10,10,10,0.22))] transition-opacity duration-300 group-hover:opacity-0"
+    : vivid
     ? "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.15),transparent_46%,rgba(10,10,10,0.15))]"
     : "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.32),transparent_46%,rgba(10,10,10,0.38))]";
   const thumbnail = useThumbnail ? item.thumbnailUrl : undefined;
@@ -191,7 +198,7 @@ function renderSourceHeatRow(
         <MediaTile
           item={item}
           locale={locale}
-          className="aspect-[3/4]"
+          className="aspect-square"
           showCategory={false}
           vivid
           useThumbnail
@@ -374,8 +381,8 @@ export default async function Home({
             </div>
             <div className="grid grid-cols-3 gap-px border border-[var(--hair)] bg-[var(--hair)]">
               {heroTopCases.map((item, index) => (
-                <Link key={item.slug} href={`/cases/${item.slug}`} className="block bg-white">
-                  <MediaTile item={item} locale={locale} rank={`#0${index + 1}`} className="aspect-[3/4] w-full" useThumbnail />
+                <Link key={item.slug} href={`/cases/${item.slug}`} className="group block bg-white">
+                  <MediaTile item={item} locale={locale} rank={`#0${index + 1}`} className="aspect-[3/4] w-full" useThumbnail hoverReveal />
                 </Link>
               ))}
             </div>

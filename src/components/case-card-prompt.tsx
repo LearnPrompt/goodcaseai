@@ -82,7 +82,7 @@ export function CaseCardPrompt({
 
   return (
     <div
-      className={`border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 ${
+      className={`border-y border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 ${
         compact ? "mt-4" : "mt-5"
       }`}
     >

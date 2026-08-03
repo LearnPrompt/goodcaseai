@@ -32,10 +32,11 @@ const MANIFEST_PATH = path.join(THUMB_DIR, "manifest.json");
 const REQUEST_TIMEOUT_MS = 30_000;
 
 function parseArgs(argv) {
-  const args = { limit: Infinity, dryRun: false, force: false };
+  const args = { limit: Infinity, dryRun: false, force: false, onlyVideo: false };
   for (const raw of argv.slice(2)) {
     if (raw === "--dry-run") args.dryRun = true;
     else if (raw === "--force") args.force = true;
+    else if (raw === "--only-video") args.onlyVideo = true;
     else if (raw.startsWith("--limit=")) {
       const value = Number.parseInt(raw.slice("--limit=".length), 10);
       if (Number.isFinite(value) && value > 0) args.limit = value;
@@ -88,14 +89,53 @@ async function fetchPublishedCases(baseUrl, serviceRoleKey) {
   return response.json();
 }
 
-/** 视频用 poster，图片用 media_url；本地资源不需要再存一份。 */
+/**
+ * 视频优先从原片抓代表帧，其次退回平台 poster；图片直接用 media_url。
+ *
+ * 平台给的 poster 常常是第一帧，很多 AI 视频第一帧是空镜或渐入黑场，
+ * 缩略图里看不到任何有效信息（用户实测反馈）。ffmpeg 对远程 mp4 做 seek
+ * 只拉取需要的片段，单条约 0.5 秒，不用下载整个视频。
+ */
 export function pickThumbnailSource(row) {
-  const candidate =
-    row.media_kind === "video" ? row.poster_url || "" : row.media_url || "";
-  if (!candidate || !/^https?:\/\//i.test(candidate)) {
-    return null;
+  if (row.media_kind === "video") {
+    const video = row.media_url || "";
+    if (/^https?:\/\//i.test(video) && /\.(mp4|m4v|mov)(\?|#|$)/i.test(video)) {
+      return { kind: "video-frame", url: video, fallback: row.poster_url || "" };
+    }
+    const poster = row.poster_url || "";
+    return /^https?:\/\//i.test(poster)
+      ? { kind: "image", url: poster, fallback: "" }
+      : null;
   }
-  return candidate;
+
+  const image = row.media_url || "";
+  return /^https?:\/\//i.test(image)
+    ? { kind: "image", url: image, fallback: "" }
+    : null;
+}
+
+/** 从远程视频的第 SEEK_SECONDS 秒抓一帧。太靠前容易抓到黑场或渐入。 */
+const SEEK_SECONDS = 2;
+
+async function grabVideoFrame(url, destination) {
+  await execFileAsync(
+    "ffmpeg",
+    [
+      "-y", "-loglevel", "error",
+      "-ss", String(SEEK_SECONDS),
+      "-i", url,
+      "-frames:v", "1",
+      "-vf", `scale=${THUMB_WIDTH}:-2`,
+      "-q:v", "4",
+      destination,
+    ],
+    { timeout: 60_000 }
+  );
+  const info = await stat(destination);
+  if (!info.size) {
+    throw new Error("ffmpeg 产出空文件");
+  }
+  return info.size;
 }
 
 export function thumbnailFileName(slug) {
@@ -162,6 +202,7 @@ async function main() {
       skippedLocal += 1;
       continue;
     }
+    if (args.onlyVideo && source.kind !== "video-frame") continue;
     targets.push({ slug: row.slug, source });
   }
 
@@ -172,7 +213,9 @@ async function main() {
   const planned = targets.slice(0, args.limit);
   if (args.dryRun) {
     planned.forEach((item, index) =>
-      console.log(`  ${String(index + 1).padStart(3)} ${item.slug}  ←  ${item.source.slice(0, 70)}`)
+      console.log(
+        `  ${String(index + 1).padStart(3)} ${item.slug}  ←  [${item.source.kind}] ${item.source.url.slice(0, 62)}`
+      )
     );
     console.log(`\ndry-run，未写入任何文件。计划处理 ${planned.length} 条。`);
     return;
@@ -186,7 +229,6 @@ async function main() {
   let done = 0;
   let skipped = 0;
   let failed = 0;
-  let sourceBytes = 0;
   let thumbBytes = 0;
 
   for (const item of planned) {
@@ -198,22 +240,37 @@ async function main() {
     }
 
     try {
-      const original = await downloadTo(item.source, destination);
-      const resized = await resizeInPlace(destination);
-      sourceBytes += original;
+      let resized;
+      let note;
+      if (item.source.kind === "video-frame") {
+        try {
+          resized = await grabVideoFrame(item.source.url, destination);
+          note = `帧@${SEEK_SECONDS}s`;
+        } catch (frameError) {
+          // 抓帧失败（编码不支持、远程不支持 range 等）时退回平台 poster，别整条丢掉。
+          if (!item.source.fallback) throw frameError;
+          await downloadTo(item.source.fallback, destination);
+          resized = await resizeInPlace(destination);
+          note = "退回 poster";
+        }
+      } else {
+        await downloadTo(item.source.url, destination);
+        resized = await resizeInPlace(destination);
+        note = "原图缩放";
+      }
+
       thumbBytes += resized;
       manifest[item.slug] = {
         file: `/media/thumbs/${fileName}`,
-        source: item.source,
+        source: item.source.url,
+        via: note,
       };
       done += 1;
-      console.log(
-        `  ✓ ${item.slug}  ${(original / 1024).toFixed(0)}KB → ${(resized / 1024).toFixed(0)}KB`
-      );
+      console.log(`  ✓ ${item.slug}  ${(resized / 1024).toFixed(0)}KB  ${note}`);
     } catch (error) {
       failed += 1;
       await rm(destination, { force: true });
-      console.log(`  ✗ ${item.slug}  ${error.message}`);
+      console.log(`  ✗ ${item.slug}  ${error.message.slice(0, 80)}`);
     }
   }
 
@@ -224,8 +281,7 @@ async function main() {
   );
   if (done > 0) {
     console.log(
-      `原图合计 ${(sourceBytes / 1024 / 1024).toFixed(1)}MB → 缩略图合计 ${(thumbBytes / 1024 / 1024).toFixed(1)}MB` +
-        `（平均每张 ${(thumbBytes / done / 1024).toFixed(0)}KB，压缩到 ${((thumbBytes / sourceBytes) * 100).toFixed(0)}%）`
+      `缩略图合计 ${(thumbBytes / 1024 / 1024).toFixed(1)}MB，平均每张 ${(thumbBytes / done / 1024).toFixed(0)}KB`
     );
   }
 }
