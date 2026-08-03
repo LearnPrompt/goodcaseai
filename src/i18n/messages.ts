@@ -68,6 +68,12 @@ export const zhCNMessages = {
     sourceHeat: "来源热度",
     stability: "稳定度",
   },
+  sort: {
+    label: "排序",
+    heat: "来源热度",
+    stability: "稳定度",
+    latest: "最新",
+  },
   model: {
     browseTitle: "按模型浏览",
     browseHint: "新模型上线后，这里会先出现",
@@ -246,6 +252,12 @@ export const enMessages = {
     viewMethod: "View method",
     sourceHeat: "Source heat",
     stability: "Stability",
+  },
+  sort: {
+    label: "Sort",
+    heat: "Source heat",
+    stability: "Stability",
+    latest: "Latest",
   },
   model: {
     browseTitle: "Browse by model",
