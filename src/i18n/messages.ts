@@ -110,6 +110,10 @@ export const zhCNMessages = {
     placeholder: "搜索关键词、模型或创作者",
     ariaLabel: "搜索案例",
     submit: "搜索",
+    skillsPlaceholder: "搜索 Skill 名称或描述",
+    skillsAriaLabel: "搜索 Skill",
+    creatorsPlaceholder: "搜索创作者名称",
+    creatorsAriaLabel: "搜索创作者",
   },
   favorites: {
     localNotice: "收藏保存在本机浏览器，清除浏览器数据或换设备不会同步。",
@@ -290,6 +294,10 @@ export const enMessages = {
     placeholder: "Search keywords, models, or creators",
     ariaLabel: "Search cases",
     submit: "Search",
+    skillsPlaceholder: "Search Skill name or description",
+    skillsAriaLabel: "Search Skills",
+    creatorsPlaceholder: "Search creator name",
+    creatorsAriaLabel: "Search creators",
   },
   favorites: {
     localNotice: "Favorites stay in this browser and do not sync across devices or after browser data is cleared.",

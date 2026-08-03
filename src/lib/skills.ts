@@ -533,3 +533,21 @@ export function findSkillBySlug<T extends SkillCaseInput>(
 ) {
   return catalog.allSkills.find((skill) => skill.slug === slug) || null;
 }
+
+/**
+ * /skills 页面搜索：只匹配名称和描述，不牵扯 case/creator 字段，
+ * 避免用户搜到名字里没有关键词的 Skill 而困惑。
+ */
+export function filterSkillsByQuery<T extends SkillCaseInput>(
+  list: DerivedSkill<T>[],
+  q: string
+): DerivedSkill<T>[] {
+  const normalized = q.trim().toLowerCase();
+  if (!normalized) {
+    return list;
+  }
+
+  return list.filter((skill) =>
+    [skill.title, skill.description].join(" ").toLowerCase().includes(normalized)
+  );
+}
