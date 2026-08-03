@@ -52,6 +52,10 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
     ],
+    // 测试站单独部署时没有独立的图片优化额度，/_next/image 会整站返回
+    // 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED，缩略图全挂。
+    // 只在测试环境关掉优化直出原图；生产不设这个变量，行为完全不变。
+    unoptimized: process.env.GOODCASE_UNOPTIMIZED_IMAGES === "1",
   },
   async headers() {
     return [
