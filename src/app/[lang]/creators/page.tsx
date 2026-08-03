@@ -3,7 +3,9 @@ import { CreatorAvatar } from "@/components/creator-avatar";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
+import { SearchBox } from "@/components/search-box";
 import { getCreatorListData } from "@/lib/cases";
+import { filterCreatorsByQuery } from "@/lib/creators";
 import { formatStabilityScore } from "@/lib/stability";
 import { localizeHref } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
@@ -38,13 +40,18 @@ export async function generateMetadata({
 
 export default async function CreatorsPage({
   params,
+  searchParams,
 }: {
   params: PageParams;
+  searchParams: Promise<{ q?: string }>;
 }) {
   const locale = await getLocaleFromParams(params);
   const messages = getMessages(locale);
   const isEnglish = locale === "en";
-  const creators = await getCreatorListData(locale);
+  const allCreators = await getCreatorListData(locale);
+  const queryParams = await searchParams;
+  const query = queryParams.q?.trim() || "";
+  const creators = filterCreatorsByQuery(allCreators, query);
 
   return (
     <SiteShell
@@ -87,6 +94,28 @@ export default async function CreatorsPage({
         </div>
       </PageHero>
 
+      <section className="border-b border-[var(--hair)] py-6">
+        <SearchBox
+          defaultQuery={query}
+          action={localizeHref(locale, "/creators")}
+          placeholder={messages.search.creatorsPlaceholder}
+          ariaLabel={messages.search.creatorsAriaLabel}
+          analyticsEvent="creator_search"
+        />
+      </section>
+
+      {creators.length === 0 ? (
+        <section className="gc-empty-state mt-7">
+          <p className="text-lg font-semibold text-[var(--ink)]">
+            {isEnglish
+              ? `No creators found${query ? ` for “${query}”` : ""}.`
+              : `没有找到${query ? `与「${query}」相关的` : ""}创作者。`}
+          </p>
+          <p className="text-sm leading-7 text-[var(--muted)]">
+            {isEnglish ? "Try another keyword." : "换个关键词试试。"}
+          </p>
+        </section>
+      ) : (
       <section className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
         {creators.map((creator, index) => (
           <article
@@ -163,6 +192,7 @@ export default async function CreatorsPage({
           </article>
         ))}
       </section>
+      )}
     </SiteShell>
   );
 }

@@ -269,3 +269,21 @@ export function findCreatorByName(creators: CreatorItem[], name: string) {
     ) || null
   );
 }
+
+/**
+ * /creators 页面搜索：只覆盖作者名，不牵扯 bio/tags，
+ * 保证 placeholder 文案「搜索创作者名称」和实际行为一致。
+ */
+export function filterCreatorsByQuery(
+  creators: CreatorItem[],
+  q: string
+): CreatorItem[] {
+  const normalized = q.trim().toLowerCase();
+  if (!normalized) {
+    return creators;
+  }
+
+  return creators.filter((creator) =>
+    creator.name.toLowerCase().includes(normalized)
+  );
+}
