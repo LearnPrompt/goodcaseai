@@ -5,6 +5,7 @@ import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
 import { FavoriteButton } from "@/components/favorite-button";
 import { SearchBox } from "@/components/search-box";
+import { CASES_PAGE_SIZE, Pagination } from "@/components/pagination";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { localizeHref } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
@@ -56,7 +57,12 @@ export default async function CasesPage({
   searchParams,
 }: {
   params: PageParams;
-  searchParams: Promise<{ filter?: string; q?: string; model?: string }>;
+  searchParams: Promise<{
+    filter?: string;
+    q?: string;
+    model?: string;
+    page?: string;
+  }>;
 }) {
   const locale = await getLocaleFromParams(params);
   const messages = getMessages(locale);
@@ -87,6 +93,28 @@ export default async function CasesPage({
     .join("&");
   const clearModelHref = clearModelQuery ? `/cases?${clearModelQuery}` : "/cases";
 
+  const totalCount = caseItems.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / CASES_PAGE_SIZE));
+  const requestedPage = Number.parseInt(queryParams.page ?? "1", 10);
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(requestedPage, 1), totalPages)
+    : 1;
+  const pagedItems = caseItems.slice(
+    (currentPage - 1) * CASES_PAGE_SIZE,
+    currentPage * CASES_PAGE_SIZE
+  );
+
+  /** 翻页时保留筛选、搜索和模型条件；第一页不带 page 参数，避免同一内容两个 URL。 */
+  const buildPageHref = (page: number) => {
+    const parts = [
+      activeFilter === "all" ? "" : `filter=${activeFilter}`,
+      query ? `q=${encodeURIComponent(query)}` : "",
+      activeModel ? `model=${activeModel.slug}` : "",
+      page > 1 ? `page=${page}` : "",
+    ].filter(Boolean);
+    return parts.length ? `/cases?${parts.join("&")}` : "/cases";
+  };
+
   return (
     <SiteShell
       footerNote={
@@ -116,9 +144,11 @@ export default async function CasesPage({
           <div className="gc-stat-label">
             {isEnglish ? "Current view" : "当前结果"}
           </div>
-          <div className="gc-stat-value">{caseItems.length}</div>
+          <div className="gc-stat-value">{totalCount}</div>
           <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
-            {isEnglish ? "Cases" : "案例"}
+            {isEnglish
+              ? `Cases · page ${currentPage}/${totalPages}`
+              : `案例 · 第 ${currentPage}/${totalPages} 页`}
           </div>
         </div>
         <div>
@@ -181,7 +211,7 @@ export default async function CasesPage({
         ) : null}
       </section>
 
-      {caseItems.length === 0 ? (
+      {totalCount === 0 ? (
         <section className="gc-empty-state mt-7">
           <p className="text-lg font-semibold text-[var(--ink)]">
             {isEnglish
@@ -203,8 +233,9 @@ export default async function CasesPage({
           </div>
         </section>
       ) : (
+      <>
       <section className="grid gap-0 border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
-        {caseItems.map((item) => (
+        {pagedItems.map((item) => (
           <CaseCard
             key={item.slug}
             variant="gallery"
@@ -224,6 +255,14 @@ export default async function CasesPage({
           />
         ))}
       </section>
+
+      <Pagination
+        currentPage={currentPage}
+        totalItems={totalCount}
+        buildHref={buildPageHref}
+        locale={locale}
+      />
+      </>
       )}
     </SiteShell>
   );
