@@ -13,6 +13,7 @@ import {
 import { scoreSourceHeat, type SourceHeatFields } from "@/lib/source-heat";
 import { getServerSupabaseClient, withTimeout } from "@/lib/supabase/server-client";
 import { caseItems, creatorAvatarUrls, type CaseItem } from "@/lib/mock-data";
+import { getHomeModelStripItems } from "@/lib/models";
 import { getRelatedCases, MISSING_MODEL } from "@/lib/related-cases";
 import {
   formatStabilityScore,
@@ -697,6 +698,7 @@ export async function getHomeData(locale: Locale = "zh-CN") {
     spreadLeaderboard: spread,
     sourceHeatLeaderboard: sourceHeat,
     stabilityLeaderboard: stability,
+    modelStrip: getHomeModelStripItems(list, locale),
   };
 }
 

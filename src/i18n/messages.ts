@@ -63,6 +63,23 @@ export const zhCNMessages = {
     sourceHeat: "来源热度",
     stability: "稳定度",
   },
+  model: {
+    browseTitle: "按模型浏览",
+    browseHint: "新模型上线后，这里会先出现",
+    viewAll: "全部模型",
+    caseCount: "个案例",
+    badgeNew: "NEW",
+    badgeHot: "HOT",
+    media: {
+      image: "图像",
+      video: "视频",
+      web: "网页",
+    },
+    pageTitle: "案例与 Prompt",
+    pageDescription: "这个模型下已收录的 Case，全部带完整 Prompt、作者与原始来源。",
+    backToAll: "回到全部模型",
+    empty: "这个模型下还没有已发布的 Case。",
+  },
   prompt: {
     bilingual: "Prompt · 原文 / 翻译",
     original: "原文",
@@ -221,6 +238,24 @@ export const enMessages = {
     viewMethod: "View method",
     sourceHeat: "Source heat",
     stability: "Stability",
+  },
+  model: {
+    browseTitle: "Browse by model",
+    browseHint: "New models show up here first",
+    viewAll: "All models",
+    caseCount: "cases",
+    badgeNew: "NEW",
+    badgeHot: "HOT",
+    media: {
+      image: "Image",
+      video: "Video",
+      web: "Web",
+    },
+    pageTitle: "cases and prompts",
+    pageDescription:
+      "Every published case for this model, with the full prompt, creator, and original source.",
+    backToAll: "Back to all models",
+    empty: "No published cases for this model yet.",
   },
   prompt: {
     bilingual: "Prompt · Original / Translation",

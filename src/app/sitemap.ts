@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { MODEL_FAMILIES } from "@/lib/models";
 import { getSitemapData } from "@/lib/sitemap-data";
 import { SITE_ORIGIN } from "@/lib/site";
 
@@ -32,6 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...localizedEntries("/", "daily", 1),
     ...localizedEntries("/cases", "daily", 0.9),
     ...localizedEntries("/skills", "daily", 0.85),
+    ...localizedEntries("/models", "daily", 0.85),
     ...localizedEntries("/creators", "daily", 0.8),
     ...localizedEntries("/changelog", "weekly", 0.5),
     ...localizedEntries("/connect", "monthly", 0.5),
@@ -55,5 +57,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     localizedEntries(`/skills/${encodeURIComponent(slug)}`, "weekly", 0.55)
   );
 
-  return [...staticRoutes, ...caseRoutes, ...creatorRoutes, ...skillRoutes];
+  const modelRoutes: MetadataRoute.Sitemap = MODEL_FAMILIES.flatMap((family) =>
+    localizedEntries(`/models/${family.slug}`, "daily", 0.75)
+  );
+
+  return [
+    ...staticRoutes,
+    ...caseRoutes,
+    ...creatorRoutes,
+    ...skillRoutes,
+    ...modelRoutes,
+  ];
 }

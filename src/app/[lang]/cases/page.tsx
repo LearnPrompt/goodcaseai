@@ -10,6 +10,7 @@ import { localizeHref } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 import { filterCasesByQuery, getCaseListData, type CaseFilter } from "@/lib/cases";
+import { filterCasesByModel, getModelFamily, getModelLabel } from "@/lib/models";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
 
 export const revalidate = 300;
@@ -55,7 +56,7 @@ export default async function CasesPage({
   searchParams,
 }: {
   params: PageParams;
-  searchParams: Promise<{ filter?: string; q?: string }>;
+  searchParams: Promise<{ filter?: string; q?: string; model?: string }>;
 }) {
   const locale = await getLocaleFromParams(params);
   const messages = getMessages(locale);
@@ -71,9 +72,20 @@ export default async function CasesPage({
   const queryParams = await searchParams;
   const activeFilter = normalizeFilter(queryParams.filter);
   const query = queryParams.q?.trim() || "";
+  const activeModel = getModelFamily(queryParams.model);
   const filteredCases = await getCaseListData(activeFilter, locale);
   const skillCatalog = deriveSkillCatalog(filteredCases, locale);
-  const caseItems = filterCasesByQuery(filteredCases, query);
+  const caseItems = filterCasesByModel(
+    filterCasesByQuery(filteredCases, query),
+    activeModel?.slug
+  );
+  const clearModelQuery = [
+    activeFilter === "all" ? "" : `filter=${activeFilter}`,
+    query ? `q=${encodeURIComponent(query)}` : "",
+  ]
+    .filter(Boolean)
+    .join("&");
+  const clearModelHref = clearModelQuery ? `/cases?${clearModelQuery}` : "/cases";
 
   return (
     <SiteShell
@@ -128,7 +140,10 @@ export default async function CasesPage({
             const isActive = option.value === activeFilter;
             const searchSuffix = query ? `q=${encodeURIComponent(query)}` : "";
             const filterParam = option.value === "all" ? "" : `filter=${option.value}`;
-            const queryString = [filterParam, searchSuffix].filter(Boolean).join("&");
+            const modelParam = activeModel ? `model=${activeModel.slug}` : "";
+            const queryString = [filterParam, searchSuffix, modelParam]
+              .filter(Boolean)
+              .join("&");
             const href = queryString ? `/cases?${queryString}` : "/cases";
 
             return (
@@ -146,6 +161,24 @@ export default async function CasesPage({
             );
           })}
         </div>
+
+        {activeModel ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="gc-eyebrow">{messages.model.browseTitle}</span>
+            <Link
+              href={clearModelHref}
+              className="gc-action border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]"
+            >
+              {getModelLabel(activeModel, locale)} ×
+            </Link>
+            <Link href={`/models/${activeModel.slug}`} className="gc-action">
+              {isEnglish
+                ? `${getModelLabel(activeModel, locale)} page`
+                : `${getModelLabel(activeModel, locale)} 模型页`}{" "}
+              →
+            </Link>
+          </div>
+        ) : null}
       </section>
 
       {caseItems.length === 0 ? (

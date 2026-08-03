@@ -1,0 +1,163 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { CaseCard } from "@/components/case-card";
+import { FavoriteButton } from "@/components/favorite-button";
+import { LikeButton } from "@/components/like-button";
+import { PageHero } from "@/components/page-hero";
+import { SiteShell } from "@/components/site-shell";
+import { LocalizedLink as Link } from "@/components/localized-link";
+import { localizeHref } from "@/i18n/config";
+import { getMessages } from "@/i18n/messages";
+import { getLocaleFromParams } from "@/i18n/server";
+import { getCaseListData } from "@/lib/cases";
+import {
+  filterCasesByModel,
+  getModelFamily,
+  getModelLabel,
+  MODEL_FAMILIES,
+} from "@/lib/models";
+import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
+
+export const revalidate = 300;
+
+type PageProps = {
+  params: Promise<{ lang: string; slug: string }>;
+};
+
+export function generateStaticParams() {
+  return MODEL_FAMILIES.map((family) => ({ slug: family.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const locale = await getLocaleFromParams(params);
+  const family = getModelFamily(slug);
+  if (!family) {
+    return {};
+  }
+
+  const isEnglish = locale === "en";
+  const label = getModelLabel(family, locale);
+  const title = isEnglish
+    ? `${label} cases and prompts`
+    : `${label} 案例与 Prompt`;
+  const description = isEnglish
+    ? `Published GoodCase examples made with ${label}, each with the full prompt, creator, and original source.`
+    : `GoodCase 已收录的 ${label} 案例，每条都带完整 Prompt、作者与原始来源。`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: localizeHref(locale, `/models/${family.slug}`),
+      languages: {
+        "zh-CN": `/models/${family.slug}`,
+        en: `/en/models/${family.slug}`,
+        "x-default": `/models/${family.slug}`,
+      },
+    },
+  };
+}
+
+export default async function ModelDetailPage({ params }: PageProps) {
+  const { slug } = await params;
+  const locale = await getLocaleFromParams(params);
+  const family = getModelFamily(slug);
+  if (!family) {
+    notFound();
+  }
+
+  const isEnglish = locale === "en";
+  const messages = getMessages(locale);
+  const label = getModelLabel(family, locale);
+  const allCases = await getCaseListData("all", locale);
+  const caseItems = filterCasesByModel(allCases, family.slug);
+  const skillCatalog = deriveSkillCatalog(caseItems, locale);
+
+  return (
+    <SiteShell
+      footerNote={
+        isEnglish
+          ? "Model pages are derived from published cases, not from vendor announcements."
+          : "模型页由已发布 Case 派生，不来自厂商通稿。"
+      }
+    >
+      <PageHero
+        eyebrow={`${messages.model.media[family.media]} · ${label}`}
+        title={
+          isEnglish
+            ? `${label} ${messages.model.pageTitle}`
+            : `${label} ${messages.model.pageTitle}`
+        }
+        description={messages.model.pageDescription}
+      >
+        <div>
+          <div className="gc-stat-label">
+            {isEnglish ? "Cases" : "案例"}
+          </div>
+          <div className="gc-stat-value">{caseItems.length}</div>
+          <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
+            {isEnglish ? "Published" : "已发布"}
+          </div>
+        </div>
+        <div>
+          <div className="gc-stat-label">
+            {isEnglish ? "Medium" : "媒介"}
+          </div>
+          <div className="gc-stat-value">
+            {messages.model.media[family.media]}
+          </div>
+          <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
+            {isEnglish ? "Primary" : "主要"}
+          </div>
+        </div>
+      </PageHero>
+
+      <section className="flex flex-wrap items-center gap-3 border-b border-[var(--hair)] py-4">
+        <Link href="/models" className="gc-action">
+          ← {messages.model.backToAll}
+        </Link>
+        <Link href="/cases" className="gc-action">
+          {isEnglish ? "All cases" : "全部案例"} →
+        </Link>
+      </section>
+
+      {caseItems.length === 0 ? (
+        <section className="gc-empty-state mt-7">
+          <p className="text-lg font-semibold text-[var(--ink)]">
+            {messages.model.empty}
+          </p>
+          <div>
+            <Link href="/submit" className="gc-action gc-action-primary">
+              {isEnglish ? "Submit a case" : "提交好案例"}
+            </Link>
+          </div>
+        </section>
+      ) : (
+        <section className="grid gap-0 border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
+          {caseItems.map((item) => (
+            <CaseCard
+              key={item.slug}
+              variant="gallery"
+              item={{
+                ...item,
+                skills: getCaseSkillLinks(skillCatalog, item.slug),
+              }}
+              actions={
+                <div className="flex flex-wrap items-center gap-2">
+                  <LikeButton
+                    caseSlug={item.slug}
+                    initialCount={item.likedCount}
+                  />
+                  <FavoriteButton caseSlug={item.slug} />
+                </div>
+              }
+            />
+          ))}
+        </section>
+      )}
+    </SiteShell>
+  );
+}

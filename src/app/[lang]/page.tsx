@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { LocalizedLink as Link } from "@/components/localized-link";
+import { ModelStrip } from "@/components/model-strip";
 import { SiteShell } from "@/components/site-shell";
 import type { Locale } from "@/i18n/config";
 import { getLocaleFromParams } from "@/i18n/server";
@@ -248,6 +249,7 @@ export default async function Home({
     spreadLeaderboard,
     sourceHeatLeaderboard,
     stabilityLeaderboard,
+    modelStrip,
   } = await getHomeData(locale);
 
   const previewCases = uniqueCases([
@@ -380,6 +382,8 @@ export default async function Home({
 
         </article>
       </section>
+
+      <ModelStrip items={modelStrip} locale={locale} />
 
       <section className="gc-section">
         <div className="gc-section-head">
