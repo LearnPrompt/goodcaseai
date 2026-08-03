@@ -25,6 +25,8 @@ export type CaseCardItem = {
   mediaType: string;
   mediaUrl: string | null;
   posterUrl?: string | null;
+  /** 本地 400px 缩略图；列表用它省流量与图片转换额度，详情页仍用原图。 */
+  thumbnailUrl?: string;
   stabilityScore: number;
   sourceHeatScore: number | null;
   sourcePublishedAt?: string | null;
@@ -74,10 +76,11 @@ export function CaseCard({
   const summary = getCaseCardSummary(item.summary);
   const creatorSlug = item.creator ? slugifyCreatorName(item.creator) : "";
   const publishedDate = formatCardPublishedDate(item.sourcePublishedAt, locale);
+  // 列表卡片一律优先本地缩略图：外链原图动辄几 MB，一页 24 张会拖垮首屏。
+  const cardMediaUrl = item.thumbnailUrl || item.mediaUrl || "";
   const galleryBackdropUrl = isGallery
-    ? item.mediaType === "image"
-      ? item.mediaUrl
-      : item.posterUrl
+    ? item.thumbnailUrl ||
+      (item.mediaType === "image" ? item.mediaUrl : item.posterUrl)
     : null;
 
   return (
@@ -106,9 +109,9 @@ export function CaseCard({
         ) : null}
 
         {item.mediaUrl ? (
-          item.mediaType === "image" ? (
+          item.mediaType === "image" || item.thumbnailUrl ? (
             <Image
-              src={item.mediaUrl}
+              src={cardMediaUrl}
               alt={item.title}
               fill
               sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
