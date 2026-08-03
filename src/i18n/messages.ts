@@ -107,7 +107,7 @@ export const zhCNMessages = {
     shareHint: "海报已打开，长按/右键保存；链接已复制",
   },
   search: {
-    placeholder: "搜索标题、摘要或创作者",
+    placeholder: "搜索关键词、模型或创作者",
     ariaLabel: "搜索案例",
     submit: "搜索",
   },
@@ -287,7 +287,7 @@ export const enMessages = {
     shareHint: "Poster opened; save it by long-press or right-click. Link copied.",
   },
   search: {
-    placeholder: "Search titles, summaries, or creators",
+    placeholder: "Search keywords, models, or creators",
     ariaLabel: "Search cases",
     submit: "Search",
   },
