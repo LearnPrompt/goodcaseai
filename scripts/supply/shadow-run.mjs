@@ -23,6 +23,7 @@ import {
   loadRunCanonicalKeys,
   rememberCanonicalKeys,
 } from "./lib/history.mjs";
+import { resolveContentLocale } from "../review/lib/content-locale.mjs";
 
 const APP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -131,6 +132,8 @@ function toImportCandidate(item, capturedAt) {
     prompt_preview:
       typeof item.promptText === "string" ? item.promptText.slice(0, 180) : null,
     prompt_full: item.promptText,
+    // X 上的中文创作者绝大多数直接写英文 Prompt，来源账号语言不能拿来当内容语言。
+    content_locale: resolveContentLocale({ prompt_full: item.promptText }),
     media_kind: item.mediaKind || "image",
     media_url: item.mediaUrl || "",
     poster_url: item.posterUrl,

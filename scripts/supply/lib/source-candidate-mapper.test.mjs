@@ -49,6 +49,31 @@ test("candidate mapper preserves provenance and flags review gaps", () => {
   ]);
 });
 
+test("candidate mapper 按 Prompt 正文标注语言", () => {
+  assert.equal(mapSourceSampleToCandidate(sample()).content_locale, "en");
+  assert.equal(
+    mapSourceSampleToCandidate(
+      sample({
+        method: "",
+        promptText: "上传一张产品图，保持比例不变，生成干净的商业背景和可控布光。",
+      })
+    ).content_locale,
+    "zh-CN"
+  );
+  // 中文来源站点上的英文 Prompt 不能跟着站点语言走。
+  assert.equal(
+    mapSourceSampleToCandidate(
+      sample({
+        sourceLabel: "中文工作流站",
+        method: "",
+        promptText:
+          "Upload one product image, preserve proportions, generate a clean studio background.",
+      })
+    ).content_locale,
+    "en"
+  );
+});
+
 test("source text sanitizer removes direct contact identifiers", () => {
   assert.equal(
     sanitizeSourceText("联系作者 QQ: 12345678，邮箱 hello@example.com"),

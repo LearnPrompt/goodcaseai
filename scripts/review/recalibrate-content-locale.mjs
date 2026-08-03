@@ -23,10 +23,14 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
+import { cjkRatio, detectLocale, similarity } from "./lib/content-locale.mjs";
+
+// 判定逻辑已抽到 lib/content-locale.mjs，供给管线共用同一份；
+// 这里继续导出是为了不破坏既有调用方和本脚本的对外签名。
+export { cjkRatio, detectLocale, similarity };
 
 const BACKUP_DIR = path.join(process.cwd(), "tmp", "locale-recalibration");
 const SIMILARITY_THRESHOLD = 0.9;
-const CJK = /[一-鿿぀-ヿ]/;
 
 function parseArgs(argv) {
   return {
@@ -61,41 +65,6 @@ async function readEnvLocal() {
   } catch {
     return {};
   }
-}
-
-/** 中日文字符占比。标点和空白不计入分母，避免长 Prompt 里的英文标点稀释比例。 */
-export function cjkRatio(text) {
-  const meaningful = (text || "").replace(/[\s\p{P}\p{S}]/gu, "");
-  if (!meaningful.length) return 0;
-  let hits = 0;
-  for (const ch of meaningful) {
-    if (CJK.test(ch)) hits += 1;
-  }
-  return hits / meaningful.length;
-}
-
-/** 超过 15% 的中日文字符就认定为中文原文；纯英文 Prompt 里偶尔夹一两个中文注释不会误判。 */
-export function detectLocale(text) {
-  return cjkRatio(text) > 0.15 ? "zh-CN" : "en";
-}
-
-/** 粗粒度相似度：按空白切词后算 Jaccard，足以识别“翻译等于原文”这种情况。 */
-export function similarity(a, b) {
-  const tokenize = (t) =>
-    new Set(
-      (t || "")
-        .toLowerCase()
-        .split(/\s+/)
-        .filter((x) => x.length > 1)
-    );
-  const setA = tokenize(a);
-  const setB = tokenize(b);
-  if (!setA.size || !setB.size) return 0;
-  let shared = 0;
-  for (const token of setA) {
-    if (setB.has(token)) shared += 1;
-  }
-  return shared / new Set([...setA, ...setB]).size;
 }
 
 export function planRow(row) {
