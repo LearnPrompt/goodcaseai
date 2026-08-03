@@ -52,10 +52,15 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
     ],
-    // 测试站单独部署时没有独立的图片优化额度，/_next/image 会整站返回
-    // 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED，缩略图全挂。
-    // 只在测试环境关掉优化直出原图；生产不设这个变量，行为完全不变。
-    unoptimized: process.env.GOODCASE_UNOPTIMIZED_IMAGES === "1",
+    // Vercel Hobby 每月只含 5000 次图片转换，且每张图的每个宽度各算一次。
+    // 案例列表一页三百多张图，刷几次就打满，之后 /_next/image 全站返回
+    // 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED，缩略图变黑块。
+    // 因此默认不走优化、直出原图；升级套餐或改用自建缩略图后，
+    // 设 GOODCASE_OPTIMIZE_IMAGES=1 即可恢复优化。
+    unoptimized: process.env.GOODCASE_OPTIMIZE_IMAGES !== "1",
+    // 恢复优化时也要控制变体数量：宽度档位越少，转换次数越省。
+    deviceSizes: [640, 1080, 1920],
+    imageSizes: [128, 256],
   },
   async headers() {
     return [
