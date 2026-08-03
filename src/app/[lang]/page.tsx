@@ -56,11 +56,14 @@ function MediaTile({
   locale,
   rank,
   className = "",
+  showCategory = true,
 }: {
   item: DisplayCaseItem;
   locale: Locale;
   rank?: string;
   className?: string;
+  /** 榜单行里的缩略图只有 56px 宽，压上分类标签会把作品本身盖住，那里要关掉。 */
+  showCategory?: boolean;
 }) {
   return (
     <div className={`relative overflow-hidden border border-[var(--hair)] bg-[var(--ink)] ${className}`}>
@@ -85,20 +88,16 @@ function MediaTile({
           {rank}
         </span>
       ) : null}
-      <span className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 font-mono text-[10px] text-white">
-        {categoryLabels[locale][item.category]}
-      </span>
+      {showCategory ? (
+        <span className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 font-mono text-[10px] text-white">
+          {categoryLabels[locale][item.category]}
+        </span>
+      ) : null}
     </div>
   );
 }
 
-function EvidenceTile({
-  item,
-  locale,
-}: {
-  item: DisplayCaseItem;
-  locale: Locale;
-}) {
+function EvidenceTile({ item }: { item: DisplayCaseItem }) {
   return (
     <div className="relative aspect-[4/3] overflow-hidden border border-[var(--hair)] bg-[var(--ink)]">
       {item.mediaType === "video" && item.posterUrl ? (
@@ -117,9 +116,6 @@ function EvidenceTile({
         <Image src={item.mediaUrl} alt={item.title} fill sizes="120px" className="object-cover opacity-80 grayscale" />
       )}
       <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(194,65,12,0.28),transparent_54%,rgba(0,0,0,0.46))]" />
-      <span className="absolute bottom-0 right-0 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.05em] text-white">
-        {item.recommendedModels[0] || categoryLabels[locale][item.category]}
-      </span>
     </div>
   );
 }
@@ -173,14 +169,20 @@ function renderSourceHeatRow(
         {String(index + 1).padStart(2, "0")}
       </span>
       <Link href={`/cases/${item.slug}`}>
-        <MediaTile item={item} locale={locale} className="aspect-[3/4]" />
+        <MediaTile
+          item={item}
+          locale={locale}
+          className="aspect-[3/4]"
+          showCategory={false}
+        />
       </Link>
       <div>
         <Link href={`/cases/${item.slug}`} className="font-semibold leading-tight hover:text-[var(--orange)]">
           {item.title}
         </Link>
         <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--mute)]">
-          {item.source} · {locale === "en" ? "Interactions" : "原始互动"}{" "}
+          {categoryLabels[locale][item.category]} · {item.source} ·{" "}
+          {locale === "en" ? "Interactions" : "原始互动"}{" "}
           {formatMetricCount(item.sourceInteractionCount, locale)}
         </div>
       </div>
@@ -206,7 +208,7 @@ function renderStabilityRow(
         {String(index + 1).padStart(2, "0")}
       </span>
       <Link href={`/cases/${item.slug}#prompt`}>
-        <EvidenceTile item={item} locale={locale} />
+        <EvidenceTile item={item} />
       </Link>
       <div>
         <Link href={`/cases/${item.slug}#prompt`} className="font-semibold leading-tight hover:text-[var(--orange)]">
