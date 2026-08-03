@@ -10,9 +10,15 @@ import { LocalizedLink as Link } from "@/components/localized-link";
 import { localizeHref } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
-import { filterCasesByQuery, getCaseListData, type CaseFilter } from "@/lib/cases";
+import {
+  filterCasesByQuery,
+  getCaseListData,
+  type CaseFilter,
+  type DisplayCaseItem,
+} from "@/lib/cases";
 import { filterCasesByModel, getModelFamily, getModelLabel } from "@/lib/models";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
+import { hasMeasuredStability } from "@/lib/stability";
 
 export const revalidate = 300;
 
@@ -52,6 +58,71 @@ function normalizeFilter(value?: string): CaseFilter {
     : "all";
 }
 
+type SortOption = "heat" | "stability" | "latest";
+
+/** 默认排序，默认值不写进 URL，避免同一内容出现两个 URL。 */
+const DEFAULT_SORT: SortOption = "heat";
+
+function normalizeSort(value?: string): SortOption {
+  return value === "stability" || value === "latest" ? value : DEFAULT_SORT;
+}
+
+/**
+ * 稳定度排序时，没有实测分（占位分，hasMeasuredStability 判定为 false）的案例
+ * 统一排到最后，避免这些占位分挤占靠前的位置。
+ */
+function sortCaseItems(
+  list: DisplayCaseItem[],
+  sort: SortOption
+): DisplayCaseItem[] {
+  const sorted = [...list];
+
+  if (sort === "stability") {
+    sorted.sort((a, b) => {
+      const aMeasured = hasMeasuredStability(a.stabilityScore);
+      const bMeasured = hasMeasuredStability(b.stabilityScore);
+      if (aMeasured !== bMeasured) {
+        return aMeasured ? -1 : 1;
+      }
+      if (!aMeasured) {
+        return 0;
+      }
+      return b.stabilityScore - a.stabilityScore;
+    });
+    return sorted;
+  }
+
+  if (sort === "latest") {
+    sorted.sort((a, b) => {
+      const aTime = a.sourcePublishedAt
+        ? new Date(a.sourcePublishedAt).getTime()
+        : NaN;
+      const bTime = b.sourcePublishedAt
+        ? new Date(b.sourcePublishedAt).getTime()
+        : NaN;
+      const aValid = Number.isFinite(aTime);
+      const bValid = Number.isFinite(bTime);
+      if (aValid !== bValid) {
+        return aValid ? -1 : 1;
+      }
+      if (!aValid) {
+        return 0;
+      }
+      return bTime - aTime;
+    });
+    return sorted;
+  }
+
+  // 默认按来源热度降序；没有热度快照（null）的排到最后。
+  sorted.sort((a, b) => {
+    if (a.sourceHeatScore === null && b.sourceHeatScore === null) return 0;
+    if (a.sourceHeatScore === null) return 1;
+    if (b.sourceHeatScore === null) return -1;
+    return b.sourceHeatScore - a.sourceHeatScore;
+  });
+  return sorted;
+}
+
 export default async function CasesPage({
   params,
   searchParams,
@@ -61,6 +132,7 @@ export default async function CasesPage({
     filter?: string;
     q?: string;
     model?: string;
+    sort?: string;
     page?: string;
   }>;
 }) {
@@ -75,19 +147,26 @@ export default async function CasesPage({
     { value: "copy", label: messages.category.copy },
     { value: "hardware", label: messages.category.hardware },
   ];
+  const sortOptions: Array<{ value: SortOption; label: string }> = [
+    { value: "heat", label: messages.sort.heat },
+    { value: "stability", label: messages.sort.stability },
+    { value: "latest", label: messages.sort.latest },
+  ];
   const queryParams = await searchParams;
   const activeFilter = normalizeFilter(queryParams.filter);
   const query = queryParams.q?.trim() || "";
   const activeModel = getModelFamily(queryParams.model);
+  const activeSort = normalizeSort(queryParams.sort);
   const filteredCases = await getCaseListData(activeFilter, locale);
   const skillCatalog = deriveSkillCatalog(filteredCases, locale);
-  const caseItems = filterCasesByModel(
-    filterCasesByQuery(filteredCases, query),
-    activeModel?.slug
+  const caseItems = sortCaseItems(
+    filterCasesByModel(filterCasesByQuery(filteredCases, query), activeModel?.slug),
+    activeSort
   );
   const clearModelQuery = [
     activeFilter === "all" ? "" : `filter=${activeFilter}`,
     query ? `q=${encodeURIComponent(query)}` : "",
+    activeSort === DEFAULT_SORT ? "" : `sort=${activeSort}`,
   ]
     .filter(Boolean)
     .join("&");
@@ -104,13 +183,25 @@ export default async function CasesPage({
     currentPage * CASES_PAGE_SIZE
   );
 
-  /** 翻页时保留筛选、搜索和模型条件；第一页不带 page 参数，避免同一内容两个 URL。 */
+  /** 翻页时保留筛选、搜索、模型和排序条件；第一页不带 page 参数，默认排序不带 sort 参数，避免同一内容多个 URL。 */
   const buildPageHref = (page: number) => {
     const parts = [
       activeFilter === "all" ? "" : `filter=${activeFilter}`,
       query ? `q=${encodeURIComponent(query)}` : "",
       activeModel ? `model=${activeModel.slug}` : "",
+      activeSort === DEFAULT_SORT ? "" : `sort=${activeSort}`,
       page > 1 ? `page=${page}` : "",
+    ].filter(Boolean);
+    return parts.length ? `/cases?${parts.join("&")}` : "/cases";
+  };
+
+  /** 切换排序时保留筛选、搜索和模型条件，并重置回第一页（不带 page 参数）。 */
+  const buildSortHref = (sort: SortOption) => {
+    const parts = [
+      activeFilter === "all" ? "" : `filter=${activeFilter}`,
+      query ? `q=${encodeURIComponent(query)}` : "",
+      activeModel ? `model=${activeModel.slug}` : "",
+      sort === DEFAULT_SORT ? "" : `sort=${sort}`,
     ].filter(Boolean);
     return parts.length ? `/cases?${parts.join("&")}` : "/cases";
   };
@@ -171,7 +262,8 @@ export default async function CasesPage({
             const searchSuffix = query ? `q=${encodeURIComponent(query)}` : "";
             const filterParam = option.value === "all" ? "" : `filter=${option.value}`;
             const modelParam = activeModel ? `model=${activeModel.slug}` : "";
-            const queryString = [filterParam, searchSuffix, modelParam]
+            const sortParam = activeSort === DEFAULT_SORT ? "" : `sort=${activeSort}`;
+            const queryString = [filterParam, searchSuffix, modelParam, sortParam]
               .filter(Boolean)
               .join("&");
             const href = queryString ? `/cases?${queryString}` : "/cases";
@@ -180,6 +272,26 @@ export default async function CasesPage({
               <Link
                 key={option.value}
                 href={href}
+                className={`gc-action ${
+                  isActive
+                    ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]"
+                    : ""
+                }`}
+              >
+                {option.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="gc-eyebrow">{messages.sort.label}</span>
+          {sortOptions.map((option) => {
+            const isActive = option.value === activeSort;
+            return (
+              <Link
+                key={option.value}
+                href={buildSortHref(option.value)}
                 className={`gc-action ${
                   isActive
                     ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]"

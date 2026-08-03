@@ -4,11 +4,12 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { CaseCardPrompt } from "@/components/case-card-prompt";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { useMessages } from "@/i18n/client";
+import { useLocale, useMessages } from "@/i18n/client";
 import { getCaseCardSummary } from "@/lib/case-presentation";
 import { slugifyCreatorName } from "@/lib/creator-slug";
 import type { SkillLink } from "@/lib/skills";
 import { formatStabilityScore, hasMeasuredStability } from "@/lib/stability";
+import type { Locale } from "@/i18n/config";
 
 export type CaseCardItem = {
   slug: string;
@@ -26,8 +27,34 @@ export type CaseCardItem = {
   posterUrl?: string | null;
   stabilityScore: number;
   sourceHeatScore: number | null;
+  sourcePublishedAt?: string | null;
   skills?: SkillLink[];
 };
+
+/**
+ * 案例时效性：AI 模型更新很快，卡片需要来源发布日期。为空时不显示占位符。
+ * 日期格式跟随 locale；这里不复用详情页 formatPublishedDate（那个固定输出 ISO
+ * 日期，不区分语言），避免影响已经在用的详情页格式。
+ */
+function formatCardPublishedDate(
+  value: string | null | undefined,
+  locale: Locale
+) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
 
 export function CaseCard({
   item,
@@ -39,12 +66,14 @@ export function CaseCard({
   variant?: "default" | "gallery";
 }) {
   const messages = useMessages();
+  const locale = useLocale();
   const isGallery = variant === "gallery";
   const label =
     messages.category[item.category as keyof typeof messages.category] ||
     item.category;
   const summary = getCaseCardSummary(item.summary);
   const creatorSlug = item.creator ? slugifyCreatorName(item.creator) : "";
+  const publishedDate = formatCardPublishedDate(item.sourcePublishedAt, locale);
   const galleryBackdropUrl = isGallery
     ? item.mediaType === "image"
       ? item.mediaUrl
@@ -113,6 +142,9 @@ export function CaseCard({
         <div className="flex flex-wrap items-center gap-2">
           <span className="gc-chip gc-chip-accent">{label}</span>
           <span className="gc-chip">{item.source}</span>
+          {publishedDate ? (
+            <span className="gc-chip font-mono">{publishedDate}</span>
+          ) : null}
           {!isGallery && item.creator && creatorSlug ? (
             <Link
               href={`/creators/${creatorSlug}`}
