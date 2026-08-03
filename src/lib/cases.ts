@@ -1,5 +1,6 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
+import { cache } from "react";
 import {
   deriveCreatorsFromCases,
   findCreatorByName,
@@ -536,7 +537,11 @@ async function mapDbCaseRowToCaseItem(
   };
 }
 
-async function fetchPublishedCases(
+/**
+ * 用 React cache 包一层：同一次渲染里多处调用（列表 + 模型筛选 + Skill 目录）
+ * 只打一次 Supabase，避免构建期把同一张表反复拉满导致超时。
+ */
+const fetchPublishedCases = cache(async function fetchPublishedCasesUncached(
   locale: Locale = "zh-CN"
 ): Promise<DisplayCaseItem[] | null> {
   const supabase = getServerSupabaseClient();
@@ -587,7 +592,7 @@ async function fetchPublishedCases(
     // Supabase timeout — fall through to return null (caller uses mock data)
     return null;
   }
-}
+});
 
 export async function getCaseListData(
   filter: CaseFilter = "all",

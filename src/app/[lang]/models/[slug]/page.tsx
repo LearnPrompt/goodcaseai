@@ -14,7 +14,6 @@ import {
   filterCasesByModel,
   getModelFamily,
   getModelLabel,
-  MODEL_FAMILIES,
 } from "@/lib/models";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
 
@@ -24,9 +23,11 @@ type PageProps = {
   params: Promise<{ lang: string; slug: string }>;
 };
 
-export function generateStaticParams() {
-  return MODEL_FAMILIES.map((family) => ({ slug: family.slug }));
-}
+/**
+ * 刻意不做 generateStaticParams：预渲染每个模型页会在构建期额外触发
+ * 注册表条数 × 语言数 次全表查询，曾把 Vercel 构建拖到 Supabase 12s 超时。
+ * 这里改成按需渲染 + revalidate，和 /cases、/skills 的行为一致。
+ */
 
 export async function generateMetadata({
   params,
