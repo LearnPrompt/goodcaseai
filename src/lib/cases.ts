@@ -659,12 +659,33 @@ export async function getCaseSlugs(): Promise<string[]> {
     return caseItems.map((item) => item.slug);
   }
 
-  const { data, error } = await withTimeout(
-    supabase.from("cases").select("slug").eq("is_published", true),
-    12_000
-  );
-  if (error) {
-    throw new Error(`Failed to load sitemap case slugs: ${error.message}`);
+  // Supabase 偶发冷启动会让这条查询从 0.2s 抖到 12s 以上。
+  // 这里是 generateStaticParams 的入口，一次抖动就会让整个构建失败，
+  // 所以重试三次再放弃；仍然保留最终抛错，不静默退回本地样例 slug 导致预渲染错的页面。
+  const MAX_ATTEMPTS = 3;
+  let lastError: string | null = null;
+  let data: Array<{ slug: string | null }> | null = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const result = await withTimeout(
+      supabase.from("cases").select("slug").eq("is_published", true),
+      12_000
+    );
+    if (!result.error) {
+      data = result.data;
+      lastError = null;
+      break;
+    }
+    lastError = result.error.message;
+    if (attempt < MAX_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1_000));
+    }
+  }
+
+  if (lastError) {
+    throw new Error(
+      `Failed to load sitemap case slugs after ${MAX_ATTEMPTS} attempts: ${lastError}`
+    );
   }
 
   return (data || [])
