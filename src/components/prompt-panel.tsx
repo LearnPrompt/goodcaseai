@@ -73,8 +73,9 @@ export function PromptPanel({
                   {messages.common.stability}
                 </dt>
                 <dd className="font-semibold">
-                  {formatStabilityScore(stabilityScore)}
-                  {hasMeasuredStability(stabilityScore) ? " / 100" : ""}
+                  {hasMeasuredStability(stabilityScore)
+                    ? `${formatStabilityScore(stabilityScore)} / 100`
+                    : messages.stability.pending}
                 </dd>
               </div>
               <div className="flex justify-between gap-4 border-t border-[var(--concrete)] pt-2">

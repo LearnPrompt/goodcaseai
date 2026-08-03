@@ -61,7 +61,13 @@ function buildCreatorBio(
   const costPhrase =
     heroCase.costBand === "low" ? "成本压得低" : heroCase.costBand === "high" ? "愿意为质感砸成本" : "成本控制在中等区间";
   const stabilityPhrase =
-    stabilityScore === null ? "稳定度待复测" : `复现稳定分 ${stabilityScore}%`;
+    stabilityScore === null
+      ? locale === "en"
+        ? "stability retest open to votes"
+        : "稳定度投票催复测"
+      : locale === "en"
+        ? `${stabilityScore}% stability`
+        : `复现稳定分 ${stabilityScore}%`;
   const signalPhrase =
     sourceHeatScore === null ? stabilityPhrase : `来源热度 ${sourceHeatScore}`;
 
@@ -71,7 +77,7 @@ function buildCreatorBio(
       : `is active on ${primarySource}`;
     const stabilityLabel =
       stabilityScore === null
-        ? "awaiting a stability retest"
+        ? "with its stability retest open to votes"
         : `with a ${stabilityScore}% stability reference`;
     const categoryFocus = {
       image: "AI image making",

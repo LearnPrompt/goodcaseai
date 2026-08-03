@@ -127,7 +127,7 @@ export default async function CreatorDetailPage({
         <div>
           <div className="gc-stat-label">{isEnglish ? "Average" : "平均值"}</div>
           <div className="gc-stat-value">
-            {formatStabilityScore(creator.averageStabilityScore)}
+            {formatStabilityScore(creator.averageStabilityScore, locale)}
           </div>
           <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
             Stability

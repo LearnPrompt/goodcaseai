@@ -8,7 +8,7 @@ import { useMessages } from "@/i18n/client";
 import { getCaseCardSummary } from "@/lib/case-presentation";
 import { slugifyCreatorName } from "@/lib/creator-slug";
 import type { SkillLink } from "@/lib/skills";
-import { formatStabilityScore } from "@/lib/stability";
+import { formatStabilityScore, hasMeasuredStability } from "@/lib/stability";
 
 export type CaseCardItem = {
   slug: string;
@@ -225,7 +225,9 @@ export function CaseCard({
                 isGallery ? "mt-1 text-sm font-semibold" : "gc-stat-value"
               }
             >
-              {formatStabilityScore(item.stabilityScore)}
+              {hasMeasuredStability(item.stabilityScore)
+                ? formatStabilityScore(item.stabilityScore)
+                : messages.stability.pending}
             </div>
           </div>
         </div>

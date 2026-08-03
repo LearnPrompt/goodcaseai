@@ -55,6 +55,11 @@ export const zhCNMessages = {
     medium: "中",
     high: "高",
   },
+  // 与 src/lib/stability.ts 的 STABILITY_PENDING_LABEL 保持一致。
+  // 那个模块被纯 node 测试直接加载，无法从这里引入，所以文案在两处各存一份。
+  stability: {
+    pending: "投票催复测",
+  },
   card: {
     prompt: "提示语",
     method: "方法",
@@ -230,6 +235,9 @@ export const enMessages = {
     low: "Low",
     medium: "Medium",
     high: "High",
+  },
+  stability: {
+    pending: "Vote to retest",
   },
   card: {
     prompt: "Prompt",

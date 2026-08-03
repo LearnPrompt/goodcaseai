@@ -990,7 +990,7 @@ export default async function OperatorPage({
             </div>
             <div className="bg-white p-4">
               <div className="gc-stat-label">
-                {isEnglish ? "Awaiting retest" : "待复测"}
+                {isEnglish ? "Vote to retest" : "投票催复测"}
               </div>
               <div className="gc-stat-value">
                 {inbox.caseHealth.publicPendingRetest}

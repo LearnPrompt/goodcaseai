@@ -133,7 +133,7 @@ export default async function CreatorsPage({
               <div className="gc-stat">
                 <div className="gc-stat-label">{messages.common.stability}</div>
                 <div className="gc-stat-value">
-                  {formatStabilityScore(creator.averageStabilityScore)}
+                  {formatStabilityScore(creator.averageStabilityScore, locale)}
                 </div>
               </div>
             </div>

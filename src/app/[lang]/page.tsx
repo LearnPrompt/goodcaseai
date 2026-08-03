@@ -240,7 +240,7 @@ function renderStabilityRow(
       </div>
       <div className="text-right font-mono text-xs">
         <b className="text-[var(--orange)]">
-          {formatStabilityScore(item.stabilityScore)}
+          {formatStabilityScore(item.stabilityScore, locale)}
           {hasMeasuredStability(item.stabilityScore) ? "%" : ""}
         </b>
       </div>
@@ -485,7 +485,7 @@ export default async function Home({
                 <div className="mt-auto flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
                   <span>
                     {isEnglish ? "Stability" : "稳定参考"}{" "}
-                    {formatStabilityScore(item.stabilityScore)}
+                    {formatStabilityScore(item.stabilityScore, locale)}
                   </span>
                   <Link href={`/cases/${item.slug}`} className="text-[var(--orange)]">
                     {isEnglish ? "View prompt" : "查看提示语"} ↗
@@ -540,7 +540,10 @@ export default async function Home({
                 />
                 <MiniMetric
                   label="Stab."
-                  value={formatStabilityScore(creator.averageStabilityScore)}
+                  value={formatStabilityScore(
+                    creator.averageStabilityScore,
+                    locale
+                  )}
                 />
               </div>
             </Link>
@@ -640,7 +643,10 @@ export default async function Home({
                 <MiniMetric label={isEnglish ? "Signal" : "传播"} value={featuredCase.spreadScore ?? "—"} />
                 <MiniMetric
                   label={isEnglish ? "Stable" : "稳定"}
-                  value={formatStabilityScore(featuredCase.stabilityScore)}
+                  value={formatStabilityScore(
+                    featuredCase.stabilityScore,
+                    locale
+                  )}
                 />
                 <MiniMetric label={isEnglish ? "Cost" : "成本"} value={costLabels[featuredCase.costBand]} />
               </div>

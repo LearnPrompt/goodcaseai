@@ -391,9 +391,9 @@ function buildEditorNote(item: CaseItem, locale: Locale) {
   const evidenceLevel = item.evidenceLevel || "L0";
 
   if (locale === "en") {
-    return `This case is best approached through ${getLearningAngle(item.category, locale)}. Its current evidence level is ${evidenceLevel}, with a stability reference of ${formatStabilityScore(item.stabilityScore)}. Source heat is calculated separately from the original-post snapshot. Treat it as a structural sample rather than a prompt to copy: understand why it works with ${leadModel} before investing in more expensive iterations.`;
+    return `This case is best approached through ${getLearningAngle(item.category, locale)}. Its current evidence level is ${evidenceLevel}, with a stability reference of ${formatStabilityScore(item.stabilityScore, locale)}. Source heat is calculated separately from the original-post snapshot. Treat it as a structural sample rather than a prompt to copy: understand why it works with ${leadModel} before investing in more expensive iterations.`;
   }
-  return `这是一个适合从 ${getLearningAngle(item.category, locale)} 切进去的 case。当前证据等级为 ${evidenceLevel}，稳定性参考为 ${formatStabilityScore(item.stabilityScore)}；来源互动热度单独按原帖快照计算，不和编辑判断混在一起。更建议你把它当成“结构样本”来看，而不只是抄一段 Prompt；先理解它为什么在 ${leadModel} 上容易出结果，再决定要不要投入更高成本继续打磨。`;
+  return `这是一个适合从 ${getLearningAngle(item.category, locale)} 切进去的 case。当前证据等级为 ${evidenceLevel}，稳定性参考为 ${formatStabilityScore(item.stabilityScore, locale)}；来源互动热度单独按原帖快照计算，不和编辑判断混在一起。更建议你把它当成“结构样本”来看，而不只是抄一段 Prompt；先理解它为什么在 ${leadModel} 上容易出结果，再决定要不要投入更高成本继续打磨。`;
 }
 
 function buildLabNote(item: CaseItem, locale: Locale) {
@@ -408,14 +408,14 @@ function buildLabNote(item: CaseItem, locale: Locale) {
     }[item.costBand];
     return [
       `Build a baseline with ${leadModel}, then compare it with ${backupModel}. Do not change many parameters at once.`,
-      `The stability reference is ${formatStabilityScore(item.stabilityScore)}. Focus first on ${getLabFocus(item.category, locale)} and check whether the output stays in the same direction.`,
+      `The stability reference is ${formatStabilityScore(item.stabilityScore, locale)}. Focus first on ${getLabFocus(item.category, locale)} and check whether the output stays in the same direction.`,
       `The current cost band is ${cost}. Start with small retests before increasing the number of generations.`,
     ];
   }
 
   return [
     `第一轮先用 ${leadModel} 建基准版本，再用 ${backupModel} 对照；不要一开始就同时改太多参数。`,
-    `这条 case 的稳定参考是 ${formatStabilityScore(item.stabilityScore)}，更建议你优先盯 ${getLabFocus(item.category, locale)} 这些变量，看输出是否还能保持同一方向。`,
+    `这条 case 的稳定参考是 ${formatStabilityScore(item.stabilityScore, locale)}，更建议你优先盯 ${getLabFocus(item.category, locale)} 这些变量，看输出是否还能保持同一方向。`,
     `当前成本档位是 ${COST_BAND_LABELS[item.costBand]}，适合先做小步复测，再决定要不要放大生成次数。`,
   ];
 }
