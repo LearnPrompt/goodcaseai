@@ -167,7 +167,7 @@ export default async function CreatorDetailPage({
               <h2 className="gc-section-title">
                 {isEnglish
                   ? "Repeated work becomes a method."
-                  : "不是给作者贴标签，而是从重复作品里找方法。"}
+                  : "从重复作品里找方法。"}
               </h2>
               <p className="gc-section-sub">
                 {isEnglish

@@ -91,26 +91,26 @@ function buildCreatorBio(
 
   const templatesByCategory: Record<CaseItem["category"], Array<(n: string) => string>> = {
     image: [
-      (n) => `${n} 主攻 AI 生图，代表作《${heroTitle}》当前${signalPhrase}，${footprint}，惯用 ${leadModel} 出图。`,
-      (n) => `${n} 的图不追求花哨，靠 ${leadModel} 把布光和质感做扎实，《${heroTitle}》${stabilityPhrase}。`,
-      (n) => `${n} ${footprint}，出图节奏很稳，《${heroTitle}》是目前的代表作，${costPhrase}。`,
+      (n) => `${n} 主攻 AI 生图，${footprint}，代表作《${heroTitle}》当前${signalPhrase}，惯用 ${leadModel}。`,
+      (n) => `${n} 的布光和质感靠 ${leadModel} 打底，代表作《${heroTitle}》${stabilityPhrase}。`,
+      (n) => `${n} ${footprint}，代表作《${heroTitle}》，${costPhrase}。`,
     ],
     video: [
-      (n) => `${n} 短视频节奏抓得准，《${heroTitle}》靠 ${leadModel} 做出转场，当前${signalPhrase}，${footprint}。`,
-      (n) => `${n} ${footprint}，镜头语言干净，代表作《${heroTitle}》${stabilityPhrase}。`,
-      (n) => `${n} 的视频胜在节奏感，《${heroTitle}》用 ${leadModel} 跑出来的，${costPhrase}。`,
+      (n) => `${n} ${footprint}，《${heroTitle}》用 ${leadModel} 做转场，当前${signalPhrase}。`,
+      (n) => `${n} ${footprint}，代表作《${heroTitle}》${stabilityPhrase}，惯用 ${leadModel}。`,
+      (n) => `${n} 的代表作《${heroTitle}》用 ${leadModel} 跑出，${costPhrase}。`,
     ],
     web: [
-      (n) => `${n} 在${primarySource}上持续输出 UI 工程化实践，《${heroTitle}》常搭 ${leadModel} 出方案，方法都带可复现代码。`,
-      (n) => `${n} ${footprint}，写的是能跑起来的界面而不是截图，《${heroTitle}》配了完整实现思路。`,
+      (n) => `${n} 在${primarySource}输出 UI 工程化实践，《${heroTitle}》搭 ${leadModel} 出方案，带可复现代码。`,
+      (n) => `${n} ${footprint}，交付可运行的界面，《${heroTitle}》配了完整实现思路。`,
     ],
     copy: [
-      (n) => `${n} 文案功夫扎实，${footprint}，《${heroTitle}》的开场钩子和结尾行动指令都抓得住人。`,
-      (n) => `${n} 惯用 ${leadModel} 打底稿再手调语感，《${heroTitle}》是这套打法里最有代表性的一条。`,
+      (n) => `${n} ${footprint}，《${heroTitle}》的开场钩子和结尾行动指令都能直接复用。`,
+      (n) => `${n} 用 ${leadModel} 打底稿再手调语感，代表作是《${heroTitle}》。`,
     ],
     hardware: [
-      (n) => `${n} 在${primarySource}记录 AI 硬件与软件闭环，《${heroTitle}》重点公开交互、隐私边界和验证状态。`,
-      (n) => `${n} 把实体动作、macOS 反馈和 AI 处理串成可复测链路，《${heroTitle}》是当前代表 Case。`,
+      (n) => `${n} 在${primarySource}记录 AI 硬件与软件闭环，《${heroTitle}》公开了交互、隐私边界和验证状态。`,
+      (n) => `${n} 把实体动作、macOS 反馈和 AI 处理串成可复测链路，代表作是《${heroTitle}》。`,
     ],
   };
 

@@ -505,8 +505,8 @@ export default async function Home({
           <div>
             <h2 className="gc-section-title">
               {isEnglish
-                ? "Designed around creators who keep shipping."
-                : "为持续交付的创作者设计。"}
+                ? "Creators who keep shipping, aggregated from their published cases."
+                : "持续出活的作者，按已发布 Case 聚合。"}
             </h2>
           </div>
         </div>

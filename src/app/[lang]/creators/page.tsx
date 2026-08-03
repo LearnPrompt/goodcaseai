@@ -65,8 +65,8 @@ export default async function CreatorsPage({
         }
         description={
           isEnglish
-            ? "Creators enter this index through collected cases, not self-written profiles. Every entry traces back to representative work, sources, and retest signals."
-            : "创作者不是凭简介进入榜单，而是由已收录 Case 反向聚合。每个人都必须能回到代表作品、来源和复测信号。"
+            ? "Every creator in this index is aggregated from collected cases, and each entry traces back to representative work, sources, and retest signals."
+            : "创作者由已收录 Case 反向聚合，每个人都能回到代表作品、来源和复测信号。"
         }
       >
         <div>

@@ -358,9 +358,9 @@ function getEditableVariables(category: CaseItem["category"], locale: Locale) {
 
 function buildPromptPublicNote(item: CaseItem, locale: Locale) {
   if (locale === "en") {
-    return `The useful part of this case is not one “magic phrase,” but how it turns ${getPromptFocus(item.category, locale)} into constraints that can be adjusted and tested.`;
+    return `The useful part of this case is how it turns ${getPromptFocus(item.category, locale)} into constraints you can adjust and retest.`;
   }
-  return `这条 ${CATEGORY_LABELS[item.category]} Case 值得学的不是某一句“魔法词”，而是它怎样把 ${getPromptFocus(item.category, locale)} 写成一组可以反复调整的约束。`;
+  return `这条 ${CATEGORY_LABELS[item.category]} Case 值得学的地方，是它把 ${getPromptFocus(item.category, locale)} 写成了一组可以反复调整的约束。`;
 }
 
 function buildPromptLoginNotes(item: CaseItem, locale: Locale) {
@@ -410,9 +410,9 @@ function buildEditorNote(item: CaseItem, locale: Locale) {
   const evidenceLevel = item.evidenceLevel || "L0";
 
   if (locale === "en") {
-    return `This case is best approached through ${getLearningAngle(item.category, locale)}. Its current evidence level is ${evidenceLevel}, with a stability reference of ${formatStabilityScore(item.stabilityScore, locale)}. Source heat is calculated separately from the original-post snapshot. Treat it as a structural sample rather than a prompt to copy: understand why it works with ${leadModel} before investing in more expensive iterations.`;
+    return `This case is best approached through ${getLearningAngle(item.category, locale)}. Its current evidence level is ${evidenceLevel}, with a stability reference of ${formatStabilityScore(item.stabilityScore, locale)}. Source heat is calculated separately from the original-post snapshot. Read it as a structural sample: understand why it works with ${leadModel} before investing in more expensive iterations.`;
   }
-  return `这是一个适合从 ${getLearningAngle(item.category, locale)} 切进去的 case。当前证据等级为 ${evidenceLevel}，稳定性参考为 ${formatStabilityScore(item.stabilityScore, locale)}；来源互动热度单独按原帖快照计算，不和编辑判断混在一起。更建议你把它当成“结构样本”来看，而不只是抄一段 Prompt；先理解它为什么在 ${leadModel} 上容易出结果，再决定要不要投入更高成本继续打磨。`;
+  return `这是一个适合从 ${getLearningAngle(item.category, locale)} 切进去的 case。当前证据等级为 ${evidenceLevel}，稳定性参考为 ${formatStabilityScore(item.stabilityScore, locale)}；来源互动热度单独按原帖快照计算，不和编辑判断混在一起。更建议你把它当成“结构样本”来读；先理解它为什么在 ${leadModel} 上容易出结果，再决定要不要投入更高成本继续打磨。`;
 }
 
 function buildLabNote(item: CaseItem, locale: Locale) {
@@ -699,7 +699,7 @@ export async function getCaseSlugs(): Promise<string[]> {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
-      // withTimeout 超时是 reject 而不是返回 error 字段，两条失败路径都要接住。
+      // withTimeout 超时走 reject，不会写进 error 字段；两条失败路径都要接住。
       const result = await withTimeout(
         supabase.from("cases").select("slug").eq("is_published", true),
         SLUG_QUERY_TIMEOUT_MS
