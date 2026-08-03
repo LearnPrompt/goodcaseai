@@ -58,6 +58,7 @@ function MediaTile({
   className = "",
   showCategory = true,
   vivid = false,
+  useThumbnail = false,
 }: {
   item: DisplayCaseItem;
   locale: Locale;
@@ -67,6 +68,8 @@ function MediaTile({
   showCategory?: boolean;
   /** 榜单缩略图去掉灰度、蒙版减淡到 15%，让人先看清作品本身。 */
   vivid?: boolean;
+  /** 小尺寸位置用本地 400px 缩略图；首屏大图仍走原图保清晰度。 */
+  useThumbnail?: boolean;
 }) {
   const mediaClassName = vivid
     ? "object-cover"
@@ -74,10 +77,13 @@ function MediaTile({
   const washClassName = vivid
     ? "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.15),transparent_46%,rgba(10,10,10,0.15))]"
     : "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.32),transparent_46%,rgba(10,10,10,0.38))]";
+  const thumbnail = useThumbnail ? item.thumbnailUrl : undefined;
 
   return (
     <div className={`relative overflow-hidden border border-[var(--hair)] bg-[var(--ink)] ${className}`}>
-      {item.mediaType === "video" && item.posterUrl ? (
+      {thumbnail ? (
+        <Image src={thumbnail} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className={mediaClassName} />
+      ) : item.mediaType === "video" && item.posterUrl ? (
         <Image src={item.posterUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className={mediaClassName} />
       ) : item.mediaType === "video" ? (
         <video
@@ -111,7 +117,9 @@ function MediaTile({
 function EvidenceTile({ item }: { item: DisplayCaseItem }) {
   return (
     <div className="relative aspect-[4/3] overflow-hidden border border-[var(--hair)] bg-[var(--ink)]">
-      {item.mediaType === "video" && item.posterUrl ? (
+      {item.thumbnailUrl ? (
+        <Image src={item.thumbnailUrl} alt={item.title} fill sizes="120px" className="object-cover" />
+      ) : item.mediaType === "video" && item.posterUrl ? (
         <Image src={item.posterUrl} alt={item.title} fill sizes="120px" className="object-cover" />
       ) : item.mediaType === "video" ? (
         <video
@@ -186,6 +194,7 @@ function renderSourceHeatRow(
           className="aspect-[3/4]"
           showCategory={false}
           vivid
+          useThumbnail
         />
       </Link>
       <div>
@@ -366,7 +375,7 @@ export default async function Home({
             <div className="grid grid-cols-3 gap-px border border-[var(--hair)] bg-[var(--hair)]">
               {heroTopCases.map((item, index) => (
                 <Link key={item.slug} href={`/cases/${item.slug}`} className="block bg-white">
-                  <MediaTile item={item} locale={locale} rank={`#0${index + 1}`} className="aspect-[3/4] w-full" />
+                  <MediaTile item={item} locale={locale} rank={`#0${index + 1}`} className="aspect-[3/4] w-full" useThumbnail />
                 </Link>
               ))}
             </div>

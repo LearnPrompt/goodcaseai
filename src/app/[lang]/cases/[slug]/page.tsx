@@ -251,6 +251,7 @@ export default async function CaseDetailPage({
           mediaType={item.mediaType}
           mediaUrl={item.mediaUrl}
           posterUrl={item.posterUrl}
+          thumbnailUrl={item.thumbnailUrl}
           title={item.title}
         />
       </section>

@@ -16,6 +16,7 @@ import { getServerSupabaseClient, withTimeout } from "@/lib/supabase/server-clie
 import { caseItems, creatorAvatarUrls, type CaseItem } from "@/lib/mock-data";
 import { getHomeModelStripItems } from "@/lib/models";
 import { getRelatedCases, MISSING_MODEL } from "@/lib/related-cases";
+import { getThumbnailUrl } from "@/lib/thumbnails";
 import {
   formatStabilityScore,
   hasMeasuredStability,
@@ -77,6 +78,8 @@ type BaseDerivedCaseFields = {
   promptContributionNotes: string[];
   editorNote: string;
   labNote: string[];
+  /** 本地 400px 缩略图，只用于列表；没有时回退到原始媒体。详情页始终用原图。 */
+  thumbnailUrl?: string;
 };
 
 type DerivedCaseFields = BaseDerivedCaseFields &
@@ -468,6 +471,7 @@ function enrichCaseItemBase(
     promptContributionNotes: buildPromptContributionNotes(localizedItem, locale),
     editorNote: buildEditorNote(localizedItem, locale),
     labNote: buildLabNote(localizedItem, locale),
+    thumbnailUrl: getThumbnailUrl(item.slug),
   };
 }
 
