@@ -734,7 +734,14 @@ export async function getHomeData(locale: Locale = "zh-CN") {
   const list = await getCaseListData("all", locale);
   const creators = deriveCreatorsFromCases(list, locale);
 
-  const featuredCase = list[0] || enrichCaseItem(caseItems[0], locale);
+  // 列表按发布时间倒序，list[0] 会随每条新 Case 漂移。
+  // 配了 GOODCASE_FEATURED_CASE_SLUG 就钉住那一条；没配或找不到时保持原行为。
+  const pinnedSlug = process.env.GOODCASE_FEATURED_CASE_SLUG?.trim();
+  const pinnedCase = pinnedSlug
+    ? list.find((item) => item.slug === pinnedSlug)
+    : undefined;
+  const featuredCase =
+    pinnedCase || list[0] || enrichCaseItem(caseItems[0], locale);
   const spread = [...list]
     .filter((item) => item.spreadScore !== null)
     .sort((a, b) => (b.spreadScore ?? -1) - (a.spreadScore ?? -1))
