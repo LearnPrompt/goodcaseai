@@ -659,9 +659,11 @@ export async function getCaseSlugs(): Promise<string[]> {
     return caseItems.map((item) => item.slug);
   }
 
-  // Supabase 偶发冷启动会让这条查询从 0.2s 抖到 12s 以上。
-  // 这里是 generateStaticParams 的入口，一次抖动就会让整个构建失败，
-  // 所以重试三次再放弃；仍然保留最终抛错，不静默退回本地样例 slug 导致预渲染错的页面。
+  // 实测这条查询在同一分钟内会从 0.25s 抖到 10.8s、14.7s，偶尔直接超过 30s。
+  // 12s 的默认超时挡不住这种抖动，Vercel 构建已经因此连续失败多次，
+  // 所以这里单独放宽到 30s 并重试三次；仍然保留最终抛错，
+  // 不静默退回本地样例 slug 导致预渲染出错误的页面集合。
+  const SLUG_QUERY_TIMEOUT_MS = 30_000;
   const MAX_ATTEMPTS = 3;
   let lastError: string | null = null;
   let data: Array<{ slug: string | null }> | null = null;
@@ -671,7 +673,7 @@ export async function getCaseSlugs(): Promise<string[]> {
       // withTimeout 超时是 reject 而不是返回 error 字段，两条失败路径都要接住。
       const result = await withTimeout(
         supabase.from("cases").select("slug").eq("is_published", true),
-        12_000
+        SLUG_QUERY_TIMEOUT_MS
       );
       if (!result.error) {
         data = result.data;

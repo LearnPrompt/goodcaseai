@@ -57,6 +57,7 @@ function MediaTile({
   rank,
   className = "",
   showCategory = true,
+  vivid = false,
 }: {
   item: DisplayCaseItem;
   locale: Locale;
@@ -64,25 +65,34 @@ function MediaTile({
   className?: string;
   /** 榜单行里的缩略图只有 56px 宽，压上分类标签会把作品本身盖住，那里要关掉。 */
   showCategory?: boolean;
+  /** 榜单缩略图去掉灰度、蒙版减淡到 15%，让人先看清作品本身。 */
+  vivid?: boolean;
 }) {
+  const mediaClassName = vivid
+    ? "object-cover"
+    : "object-cover opacity-90 grayscale";
+  const washClassName = vivid
+    ? "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.15),transparent_46%,rgba(10,10,10,0.15))]"
+    : "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.32),transparent_46%,rgba(10,10,10,0.38))]";
+
   return (
     <div className={`relative overflow-hidden border border-[var(--hair)] bg-[var(--ink)] ${className}`}>
       {item.mediaType === "video" && item.posterUrl ? (
-        <Image src={item.posterUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className="object-cover opacity-90 grayscale" />
+        <Image src={item.posterUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className={mediaClassName} />
       ) : item.mediaType === "video" ? (
         <video
           muted
           playsInline
           preload="none"
           poster={item.posterUrl}
-          className="h-full w-full object-cover opacity-90 grayscale"
+          className={`h-full w-full ${mediaClassName}`}
         >
           <source src={item.mediaUrl} type="video/mp4" />
         </video>
       ) : (
-        <Image src={item.mediaUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className="object-cover opacity-90 grayscale" />
+        <Image src={item.mediaUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className={mediaClassName} />
       )}
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.32),transparent_46%,rgba(10,10,10,0.38))]" />
+      <div className={washClassName} />
       {rank ? (
         <span className="absolute left-2 top-2 bg-[var(--orange)] px-2 py-1 font-mono text-[10px] text-white">
           {rank}
@@ -97,25 +107,26 @@ function MediaTile({
   );
 }
 
+/** 稳定榜行内缩略图：同样去掉灰度、蒙版减淡，优先让人看清作品。 */
 function EvidenceTile({ item }: { item: DisplayCaseItem }) {
   return (
     <div className="relative aspect-[4/3] overflow-hidden border border-[var(--hair)] bg-[var(--ink)]">
       {item.mediaType === "video" && item.posterUrl ? (
-        <Image src={item.posterUrl} alt={item.title} fill sizes="120px" className="object-cover opacity-80 grayscale" />
+        <Image src={item.posterUrl} alt={item.title} fill sizes="120px" className="object-cover" />
       ) : item.mediaType === "video" ? (
         <video
           muted
           playsInline
           preload="none"
           poster={item.posterUrl}
-          className="h-full w-full object-cover opacity-80 grayscale"
+          className="h-full w-full object-cover"
         >
           <source src={item.mediaUrl} type="video/mp4" />
         </video>
       ) : (
-        <Image src={item.mediaUrl} alt={item.title} fill sizes="120px" className="object-cover opacity-80 grayscale" />
+        <Image src={item.mediaUrl} alt={item.title} fill sizes="120px" className="object-cover" />
       )}
-      <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(194,65,12,0.28),transparent_54%,rgba(0,0,0,0.46))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(194,65,12,0.15),transparent_54%,rgba(0,0,0,0.15))]" />
     </div>
   );
 }
@@ -174,6 +185,7 @@ function renderSourceHeatRow(
           locale={locale}
           className="aspect-[3/4]"
           showCategory={false}
+          vivid
         />
       </Link>
       <div>
