@@ -667,16 +667,22 @@ export async function getCaseSlugs(): Promise<string[]> {
   let data: Array<{ slug: string | null }> | null = null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-    const result = await withTimeout(
-      supabase.from("cases").select("slug").eq("is_published", true),
-      12_000
-    );
-    if (!result.error) {
-      data = result.data;
-      lastError = null;
-      break;
+    try {
+      // withTimeout 超时是 reject 而不是返回 error 字段，两条失败路径都要接住。
+      const result = await withTimeout(
+        supabase.from("cases").select("slug").eq("is_published", true),
+        12_000
+      );
+      if (!result.error) {
+        data = result.data;
+        lastError = null;
+        break;
+      }
+      lastError = result.error.message;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
     }
-    lastError = result.error.message;
+
     if (attempt < MAX_ATTEMPTS) {
       await new Promise((resolve) => setTimeout(resolve, attempt * 1_000));
     }
