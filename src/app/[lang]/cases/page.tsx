@@ -16,6 +16,7 @@ import {
   type CaseFilter,
   type DisplayCaseItem,
 } from "@/lib/cases";
+import { toCaseCardItem } from "@/lib/case-card-item";
 import { filterCasesByModel, getModelFamily, getModelLabel } from "@/lib/models";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
 import { hasMeasuredStability } from "@/lib/stability";
@@ -358,10 +359,7 @@ export default async function CasesPage({
           <CaseCard
             key={item.slug}
             variant="gallery"
-            item={{
-              ...item,
-              skills: getCaseSkillLinks(skillCatalog, item.slug),
-            }}
+            item={toCaseCardItem(item, getCaseSkillLinks(skillCatalog, item.slug))}
             actions={
                 <div className="flex flex-wrap items-center gap-2">
                   <LikeButton

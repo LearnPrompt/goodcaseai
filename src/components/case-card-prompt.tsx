@@ -51,7 +51,8 @@ export function CaseCardPrompt({
       ? promptTranslationZh
       : language === "en"
         ? promptTranslationEn
-        : promptPreview
+        : promptPreview,
+    compact
   );
 
   if (!prompt.text && !prompt.resourceUrl) {
