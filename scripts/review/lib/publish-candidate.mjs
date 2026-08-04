@@ -1,3 +1,5 @@
+import { resolveContentLocale } from "./content-locale.mjs";
+
 export function buildCasePayload(candidate) {
   return {
     source_candidate_id: candidate.id,
@@ -17,7 +19,8 @@ export function buildCasePayload(candidate) {
     summary: candidate.summary,
     prompt_preview: candidate.prompt_preview,
     prompt_full: candidate.prompt_full,
-    content_locale: candidate.content_locale || "zh-CN",
+    // 曾经无条件默认 zh-CN，导致大量英文 Prompt 被标成中文、前端触发无意义的机器翻译。
+    content_locale: resolveContentLocale(candidate),
     translations: candidate.translations || {},
     translation_status: candidate.translation_status || "untranslated",
     media_kind: candidate.media_kind,

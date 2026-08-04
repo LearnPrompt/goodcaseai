@@ -12,6 +12,7 @@ import { readFileSync, appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import { resolveContentLocale } from "./review/lib/content-locale.mjs";
 
 const APP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FEISHU_APP_TOKEN = "QeLabhd3WaySZNs31oCcCtIgnoe";
@@ -85,6 +86,11 @@ function mockToRow(item) {
     summary: item.summary,
     prompt_preview: item.promptPreview,
     prompt_full: item.promptFull,
+    content_locale: resolveContentLocale({
+      content_locale: item.contentLocale,
+      prompt_full: item.promptFull,
+      prompt_preview: item.promptPreview,
+    }),
     media_kind: item.mediaType,
     media_url: item.mediaUrl,
     poster_url: item.posterUrl ?? null,
@@ -232,6 +238,8 @@ async function runFeishuSync(supabase) {
       summary: `来自飞书多维表的已采纳案例：${title}`,
       prompt_preview: prompt ? `${prompt.slice(0, 160)}${prompt.length > 160 ? "..." : ""}` : null,
       prompt_full: prompt || null,
+      // 飞书表里没有语言字段，按 Prompt 正文判定；cases 表这一列是 not null，必须给值。
+      content_locale: resolveContentLocale({ prompt_full: prompt }),
       media_kind: category === "video" ? "video" : "image",
       media_url: "",
       poster_url: null,
