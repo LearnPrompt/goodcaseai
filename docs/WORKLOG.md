@@ -2,6 +2,14 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-04 · migration 落地 + 额度警报记录
+
+- `20260804000000_candidate_content_locale_optional` 由主控在 Supabase SQL Editor
+  执行；代码侧插入测试行行为验证通过（content_locale 落 null），测试行已清理
+- 记录 Supabase Egress 超限宽限期（至 2026-09-01），详见 PROJECT_STATE 额度警报节
+- 远端 fix/supply-locale-detection-20260803、fix/image-quota-20260803 已删
+  （均已完整并入 staging）
+
 ## 2026-08-04 · 语言判定修复全链路收口
 
 - 合并 `fix/supply-locale-detection-20260803`（3 commits）与

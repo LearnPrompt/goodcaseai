@@ -24,9 +24,8 @@
   备份均在 `tmp/locale-recalibration/`
 - 发布闸门（publish-approved-cases）带语言不匹配哨兵告警；运营后台按正文
   显示原文语言并对标错候选给橙色提示
-- **未完成**：migration `supabase/migrations/20260804000000_candidate_content_locale_optional.sql`
-  尚未在生产库执行（去掉 case_candidates.content_locale 的 default 与 not null）。
-  不执行不出错——所有写入路径已显式写值——只是少最后一层防线
+- migration `20260804000000_candidate_content_locale_optional` 已于 2026-08-04
+  在生产库执行并行为验证（不写该字段时落 null，不再被默认值填成 zh-CN）
 - 87 条改标 en 的候选缺 zh-CN 翻译，已委托 Codex 处理；发布闸门要求
   translation_status=confirmed，不会漏到线上
 
@@ -34,3 +33,9 @@
 
 - staging 已聚齐 2026-08-03 ~ 08-04 全部改动（含 locale 修复与 image-quota），
   测试 195 项全绿；staging → main 的合并与生产部署由主控统一决策
+
+## 额度警报 · 2026-08-04
+
+- Supabase Free Plan 上个账期 Egress 超限，宽限期到 2026-09-01，逾期后请求
+  返回 402。列表页已于 08-03 切本地缩略图，本账期流量应明显回落；
+  9 月前需回 Usage 页确认降没降下来，没降就把详情页媒体也本地化或升 Pro
