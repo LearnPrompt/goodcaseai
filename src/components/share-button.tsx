@@ -45,6 +45,13 @@ export function ShareButton({
       locale,
       `/cases/${caseSlug}`
     )}`;
+    const copyCaseUrl = async () => {
+      try {
+        await navigator.clipboard.writeText(caseUrl);
+      } catch {
+        // 剪贴板不可用（http / 权限拒绝）时忽略，分享本身已经完成。
+      }
+    };
 
     // 优先系统分享面板（移动端微信/小红书场景），带海报图片文件。
     try {
@@ -56,12 +63,10 @@ export function ShareButton({
             type: blob.type || "image/png",
           });
           if (navigator.canShare?.({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title,
-              text: `${title} · GoodCase.ai`,
-              url: caseUrl,
-            });
+            // 只带文件。同时传 text / url 会让微信、飞书把图片和链接拆成两条消息发出去。
+            await navigator.share({ files: [file], title });
+            // 链接改成分享成功后静默复制，用户想补发链接时随手可贴。
+            await copyCaseUrl();
             setStatus("idle");
             return;
           }
@@ -77,11 +82,7 @@ export function ShareButton({
 
     // 降级：新窗口打开海报图 + 复制案例链接。
     window.open(posterPath, "_blank", "noopener");
-    try {
-      await navigator.clipboard.writeText(caseUrl);
-    } catch {
-      // 剪贴板不可用（http / 权限拒绝）时忽略，仅提示保存海报。
-    }
+    await copyCaseUrl();
     showHint();
   };
 

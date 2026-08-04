@@ -4,11 +4,13 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { CaseCardPrompt } from "@/components/case-card-prompt";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { useMessages } from "@/i18n/client";
-import { getCaseCardSummary } from "@/lib/case-presentation";
+import { useLocale, useMessages } from "@/i18n/client";
+import type { CardMediaFit } from "@/lib/card-media-fit";
+import { getPresentableCaseSummary } from "@/lib/case-presentation";
 import { slugifyCreatorName } from "@/lib/creator-slug";
 import type { SkillLink } from "@/lib/skills";
-import { formatStabilityScore } from "@/lib/stability";
+import { formatStabilityScore, hasMeasuredStability } from "@/lib/stability";
+import type { Locale } from "@/i18n/config";
 
 export type CaseCardItem = {
   slug: string;
@@ -24,39 +26,90 @@ export type CaseCardItem = {
   mediaType: string;
   mediaUrl: string | null;
   posterUrl?: string | null;
+  /** 三段式复用方法，第一段是关键决定；摘要是自动生成的套话时拿它兜底。 */
+  promptContributionNotes?: string[];
+  /** 本地 400px 缩略图；列表用它省流量与图片转换额度，详情页仍用原图。 */
+  thumbnailUrl?: string;
+  /** 缩略图在 16:9 框里的填充方式，由缩略图宽高算出；缺省按 cover。 */
+  thumbnailFit?: CardMediaFit;
   stabilityScore: number;
   sourceHeatScore: number | null;
+  sourcePublishedAt?: string | null;
   skills?: SkillLink[];
 };
+
+/**
+ * 案例时效性：AI 模型更新很快，卡片需要来源发布日期。为空时不显示占位符。
+ * 日期格式跟随 locale；这里不复用详情页 formatPublishedDate（那个固定输出 ISO
+ * 日期，不区分语言），避免影响已经在用的详情页格式。
+ */
+function formatCardPublishedDate(
+  value: string | null | undefined,
+  locale: Locale
+) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
 
 export function CaseCard({
   item,
   actions,
+  variant = "default",
 }: {
   item: CaseCardItem;
   actions?: ReactNode;
+  variant?: "default" | "gallery";
 }) {
   const messages = useMessages();
+  const locale = useLocale();
+  const isGallery = variant === "gallery";
   const label =
     messages.category[item.category as keyof typeof messages.category] ||
     item.category;
-  const summary = getCaseCardSummary(item.summary);
+  // 自动生成的通用摘要（来自 X 的真实 XX 案例…）已被 getPresentableCaseSummary 判为无效，
+  // 于是同一排卡片有的有推荐理由有的没有。这里用复用方法的第一句兜底，
+  // 让每张卡都有一句能读的推荐理由，排版也不再忽长忽短。
+  const summary = getPresentableCaseSummary(
+    item.summary,
+    item.promptContributionNotes
+  );
   const creatorSlug = item.creator ? slugifyCreatorName(item.creator) : "";
+  const publishedDate = formatCardPublishedDate(item.sourcePublishedAt, locale);
+  // 列表卡片一律优先本地缩略图：外链原图动辄几 MB，一页 24 张会拖垮首屏。
+  const cardMediaUrl = item.thumbnailUrl || item.mediaUrl || "";
+  // 只有本地缩略图才量得到宽高；回退到外链原图时前端拿不到尺寸，按 cover 处理。
+  const mediaFit: CardMediaFit = item.thumbnailUrl
+    ? item.thumbnailFit ?? "cover"
+    : "cover";
 
   return (
     <article className="gc-card group flex h-full flex-col overflow-hidden">
       <Link
         href={`/cases/${item.slug}`}
-        className="relative block aspect-[4/3] overflow-hidden border-b border-[var(--hair)] bg-[var(--ink)]"
+        className="relative block aspect-[16/9] overflow-hidden border-b border-[var(--hair)] bg-[var(--paper-2)]"
       >
         {item.mediaUrl ? (
-          item.mediaType === "image" ? (
+          item.mediaType === "image" || item.thumbnailUrl ? (
             <Image
-              src={item.mediaUrl}
+              src={cardMediaUrl}
               alt={item.title}
               fill
-              sizes="(min-width: 1536px) 31vw, (min-width: 768px) 48vw, 100vw"
-              className="object-cover grayscale transition duration-300 group-hover:grayscale-0"
+              sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
+              className={`${
+                mediaFit === "contain" ? "object-contain" : "object-cover"
+              } grayscale transition duration-300 group-hover:scale-[1.015] group-hover:grayscale-0`}
             />
           ) : (
             <video
@@ -64,7 +117,7 @@ export function CaseCard({
               playsInline
               preload="none"
               poster={item.posterUrl || undefined}
-              className="h-full w-full object-cover grayscale transition duration-300 group-hover:grayscale-0"
+              className="h-full w-full object-cover grayscale transition duration-300 group-hover:scale-[1.015] group-hover:grayscale-0"
             >
               <source src={item.mediaUrl} type="video/mp4" />
             </video>
@@ -72,72 +125,151 @@ export function CaseCard({
         ) : null}
       </Link>
 
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="gc-chip gc-chip-accent">{label}</span>
-          <span className="gc-chip">{item.source}</span>
-          {item.creator && creatorSlug ? (
-            <Link
-              href={`/creators/${creatorSlug}`}
-              className="gc-chip transition hover:border-[var(--ink)] hover:text-[var(--ink)]"
+      {/*
+        三段式骨架：头部（分类/标题/推荐理由）+ 中段（Skill 标签/提示语）+ 尾部（统计/底栏）。
+        中段拿 flex-1 吃掉所有高度差异——Skill 标签行可有可无、提示语块有「提示语」和
+        「方法/代码」两种高度——尾部再用 mt-auto 贴底。同一行卡片由 grid 拉成等高，
+        于是统计行和底栏都落在同一个 y 上，不会再被中段那些可选行整体顶偏。
+      */}
+      <div
+        className={`flex flex-1 flex-col ${isGallery ? "p-4 sm:p-5" : "p-5"}`}
+      >
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="gc-chip gc-chip-accent">{label}</span>
+            <span className="gc-chip">{item.source}</span>
+            {publishedDate ? (
+              <span className="gc-chip font-mono">{publishedDate}</span>
+            ) : null}
+            {!isGallery && item.creator && creatorSlug ? (
+              <Link
+                href={`/creators/${creatorSlug}`}
+                className="gc-chip transition hover:border-[var(--ink)] hover:text-[var(--ink)]"
+              >
+                {item.creator} →
+              </Link>
+            ) : !isGallery && item.creator ? (
+              <span className="gc-chip">{item.creator}</span>
+            ) : null}
+          </div>
+
+          <Link
+            href={`/cases/${item.slug}`}
+            className={isGallery ? "mt-4 block" : "mt-5 block"}
+          >
+            <h2
+              className={`font-semibold tracking-[-0.035em] text-[var(--ink)] ${
+                isGallery
+                  ? "line-clamp-2 text-xl leading-[1.16] sm:text-2xl"
+                  : "text-2xl leading-[1.02] sm:text-3xl"
+              }`}
             >
-              {item.creator} →
-            </Link>
-          ) : item.creator ? (
-            <span className="gc-chip">{item.creator}</span>
+              {item.title}
+            </h2>
+          </Link>
+
+          {isGallery && item.creator ? (
+            <p className="mt-3 truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
+              {messages.common.creator}{" "}
+              {creatorSlug ? (
+                <Link
+                  href={`/creators/${creatorSlug}`}
+                  className="font-semibold text-[var(--ink)] hover:text-[var(--orange)]"
+                >
+                  {item.creator} →
+                </Link>
+              ) : (
+                <span className="font-semibold text-[var(--ink)]">{item.creator}</span>
+              )}
+            </p>
+          ) : null}
+
+          {summary ? (
+            <p
+              className={`mt-3 text-sm text-[var(--muted)] ${
+                isGallery ? "line-clamp-2 leading-6" : "line-clamp-3 leading-7"
+              }`}
+            >
+              {summary}
+            </p>
           ) : null}
         </div>
 
-        <Link href={`/cases/${item.slug}`} className="mt-5 block">
-          <h2 className="text-2xl font-semibold leading-[1.02] tracking-[-0.035em] text-[var(--ink)] sm:text-3xl">
-            {item.title}
-          </h2>
-        </Link>
-        {summary ? (
-          <p className="mt-3 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
-            {summary}
-          </p>
-        ) : null}
-
-        {item.skills?.length ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {item.skills.map((skill) => (
-              <Link
-                key={skill.slug}
-                href={`/skills/${skill.slug}`}
-                className="gc-chip transition hover:border-[var(--orange)] hover:text-[var(--orange)]"
-              >
-                Skill · {skill.title}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-
-        <CaseCardPrompt
-          promptPreview={item.promptPreview}
-          contentLocale={item.contentLocale}
-          promptTranslationZh={item.promptTranslationZh}
-          promptTranslationEn={item.promptTranslationEn}
-        />
-
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <div className="gc-stat">
-            <div className="gc-stat-label">{messages.card.sourceHeat}</div>
-            <div className="gc-stat-value">{item.sourceHeatScore ?? "—"}</div>
-          </div>
-          <div className="gc-stat">
-            <div className="gc-stat-label">{messages.card.stability}</div>
-            <div className="gc-stat-value">
-              {formatStabilityScore(item.stabilityScore)}
+        <div className="flex-1">
+          {item.skills?.length ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {item.skills
+                .slice(0, isGallery ? 1 : item.skills.length)
+                .map((skill) => (
+                  <Link
+                    key={skill.slug}
+                    href={`/skills/${skill.slug}`}
+                    className="gc-chip transition hover:border-[var(--orange)] hover:text-[var(--orange)]"
+                  >
+                    Skill · {skill.title}
+                  </Link>
+                ))}
+              {isGallery && item.skills.length > 1 ? (
+                <span className="gc-chip">+{item.skills.length - 1}</span>
+              ) : null}
             </div>
-          </div>
+          ) : null}
+
+          <CaseCardPrompt
+            promptPreview={item.promptPreview}
+            contentLocale={item.contentLocale}
+            promptTranslationZh={item.promptTranslationZh}
+            promptTranslationEn={item.promptTranslationEn}
+            compact={isGallery}
+          />
         </div>
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hair)] pt-4">
-          {actions}
-          <Link href={`/cases/${item.slug}`} className="gc-action ml-auto">
-            {messages.common.viewCase} →
-          </Link>
+        <div className="mt-auto">
+          <div
+            className={`grid grid-cols-2 ${
+              isGallery
+                ? "mt-5 gap-px border border-[var(--concrete)] bg-[var(--concrete)]"
+                : "mt-5 gap-2"
+            }`}
+          >
+            <div
+              className={
+                isGallery ? "bg-white px-3 py-2" : "gc-stat"
+              }
+            >
+              <div className="gc-stat-label">{messages.card.sourceHeat}</div>
+              <div
+                className={
+                  isGallery ? "mt-1 text-sm font-semibold" : "gc-stat-value"
+                }
+              >
+                {item.sourceHeatScore ?? "—"}
+              </div>
+            </div>
+            <div
+              className={
+                isGallery ? "bg-white px-3 py-2" : "gc-stat"
+              }
+            >
+              <div className="gc-stat-label">{messages.card.stability}</div>
+              <div
+                className={
+                  isGallery ? "mt-1 text-sm font-semibold" : "gc-stat-value"
+                }
+              >
+                {hasMeasuredStability(item.stabilityScore)
+                  ? formatStabilityScore(item.stabilityScore)
+                  : messages.stability.pending}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hair)] pt-4">
+            {actions}
+            <Link href={`/cases/${item.slug}`} className="gc-action ml-auto">
+              {messages.common.viewCase} →
+            </Link>
+          </div>
         </div>
       </div>
     </article>

@@ -15,7 +15,8 @@ import {
 } from "@/lib/cases";
 import { formatStabilityScore } from "@/lib/stability";
 
-export const revalidate = 300;
+// 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
+export const revalidate = 3_600;
 
 export async function generateStaticParams() {
   const creators = await getCreatorListData();
@@ -127,7 +128,7 @@ export default async function CreatorDetailPage({
         <div>
           <div className="gc-stat-label">{isEnglish ? "Average" : "平均值"}</div>
           <div className="gc-stat-value">
-            {formatStabilityScore(creator.averageStabilityScore)}
+            {formatStabilityScore(creator.averageStabilityScore, locale)}
           </div>
           <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
             Stability
@@ -167,7 +168,7 @@ export default async function CreatorDetailPage({
               <h2 className="gc-section-title">
                 {isEnglish
                   ? "Repeated work becomes a method."
-                  : "不是给作者贴标签，而是从重复作品里找方法。"}
+                  : "从重复作品里找方法。"}
               </h2>
               <p className="gc-section-sub">
                 {isEnglish

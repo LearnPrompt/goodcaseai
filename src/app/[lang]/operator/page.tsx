@@ -29,6 +29,10 @@ import {
   updateCandidateTranslation,
   updateFeedbackStatus,
 } from "./actions";
+import {
+  describeLocaleMismatch,
+  resolveContentLocale,
+} from "../../../../scripts/review/lib/content-locale.mjs";
 
 type PageParams = Promise<{ lang: string }>;
 
@@ -226,7 +230,11 @@ function CandidateDetail({
     buildOperatorHref(query, { candidateId: null })
   );
   const prompt = item.prompt_full || item.prompt_preview;
-  const targetLocale = item.content_locale === "en" ? "zh-CN" : "en";
+  // 缺 Prompt 的候选还轮不到判定语言，运营补齐 Prompt 之后才有依据；
+  // 库里存的值可能是旧默认值填的，跟正文对不上时下面会明确提示，别照着它翻译。
+  const sourceLocale = item.content_locale ?? (prompt ? resolveContentLocale(item) : null);
+  const localeMismatch = describeLocaleMismatch(item);
+  const targetLocale = sourceLocale === "en" ? "zh-CN" : "en";
   const translated = item.translations?.[targetLocale] || {};
   const translationStatus =
     item.translation_status || "untranslated";
@@ -399,9 +407,20 @@ function CandidateDetail({
             <input type="hidden" name="targetLocale" value={targetLocale} />
             <p className="text-xs leading-6 text-[var(--muted)]">
               {isEnglish
-                ? `Source language: ${item.content_locale}; target: ${targetLocale}. Original content stays unchanged.`
-                : `原文语言：${item.content_locale}；目标语言：${targetLocale}。原始内容不会被覆盖。`}
+                ? `Source language: ${
+                    sourceLocale ?? "not determined yet (prompt missing)"
+                  }; target: ${targetLocale}. Original content stays unchanged.`
+                : `原文语言：${
+                    sourceLocale ?? "未判定（Prompt 待补）"
+                  }；目标语言：${targetLocale}。原始内容不会被覆盖。`}
             </p>
+            {localeMismatch ? (
+              <p className="text-xs leading-6 text-[var(--orange)]">
+                {isEnglish
+                  ? `Heads up: this candidate is labelled ${localeMismatch.declared}, but the prompt reads as ${localeMismatch.detected}. Translating it would produce a near-copy of the original — fix the label first.`
+                  : `注意：这条标着 ${localeMismatch.declared}，但 Prompt 正文看着是 ${localeMismatch.detected}。照这个翻会得到一份和原文几乎一样的译文，先把语言标对再说。`}
+              </p>
+            ) : null}
             <label className="grid gap-2">
               <span className="gc-stat-label">
                 {isEnglish ? "Translated title" : "翻译标题"}
@@ -990,7 +1009,7 @@ export default async function OperatorPage({
             </div>
             <div className="bg-white p-4">
               <div className="gc-stat-label">
-                {isEnglish ? "Awaiting retest" : "待复测"}
+                {isEnglish ? "Vote to retest" : "投票催复测"}
               </div>
               <div className="gc-stat-value">
                 {inbox.caseHealth.publicPendingRetest}

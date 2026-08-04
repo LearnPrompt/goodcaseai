@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   extractPromptUrls,
   extractWeeklyPromptUrls,
+  inferSourceCategoryFromListingUrl,
   normalizeYouMindPromptPage,
 } from "../adapters/youmind.mjs";
 
@@ -105,6 +106,71 @@ test("normalizeYouMindPromptPage extracts original source, prompt, media, and me
   assert.equal(item.sourceLikeCount, 1081);
   assert.equal(item.sourceViewCount, 285382);
   assert.deepEqual(item.tags, ["youmind", "Grok Imagine"]);
+});
+
+test("inferSourceCategoryFromListingUrl reads the category from dedicated listing pages, and returns null for the mixed root index", () => {
+  assert.equal(
+    inferSourceCategoryFromListingUrl("https://youmind.com/zh-CN/prompts/video"),
+    "video"
+  );
+  assert.equal(
+    inferSourceCategoryFromListingUrl("https://youmind.com/zh-CN/prompts/webpage"),
+    "web"
+  );
+  assert.equal(
+    inferSourceCategoryFromListingUrl("https://youmind.com/zh-CN/prompts/image"),
+    "image"
+  );
+  assert.equal(
+    inferSourceCategoryFromListingUrl("https://youmind.com/zh-CN/prompts"),
+    null
+  );
+});
+
+test("normalizeYouMindPromptPage lets an explicit sourceCategory override the applicationCategory/mediaKind guess", () => {
+  const html = `
+    <script type="application/ld+json">
+      ${JSON.stringify({ "@context": "https://schema.org", "@graph": [creativeWork, video] })}
+    </script>
+  `;
+
+  // 不传 sourceCategory 时走兜底：这条素材有 VideoObject，兜底逻辑判成 video。
+  const withoutSourceCategory = normalizeYouMindPromptPage(
+    html,
+    "https://youmind.com/zh-CN/video-prompts/pixel-fairy-7697"
+  );
+  assert.equal(withoutSourceCategory.category, "video");
+
+  // 传了 sourceCategory（比如抓取时已知这条来自 /prompts/webpage）就是唯一判据，
+  // 优先级高于素材本身的 mediaKind 兜底猜测。
+  const withSourceCategory = normalizeYouMindPromptPage(
+    html,
+    "https://youmind.com/zh-CN/video-prompts/pixel-fairy-7697",
+    { sourceCategory: "web" }
+  );
+  assert.equal(withSourceCategory.category, "web");
+});
+
+test("normalizeYouMindPromptPage falls back to about.applicationCategory only when sourceCategory is unknown, and now also accepts WebApplication", () => {
+  const webWork = {
+    ...creativeWork,
+    about: {
+      "@type": "SoftwareApplication",
+      name: "Gemini 3 Pro",
+      applicationCategory: "WebApplication",
+    },
+  };
+  const html = `
+    <script type="application/ld+json">
+      ${JSON.stringify({ "@context": "https://schema.org", "@graph": [webWork] })}
+    </script>
+  `;
+
+  const item = normalizeYouMindPromptPage(
+    html,
+    "https://youmind.com/zh-CN/prompts/example-101"
+  );
+  assert.equal(item.category, "web");
 });
 
 test("normalizeYouMindPromptPage rejects pages without an original source", () => {

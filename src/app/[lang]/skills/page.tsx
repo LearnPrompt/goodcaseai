@@ -1,17 +1,40 @@
 import type { Metadata } from "next";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
+import { SearchBox } from "@/components/search-box";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { localizeHref } from "@/i18n/config";
+import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 import { getSkillCatalogData } from "@/lib/cases";
+import { filterSkillsByQuery } from "@/lib/skills";
+import type { CaseCategory } from "@/lib/mock-data";
 import {
   getInstallableSkillPackages,
   getSkillDownloadPath,
 } from "@/lib/installable-skills";
 
-export const revalidate = 300;
+/** 与 /cases 的 CaseFilter 同构，多一个 "all"，用于分类筛选按钮。 */
+type SkillCategoryFilter = CaseCategory | "all";
+
+function normalizeCategory(value?: string): SkillCategoryFilter {
+  return value === "video" ||
+    value === "web" ||
+    value === "image" ||
+    value === "copy" ||
+    value === "hardware"
+    ? value
+    : "all";
+}
+
+// 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
+export const revalidate = 3_600;
+
+// [lang] 是动态段，不加 generateStaticParams 的话上面的 revalidate 完全不起作用——
+// 每次请求都会打 Supabase。只有两种语言，直接枚举。
+export function generateStaticParams() {
+  return SUPPORTED_LOCALES.map((lang) => ({ lang }));
+}
 
 export async function generateMetadata({
   params,
@@ -38,8 +61,10 @@ export async function generateMetadata({
 
 export default async function SkillsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ lang: string }>;
+  searchParams: Promise<{ category?: string; q?: string }>;
 }) {
   const locale = await getLocaleFromParams(params);
   const isEnglish = locale === "en";
@@ -58,6 +83,30 @@ export default async function SkillsPage({
   const evidenceCount = new Set(
     allSkills.flatMap((skill) => skill.cases.map((item) => item.slug))
   ).size;
+
+  // 分类筛选 + 搜索都走 URL 查询参数，服务端过滤，两者可叠加。
+  const queryParams = await searchParams;
+  const activeCategory = normalizeCategory(queryParams.category);
+  const query = queryParams.q?.trim() || "";
+  const categoryOptions: Array<{ value: SkillCategoryFilter; label: string }> = [
+    { value: "all", label: messages.category.all },
+    { value: "video", label: messages.category.video },
+    { value: "web", label: messages.category.web },
+    { value: "image", label: messages.category.image },
+    { value: "copy", label: messages.category.copy },
+    { value: "hardware", label: messages.category.hardware },
+  ];
+  const byCategory = <T extends { category: CaseCategory }>(skill: T) =>
+    activeCategory === "all" || skill.category === activeCategory;
+  const visibleSharedSkills = filterSkillsByQuery(
+    sharedSkills.filter(byCategory),
+    query
+  );
+  const visibleCreatorMethods = filterSkillsByQuery(
+    creatorMethods.filter(byCategory),
+    query
+  );
+  const hasResults = visibleSharedSkills.length + visibleCreatorMethods.length > 0;
 
   return (
     <SiteShell
@@ -106,31 +155,87 @@ export default async function SkillsPage({
         </div>
       </PageHero>
 
-      <SkillSection
-        title={isEnglish ? "Shared Skills" : "跨作者通用 Skills"}
-        description={
-          isEnglish
-            ? "Patterns repeated across at least three published Cases and two creators."
-            : "至少 3 个已发布 Case、2 位创作者重复出现的可复用方法。"
-        }
-        skills={sharedSkills}
-        isEnglish={isEnglish}
-        categoryLabels={messages.category}
-      />
-
-      {creatorMethods.length ? (
-        <SkillSection
-          title={isEnglish ? "Creator methods" : "作者方法 Skills"}
-          description={
-            isEnglish
-              ? "Unofficial workflows derived from at least three published Cases by the same creator. Attribution stays attached."
-              : "同一作者至少 3 个已发布 Case 中归纳的非官方工作流，安装后仍保留作者与证据署名。"
-          }
-          skills={creatorMethods}
-          isEnglish={isEnglish}
-          categoryLabels={messages.category}
+      <section className="grid gap-4 border-b border-[var(--hair)] py-6">
+        <SearchBox
+          defaultQuery={query}
+          filter={activeCategory}
+          action={localizeHref(locale, "/skills")}
+          hiddenParamName="category"
+          placeholder={messages.search.skillsPlaceholder}
+          ariaLabel={messages.search.skillsAriaLabel}
+          analyticsEvent="skill_search"
         />
-      ) : null}
+
+        <div className="flex flex-wrap gap-2">
+          {categoryOptions.map((option) => {
+            const isActive = option.value === activeCategory;
+            const categoryParam =
+              option.value === "all" ? "" : `category=${option.value}`;
+            const searchParam = query ? `q=${encodeURIComponent(query)}` : "";
+            const queryString = [categoryParam, searchParam]
+              .filter(Boolean)
+              .join("&");
+            const href = queryString ? `/skills?${queryString}` : "/skills";
+
+            return (
+              <Link
+                key={option.value}
+                href={href}
+                className={`gc-action ${
+                  isActive
+                    ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]"
+                    : ""
+                }`}
+              >
+                {option.label}
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {hasResults ? (
+        <>
+          <SkillSection
+            title={isEnglish ? "Shared Skills" : "跨作者通用 Skills"}
+            description={
+              isEnglish
+                ? "Patterns repeated across at least three published Cases and two creators."
+                : "至少 3 个已发布 Case、2 位创作者重复出现的可复用方法。"
+            }
+            skills={visibleSharedSkills}
+            isEnglish={isEnglish}
+            categoryLabels={messages.category}
+          />
+
+          {visibleCreatorMethods.length ? (
+            <SkillSection
+              title={isEnglish ? "Creator methods" : "作者方法 Skills"}
+              description={
+                isEnglish
+                  ? "Unofficial workflows derived from at least three published Cases by the same creator. Attribution stays attached."
+                  : "同一作者至少 3 个已发布 Case 中归纳的非官方工作流，安装后仍保留作者与证据署名。"
+              }
+              skills={visibleCreatorMethods}
+              isEnglish={isEnglish}
+              categoryLabels={messages.category}
+            />
+          ) : null}
+        </>
+      ) : (
+        <section className="gc-empty-state mt-7">
+          <p className="text-lg font-semibold text-[var(--ink)]">
+            {isEnglish
+              ? `No Skills found${query ? ` for “${query}”` : ""}.`
+              : `没有找到${query ? `与「${query}」相关的` : ""} Skill。`}
+          </p>
+          <p className="text-sm leading-7 text-[var(--muted)]">
+            {isEnglish
+              ? "Try another keyword or category."
+              : "换个关键词或分类试试。"}
+          </p>
+        </section>
+      )}
     </SiteShell>
   );
 }

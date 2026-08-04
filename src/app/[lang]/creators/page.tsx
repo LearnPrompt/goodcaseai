@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
-import { CreatorAvatar } from "@/components/creator-avatar";
-import { LocalizedLink as Link } from "@/components/localized-link";
+import { CreatorCard } from "@/components/creator-card";
+import { toCreatorCardItem } from "@/lib/creator-card-item";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
+import { SearchBox } from "@/components/search-box";
+import { CASES_PAGE_SIZE, Pagination } from "@/components/pagination";
 import { getCreatorListData } from "@/lib/cases";
-import { formatStabilityScore } from "@/lib/stability";
-import { localizeHref } from "@/i18n/config";
+import { filterCreatorsByQuery } from "@/lib/creators";
+import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 
-export const revalidate = 300;
+// 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
+export const revalidate = 3_600;
+
+// [lang] 是动态段，不加 generateStaticParams 的话上面的 revalidate 完全不起作用——
+// 每次请求都会打 Supabase。只有两种语言，直接枚举。
+export function generateStaticParams() {
+  return SUPPORTED_LOCALES.map((lang) => ({ lang }));
+}
 
 type PageParams = Promise<{ lang: string }>;
 
@@ -38,13 +47,38 @@ export async function generateMetadata({
 
 export default async function CreatorsPage({
   params,
+  searchParams,
 }: {
   params: PageParams;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   const locale = await getLocaleFromParams(params);
   const messages = getMessages(locale);
   const isEnglish = locale === "en";
-  const creators = await getCreatorListData(locale);
+  const allCreators = await getCreatorListData(locale);
+  const queryParams = await searchParams;
+  const query = queryParams.q?.trim() || "";
+  const creators = filterCreatorsByQuery(allCreators, query);
+
+  const totalCount = creators.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / CASES_PAGE_SIZE));
+  const requestedPage = Number.parseInt(queryParams.page ?? "1", 10);
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(requestedPage, 1), totalPages)
+    : 1;
+  const pagedCreators = creators.slice(
+    (currentPage - 1) * CASES_PAGE_SIZE,
+    currentPage * CASES_PAGE_SIZE
+  );
+
+  /** 翻页时保留搜索关键词；第一页不带 page 参数，避免同一内容多个 URL。 */
+  const buildPageHref = (page: number) => {
+    const parts = [
+      query ? `q=${encodeURIComponent(query)}` : "",
+      page > 1 ? `page=${page}` : "",
+    ].filter(Boolean);
+    return parts.length ? `/creators?${parts.join("&")}` : "/creators";
+  };
 
   return (
     <SiteShell
@@ -65,16 +99,20 @@ export default async function CreatorsPage({
         }
         description={
           isEnglish
-            ? "Creators enter this index through collected cases, not self-written profiles. Every entry traces back to representative work, sources, and retest signals."
-            : "创作者不是凭简介进入榜单，而是由已收录 Case 反向聚合。每个人都必须能回到代表作品、来源和复测信号。"
+            ? "Every creator in this index is aggregated from collected cases, and each entry traces back to representative work, sources, and retest signals."
+            : "创作者由已收录 Case 反向聚合，每个人都能回到代表作品、来源和复测信号。"
         }
       >
         <div>
           <div className="gc-stat-label">
             {isEnglish ? "Creators" : "创作者"}
           </div>
-          <div className="gc-stat-value">{creators.length}</div>
-          <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">From cases</div>
+          <div className="gc-stat-value">{totalCount}</div>
+          <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
+            {isEnglish
+              ? `From cases · page ${currentPage}/${totalPages}`
+              : `来自 Case · 第 ${currentPage}/${totalPages} 页`}
+          </div>
         </div>
         <div>
           <div className="gc-stat-label">{isEnglish ? "Rule" : "规则"}</div>
@@ -87,82 +125,47 @@ export default async function CreatorsPage({
         </div>
       </PageHero>
 
+      <section className="border-b border-[var(--hair)] py-6">
+        <SearchBox
+          defaultQuery={query}
+          action={localizeHref(locale, "/creators")}
+          placeholder={messages.search.creatorsPlaceholder}
+          ariaLabel={messages.search.creatorsAriaLabel}
+          analyticsEvent="creator_search"
+        />
+      </section>
+
+      {totalCount === 0 ? (
+        <section className="gc-empty-state mt-7">
+          <p className="text-lg font-semibold text-[var(--ink)]">
+            {isEnglish
+              ? `No creators found${query ? ` for “${query}”` : ""}.`
+              : `没有找到${query ? `与「${query}」相关的` : ""}创作者。`}
+          </p>
+          <p className="text-sm leading-7 text-[var(--muted)]">
+            {isEnglish ? "Try another keyword." : "换个关键词试试。"}
+          </p>
+        </section>
+      ) : (
+      <>
       <section className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
-        {creators.map((creator, index) => (
-          <article
+        {pagedCreators.map((creator, index) => (
+          <CreatorCard
             key={creator.slug}
-            className="gc-card flex h-full flex-col border-l-0 border-t-0 p-5 sm:p-6"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="gc-chip gc-chip-accent">
-                {creator.highlightedLabel}
-                </span>
-                {creator.tags.slice(0, 2).map((tag) => (
-                  <span key={tag} className="gc-chip">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <span className="font-mono text-xs text-[var(--orange)]">
-                #{String(index + 1).padStart(2, "0")}
-              </span>
-            </div>
-
-            <div className="mt-7 flex items-center gap-4">
-              <CreatorAvatar
-                name={creator.name}
-                avatarUrl={creator.avatarUrl}
-                size={64}
-              />
-              <h2 className="text-3xl font-semibold leading-[0.95] tracking-[-0.04em] sm:text-4xl">
-                {creator.name}
-              </h2>
-            </div>
-            <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{creator.bio}</p>
-
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              <div className="gc-stat">
-                <div className="gc-stat-label">{messages.common.cases}</div>
-                <div className="gc-stat-value">{creator.caseCount}</div>
-              </div>
-              <div className="gc-stat">
-                <div className="gc-stat-label">{messages.common.sourceHeat}</div>
-                <div className="gc-stat-value">{creator.averageSourceHeatScore ?? "—"}</div>
-              </div>
-              <div className="gc-stat">
-                <div className="gc-stat-label">{messages.common.stability}</div>
-                <div className="gc-stat-value">
-                  {formatStabilityScore(creator.averageStabilityScore)}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 border border-[var(--hair)] bg-[var(--paper-2)] p-4">
-              <p className="gc-eyebrow">
-                {isEnglish ? "Representative case" : "代表案例"}
-              </p>
-              <h3 className="mt-3 text-lg font-semibold text-[var(--ink)]">{creator.heroCase.title}</h3>
-              <p className="mt-2 line-clamp-2 text-sm leading-7 text-[var(--muted)]">{creator.heroCase.summary}</p>
-            </div>
-
-            <div className="mt-auto flex flex-wrap gap-2 border-t border-[var(--hair)] pt-5">
-              <Link
-                href={`/creators/${creator.slug}`}
-                className="gc-action gc-action-primary"
-              >
-                {messages.common.viewCreator}
-              </Link>
-              <Link
-                href={`/cases/${creator.heroCase.slug}`}
-                className="gc-action"
-              >
-                {isEnglish ? "Representative case" : "代表 Case"} →
-              </Link>
-            </div>
-          </article>
+            creator={toCreatorCardItem(creator)}
+            rank={(currentPage - 1) * CASES_PAGE_SIZE + index + 1}
+          />
         ))}
       </section>
+
+      <Pagination
+        currentPage={currentPage}
+        totalItems={totalCount}
+        buildHref={buildPageHref}
+        locale={locale}
+      />
+      </>
+      )}
     </SiteShell>
   );
 }

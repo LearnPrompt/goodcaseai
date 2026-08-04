@@ -1,3 +1,5 @@
+import { resolveContentLocale } from "../../review/lib/content-locale.mjs";
+
 function normalizeMetric(value) {
   return Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
 }
@@ -59,6 +61,8 @@ export function mapSourceSampleToCandidate(item) {
     ),
     prompt_preview: concise(reproducibleText, 240) || null,
     prompt_full: reproducibleText || null,
+    // 按 Prompt 正文判定，而不是跟着来源站点或创作者的语言走。
+    content_locale: resolveContentLocale({ prompt_full: reproducibleText }),
     media_kind: item.mediaKind === "video" ? "video" : "image",
     media_url: String(item.mediaUrl ?? "").trim(),
     poster_url: null,

@@ -7,6 +7,7 @@ import {
   buildCandidateDedupeKey,
   slugifyCandidate,
 } from "./supply/lib/candidate-slug.mjs";
+import { resolveContentLocale } from "./review/lib/content-locale.mjs";
 
 function getArg(name) {
   const match = process.argv.find((arg) => arg.startsWith(`${name}=`));
@@ -40,6 +41,24 @@ function normalizeCategory(value) {
   return "image";
 }
 
+function normalizeTranslations(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value;
+  }
+  return {};
+}
+
+function normalizeTranslationStatus(value) {
+  if (
+    value === "untranslated" ||
+    value === "machine_draft" ||
+    value === "confirmed"
+  ) {
+    return value;
+  }
+  return "untranslated";
+}
+
 function normalizeOptionalCount(value) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -65,6 +84,9 @@ function mapCandidate(raw, importBatchId) {
   const slug =
     String(raw.slug || "").trim() ||
     slugifyCandidate(title || mediaUrl, sourceUrl || mediaUrl || title);
+  const promptPreview =
+    String(raw.prompt_preview || raw.promptPreview || "").trim() || null;
+  const promptFull = String(raw.prompt_full || raw.promptFull || "").trim() || null;
 
   const candidate = {
     slug,
@@ -101,8 +123,21 @@ function mapCandidate(raw, importBatchId) {
       String(raw.creator_avatar_url || raw.creatorAvatarUrl || "").trim() ||
       null,
     summary: String(raw.summary || "").trim() || "暂无摘要",
-    prompt_preview: String(raw.prompt_preview || raw.promptPreview || "").trim() || null,
-    prompt_full: String(raw.prompt_full || raw.promptFull || "").trim() || null,
+    prompt_preview: promptPreview,
+    prompt_full: promptFull,
+    // 必须显式写入：case_candidates.content_locale 的库默认值是 zh-CN，
+    // 不写就等于让数据库替所有候选决定语言，英文 Prompt 会被一路带错到发布。
+    content_locale: resolveContentLocale({
+      content_locale: raw.content_locale || raw.contentLocale,
+      prompt_full: promptFull,
+      prompt_preview: promptPreview,
+    }),
+    // 必须显式写入：case_candidates.translations / translation_status 不写就等于
+    // 把离线加工好的双语内容丢在导入这一步，跟上面 content_locale 那条注释是同一类坑。
+    translations: normalizeTranslations(raw.translations),
+    translation_status: normalizeTranslationStatus(
+      raw.translation_status ?? raw.translationStatus
+    ),
     media_kind: normalizeMediaKind(raw.media_kind || raw.mediaType),
     media_url: mediaUrl,
     poster_url: String(raw.poster_url || raw.posterUrl || "").trim() || null,

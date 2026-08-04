@@ -5,14 +5,30 @@ import { SiteShell } from "@/components/site-shell";
 import { LikeButton } from "@/components/like-button";
 import { FavoriteButton } from "@/components/favorite-button";
 import { SearchBox } from "@/components/search-box";
+import { CASES_PAGE_SIZE, Pagination } from "@/components/pagination";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { localizeHref } from "@/i18n/config";
+import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
-import { filterCasesByQuery, getCaseListData, type CaseFilter } from "@/lib/cases";
+import {
+  filterCasesByQuery,
+  getCaseListData,
+  type CaseFilter,
+  type DisplayCaseItem,
+} from "@/lib/cases";
+import { toCaseCardItem } from "@/lib/case-card-item";
+import { filterCasesByModel, getModelFamily, getModelLabel } from "@/lib/models";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
+import { hasMeasuredStability } from "@/lib/stability";
 
-export const revalidate = 300;
+// 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
+export const revalidate = 3_600;
+
+// [lang] 是动态段，不加 generateStaticParams 的话上面的 revalidate 完全不起作用——
+// 每次请求都会打 Supabase。只有两种语言，直接枚举。
+export function generateStaticParams() {
+  return SUPPORTED_LOCALES.map((lang) => ({ lang }));
+}
 
 type PageParams = Promise<{ lang: string }>;
 
@@ -50,12 +66,83 @@ function normalizeFilter(value?: string): CaseFilter {
     : "all";
 }
 
+type SortOption = "heat" | "stability" | "latest";
+
+/** 默认排序，默认值不写进 URL，避免同一内容出现两个 URL。 */
+const DEFAULT_SORT: SortOption = "heat";
+
+function normalizeSort(value?: string): SortOption {
+  return value === "stability" || value === "latest" ? value : DEFAULT_SORT;
+}
+
+/**
+ * 稳定度排序时，没有实测分（占位分，hasMeasuredStability 判定为 false）的案例
+ * 统一排到最后，避免这些占位分挤占靠前的位置。
+ */
+function sortCaseItems(
+  list: DisplayCaseItem[],
+  sort: SortOption
+): DisplayCaseItem[] {
+  const sorted = [...list];
+
+  if (sort === "stability") {
+    sorted.sort((a, b) => {
+      const aMeasured = hasMeasuredStability(a.stabilityScore);
+      const bMeasured = hasMeasuredStability(b.stabilityScore);
+      if (aMeasured !== bMeasured) {
+        return aMeasured ? -1 : 1;
+      }
+      if (!aMeasured) {
+        return 0;
+      }
+      return b.stabilityScore - a.stabilityScore;
+    });
+    return sorted;
+  }
+
+  if (sort === "latest") {
+    sorted.sort((a, b) => {
+      const aTime = a.sourcePublishedAt
+        ? new Date(a.sourcePublishedAt).getTime()
+        : NaN;
+      const bTime = b.sourcePublishedAt
+        ? new Date(b.sourcePublishedAt).getTime()
+        : NaN;
+      const aValid = Number.isFinite(aTime);
+      const bValid = Number.isFinite(bTime);
+      if (aValid !== bValid) {
+        return aValid ? -1 : 1;
+      }
+      if (!aValid) {
+        return 0;
+      }
+      return bTime - aTime;
+    });
+    return sorted;
+  }
+
+  // 默认按来源热度降序；没有热度快照（null）的排到最后。
+  sorted.sort((a, b) => {
+    if (a.sourceHeatScore === null && b.sourceHeatScore === null) return 0;
+    if (a.sourceHeatScore === null) return 1;
+    if (b.sourceHeatScore === null) return -1;
+    return b.sourceHeatScore - a.sourceHeatScore;
+  });
+  return sorted;
+}
+
 export default async function CasesPage({
   params,
   searchParams,
 }: {
   params: PageParams;
-  searchParams: Promise<{ filter?: string; q?: string }>;
+  searchParams: Promise<{
+    filter?: string;
+    q?: string;
+    model?: string;
+    sort?: string;
+    page?: string;
+  }>;
 }) {
   const locale = await getLocaleFromParams(params);
   const messages = getMessages(locale);
@@ -68,12 +155,64 @@ export default async function CasesPage({
     { value: "copy", label: messages.category.copy },
     { value: "hardware", label: messages.category.hardware },
   ];
+  const sortOptions: Array<{ value: SortOption; label: string }> = [
+    { value: "heat", label: messages.sort.heat },
+    { value: "stability", label: messages.sort.stability },
+    { value: "latest", label: messages.sort.latest },
+  ];
   const queryParams = await searchParams;
   const activeFilter = normalizeFilter(queryParams.filter);
   const query = queryParams.q?.trim() || "";
+  const activeModel = getModelFamily(queryParams.model);
+  const activeSort = normalizeSort(queryParams.sort);
   const filteredCases = await getCaseListData(activeFilter, locale);
   const skillCatalog = deriveSkillCatalog(filteredCases, locale);
-  const caseItems = filterCasesByQuery(filteredCases, query);
+  const caseItems = sortCaseItems(
+    filterCasesByModel(filterCasesByQuery(filteredCases, query), activeModel?.slug),
+    activeSort
+  );
+  const clearModelQuery = [
+    activeFilter === "all" ? "" : `filter=${activeFilter}`,
+    query ? `q=${encodeURIComponent(query)}` : "",
+    activeSort === DEFAULT_SORT ? "" : `sort=${activeSort}`,
+  ]
+    .filter(Boolean)
+    .join("&");
+  const clearModelHref = clearModelQuery ? `/cases?${clearModelQuery}` : "/cases";
+
+  const totalCount = caseItems.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / CASES_PAGE_SIZE));
+  const requestedPage = Number.parseInt(queryParams.page ?? "1", 10);
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(requestedPage, 1), totalPages)
+    : 1;
+  const pagedItems = caseItems.slice(
+    (currentPage - 1) * CASES_PAGE_SIZE,
+    currentPage * CASES_PAGE_SIZE
+  );
+
+  /** 翻页时保留筛选、搜索、模型和排序条件；第一页不带 page 参数，默认排序不带 sort 参数，避免同一内容多个 URL。 */
+  const buildPageHref = (page: number) => {
+    const parts = [
+      activeFilter === "all" ? "" : `filter=${activeFilter}`,
+      query ? `q=${encodeURIComponent(query)}` : "",
+      activeModel ? `model=${activeModel.slug}` : "",
+      activeSort === DEFAULT_SORT ? "" : `sort=${activeSort}`,
+      page > 1 ? `page=${page}` : "",
+    ].filter(Boolean);
+    return parts.length ? `/cases?${parts.join("&")}` : "/cases";
+  };
+
+  /** 切换排序时保留筛选、搜索和模型条件，并重置回第一页（不带 page 参数）。 */
+  const buildSortHref = (sort: SortOption) => {
+    const parts = [
+      activeFilter === "all" ? "" : `filter=${activeFilter}`,
+      query ? `q=${encodeURIComponent(query)}` : "",
+      activeModel ? `model=${activeModel.slug}` : "",
+      sort === DEFAULT_SORT ? "" : `sort=${sort}`,
+    ].filter(Boolean);
+    return parts.length ? `/cases?${parts.join("&")}` : "/cases";
+  };
 
   return (
     <SiteShell
@@ -104,9 +243,11 @@ export default async function CasesPage({
           <div className="gc-stat-label">
             {isEnglish ? "Current view" : "当前结果"}
           </div>
-          <div className="gc-stat-value">{caseItems.length}</div>
+          <div className="gc-stat-value">{totalCount}</div>
           <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
-            {isEnglish ? "Cases" : "案例"}
+            {isEnglish
+              ? `Cases · page ${currentPage}/${totalPages}`
+              : `案例 · 第 ${currentPage}/${totalPages} 页`}
           </div>
         </div>
         <div>
@@ -128,7 +269,11 @@ export default async function CasesPage({
             const isActive = option.value === activeFilter;
             const searchSuffix = query ? `q=${encodeURIComponent(query)}` : "";
             const filterParam = option.value === "all" ? "" : `filter=${option.value}`;
-            const queryString = [filterParam, searchSuffix].filter(Boolean).join("&");
+            const modelParam = activeModel ? `model=${activeModel.slug}` : "";
+            const sortParam = activeSort === DEFAULT_SORT ? "" : `sort=${activeSort}`;
+            const queryString = [filterParam, searchSuffix, modelParam, sortParam]
+              .filter(Boolean)
+              .join("&");
             const href = queryString ? `/cases?${queryString}` : "/cases";
 
             return (
@@ -146,9 +291,47 @@ export default async function CasesPage({
             );
           })}
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="gc-eyebrow">{messages.sort.label}</span>
+          {sortOptions.map((option) => {
+            const isActive = option.value === activeSort;
+            return (
+              <Link
+                key={option.value}
+                href={buildSortHref(option.value)}
+                className={`gc-action ${
+                  isActive
+                    ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]"
+                    : ""
+                }`}
+              >
+                {option.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {activeModel ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="gc-eyebrow">{messages.model.browseTitle}</span>
+            <Link
+              href={clearModelHref}
+              className="gc-action border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]"
+            >
+              {getModelLabel(activeModel, locale)} ×
+            </Link>
+            <Link href={`/models/${activeModel.slug}`} className="gc-action">
+              {isEnglish
+                ? `${getModelLabel(activeModel, locale)} page`
+                : `${getModelLabel(activeModel, locale)} 模型页`}{" "}
+              →
+            </Link>
+          </div>
+        ) : null}
       </section>
 
-      {caseItems.length === 0 ? (
+      {totalCount === 0 ? (
         <section className="gc-empty-state mt-7">
           <p className="text-lg font-semibold text-[var(--ink)]">
             {isEnglish
@@ -170,14 +353,13 @@ export default async function CasesPage({
           </div>
         </section>
       ) : (
-      <section className="grid gap-0 border-l border-t border-[var(--hair)] md:grid-cols-2 2xl:grid-cols-3">
-        {caseItems.map((item) => (
+      <>
+      <section className="grid gap-0 border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
+        {pagedItems.map((item) => (
           <CaseCard
             key={item.slug}
-            item={{
-              ...item,
-              skills: getCaseSkillLinks(skillCatalog, item.slug),
-            }}
+            variant="gallery"
+            item={toCaseCardItem(item, getCaseSkillLinks(skillCatalog, item.slug))}
             actions={
                 <div className="flex flex-wrap items-center gap-2">
                   <LikeButton
@@ -190,6 +372,14 @@ export default async function CasesPage({
           />
         ))}
       </section>
+
+      <Pagination
+        currentPage={currentPage}
+        totalItems={totalCount}
+        buildHref={buildPageHref}
+        locale={locale}
+      />
+      </>
       )}
     </SiteShell>
   );

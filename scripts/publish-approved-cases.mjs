@@ -5,6 +5,7 @@ import {
   buildCasePayload,
   decidePublish,
 } from "./review/lib/publish-candidate.mjs";
+import { describeLocaleMismatch } from "./review/lib/content-locale.mjs";
 
 function getArg(name) {
   const match = process.argv.find((arg) => arg.startsWith(`${name}=`));
@@ -58,7 +59,14 @@ async function main() {
     updated: 0,
     resumed: 0,
   };
+  // 存量候选的 content_locale 是库默认值填的，读出来和人工声明的一模一样，
+  // buildCasePayload 只能照单全收。这里把对不上的行喊出来，别让它们悄悄发出去。
+  const localeMismatches = [];
   for (const item of approvedRows) {
+    const mismatch = describeLocaleMismatch(item);
+    if (mismatch) {
+      localeMismatches.push({ slug: item.slug, ...mismatch });
+    }
     const [{ data: existingByCandidate, error: candidateLookupError }, {
       data: existingBySlug,
       error: slugLookupError,
@@ -85,10 +93,16 @@ async function main() {
 
     const decision = decidePublish({
       candidateId: item.id,
+      candidate: item,
       existingByCandidate,
       existingBySlug,
       allowUpdate,
     });
+    if (decision.action === "blocked") {
+      throw new Error(
+        `发布拦截（${item.slug}）：${decision.reason}。请修好候选的媒体字段再发布。`
+      );
+    }
     if (decision.action === "conflict") {
       throw new Error(
         `发布冲突（${item.slug}）：${decision.reason}。${
@@ -153,6 +167,55 @@ async function main() {
       allowUpdate ? "显式允许更新" : "只追加"
     }`
   );
+
+  if (localeMismatches.length > 0) {
+    console.warn(
+      `\n⚠️  ${localeMismatches.length} 条候选声明的语言和 Prompt 正文对不上，已按声明值发布：`
+    );
+    for (const item of localeMismatches.slice(0, 10)) {
+      console.warn(
+        `  ${String(item.slug).slice(0, 38).padEnd(40)} 声明 ${item.declared}，正文看着是 ${
+          item.detected
+        }（中日文占比 ${(item.cjkRatio * 100).toFixed(1)}%）`
+      );
+    }
+    if (localeMismatches.length > 10) {
+      console.warn(`  ……等共 ${localeMismatches.length} 条`);
+    }
+    console.warn(
+      "  多半是 migration 落地前入库的存量候选，跑 scripts/review/recalibrate-candidate-locale.mjs 修。"
+    );
+  }
+
+  // 详情页是构建期全量预渲染的，新发布的 slug 不重新部署就访问不到。
+  // 没配 hook 就只提示一句，不当成失败——库已经写完了。
+  const published = counters.inserted + counters.updated;
+  if (published > 0) {
+    const hookUrl = process.env.VERCEL_DEPLOY_HOOK_URL;
+    if (!hookUrl) {
+      console.warn(
+        "\n⚠️  未配置 VERCEL_DEPLOY_HOOK_URL，新发布的 Case 要等下一次部署才可访问。"
+      );
+    } else {
+      try {
+        const res = await fetch(hookUrl, {
+          method: "POST",
+          signal: AbortSignal.timeout(10_000),
+        });
+        console.log(
+          res.ok
+            ? "\n已触发部署，几分钟后新 Case 上线。"
+            : `\n⚠️  部署触发失败（HTTP ${res.status}），请手动重新部署。`
+        );
+      } catch (error) {
+        console.warn(
+          `\n⚠️  部署触发失败（${
+            error instanceof Error ? error.message : String(error)
+          }），请手动重新部署。`
+        );
+      }
+    }
+  }
 }
 
 main().catch((error) => {

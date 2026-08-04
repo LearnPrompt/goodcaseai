@@ -2,16 +2,26 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { LocalizedLink as Link } from "@/components/localized-link";
+import { HomeCaseDeck } from "@/components/home-case-deck";
+import { ModelStrip } from "@/components/model-strip";
 import { SiteShell } from "@/components/site-shell";
-import type { Locale } from "@/i18n/config";
+import { SUPPORTED_LOCALES, type Locale } from "@/i18n/config";
 import { getLocaleFromParams } from "@/i18n/server";
 import { getHomeData, type DisplayCaseItem } from "@/lib/cases";
+import { getPresentableCaseSummary } from "@/lib/case-presentation";
 import {
   formatStabilityScore,
   hasMeasuredStability,
 } from "@/lib/stability";
 
-export const revalidate = 300;
+// 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
+export const revalidate = 3_600;
+
+// [lang] 是动态段，不加 generateStaticParams 的话上面的 revalidate 完全不起作用——
+// 每次请求都会打 Supabase。只有两种语言，直接枚举。
+export function generateStaticParams() {
+  return SUPPORTED_LOCALES.map((lang) => ({ lang }));
+}
 
 const categoryLabels: Record<
   Locale,
@@ -55,70 +65,92 @@ function MediaTile({
   locale,
   rank,
   className = "",
+  showCategory = true,
+  vivid = false,
+  useThumbnail = false,
+  hoverReveal = false,
 }: {
   item: DisplayCaseItem;
   locale: Locale;
   rank?: string;
   className?: string;
+  /** 榜单行里的缩略图只有 56px 宽，压上分类标签会把作品本身盖住，那里要关掉。 */
+  showCategory?: boolean;
+  /** 榜单缩略图去掉灰度、蒙版减淡到 15%，让人先看清作品本身。 */
+  vivid?: boolean;
+  /** 小尺寸位置用本地 400px 缩略图；首屏大图仍走原图保清晰度。 */
+  useThumbnail?: boolean;
+  /** 默认灰度，指针悬停时还原本色，不需要点击。 */
+  hoverReveal?: boolean;
 }) {
+  const mediaClassName = hoverReveal
+    ? "object-cover grayscale transition duration-300 group-hover:grayscale-0"
+    : vivid
+      ? "object-cover"
+      : "object-cover opacity-90 grayscale";
+  const washClassName = hoverReveal
+    ? "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.18),transparent_46%,rgba(10,10,10,0.22))] transition-opacity duration-300 group-hover:opacity-0"
+    : vivid
+    ? "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.15),transparent_46%,rgba(10,10,10,0.15))]"
+    : "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.32),transparent_46%,rgba(10,10,10,0.38))]";
+  const thumbnail = useThumbnail ? item.thumbnailUrl : undefined;
+
   return (
     <div className={`relative overflow-hidden border border-[var(--hair)] bg-[var(--ink)] ${className}`}>
-      {item.mediaType === "video" && item.posterUrl ? (
-        <Image src={item.posterUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className="object-cover opacity-90 grayscale" />
+      {thumbnail ? (
+        <Image src={thumbnail} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className={mediaClassName} />
+      ) : item.mediaType === "video" && item.posterUrl ? (
+        <Image src={item.posterUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className={mediaClassName} />
       ) : item.mediaType === "video" ? (
         <video
           muted
           playsInline
           preload="none"
           poster={item.posterUrl}
-          className="h-full w-full object-cover opacity-90 grayscale"
+          className={`h-full w-full ${mediaClassName}`}
         >
           <source src={item.mediaUrl} type="video/mp4" />
         </video>
       ) : (
-        <Image src={item.mediaUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className="object-cover opacity-90 grayscale" />
+        <Image src={item.mediaUrl} alt={item.title} fill sizes="(min-width: 1024px) 20vw, 33vw" className={mediaClassName} />
       )}
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.32),transparent_46%,rgba(10,10,10,0.38))]" />
+      <div className={washClassName} />
       {rank ? (
         <span className="absolute left-2 top-2 bg-[var(--orange)] px-2 py-1 font-mono text-[10px] text-white">
           {rank}
         </span>
       ) : null}
-      <span className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 font-mono text-[10px] text-white">
-        {categoryLabels[locale][item.category]}
-      </span>
+      {showCategory ? (
+        <span className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 font-mono text-[10px] text-white">
+          {categoryLabels[locale][item.category]}
+        </span>
+      ) : null}
     </div>
   );
 }
 
-function EvidenceTile({
-  item,
-  locale,
-}: {
-  item: DisplayCaseItem;
-  locale: Locale;
-}) {
+/** 稳定榜行内缩略图：同样去掉灰度、蒙版减淡，优先让人看清作品。 */
+function EvidenceTile({ item }: { item: DisplayCaseItem }) {
   return (
     <div className="relative aspect-[4/3] overflow-hidden border border-[var(--hair)] bg-[var(--ink)]">
-      {item.mediaType === "video" && item.posterUrl ? (
-        <Image src={item.posterUrl} alt={item.title} fill sizes="120px" className="object-cover opacity-80 grayscale" />
+      {item.thumbnailUrl ? (
+        <Image src={item.thumbnailUrl} alt={item.title} fill sizes="120px" className="object-cover" />
+      ) : item.mediaType === "video" && item.posterUrl ? (
+        <Image src={item.posterUrl} alt={item.title} fill sizes="120px" className="object-cover" />
       ) : item.mediaType === "video" ? (
         <video
           muted
           playsInline
           preload="none"
           poster={item.posterUrl}
-          className="h-full w-full object-cover opacity-80 grayscale"
+          className="h-full w-full object-cover"
         >
           <source src={item.mediaUrl} type="video/mp4" />
         </video>
       ) : (
-        <Image src={item.mediaUrl} alt={item.title} fill sizes="120px" className="object-cover opacity-80 grayscale" />
+        <Image src={item.mediaUrl} alt={item.title} fill sizes="120px" className="object-cover" />
       )}
-      <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(194,65,12,0.28),transparent_54%,rgba(0,0,0,0.46))]" />
-      <span className="absolute bottom-0 right-0 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.05em] text-white">
-        {item.recommendedModels[0] || categoryLabels[locale][item.category]}
-      </span>
+      <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(194,65,12,0.15),transparent_54%,rgba(0,0,0,0.15))]" />
     </div>
   );
 }
@@ -172,14 +204,22 @@ function renderSourceHeatRow(
         {String(index + 1).padStart(2, "0")}
       </span>
       <Link href={`/cases/${item.slug}`}>
-        <MediaTile item={item} locale={locale} className="aspect-[3/4]" />
+        <MediaTile
+          item={item}
+          locale={locale}
+          className="aspect-square"
+          showCategory={false}
+          vivid
+          useThumbnail
+        />
       </Link>
       <div>
         <Link href={`/cases/${item.slug}`} className="font-semibold leading-tight hover:text-[var(--orange)]">
           {item.title}
         </Link>
         <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--mute)]">
-          {item.source} · {locale === "en" ? "Interactions" : "原始互动"}{" "}
+          {categoryLabels[locale][item.category]} · {item.source} ·{" "}
+          {locale === "en" ? "Interactions" : "原始互动"}{" "}
           {formatMetricCount(item.sourceInteractionCount, locale)}
         </div>
       </div>
@@ -205,7 +245,7 @@ function renderStabilityRow(
         {String(index + 1).padStart(2, "0")}
       </span>
       <Link href={`/cases/${item.slug}#prompt`}>
-        <EvidenceTile item={item} locale={locale} />
+        <EvidenceTile item={item} />
       </Link>
       <div>
         <Link href={`/cases/${item.slug}#prompt`} className="font-semibold leading-tight hover:text-[var(--orange)]">
@@ -225,7 +265,7 @@ function renderStabilityRow(
       </div>
       <div className="text-right font-mono text-xs">
         <b className="text-[var(--orange)]">
-          {formatStabilityScore(item.stabilityScore)}
+          {formatStabilityScore(item.stabilityScore, locale)}
           {hasMeasuredStability(item.stabilityScore) ? "%" : ""}
         </b>
       </div>
@@ -248,14 +288,23 @@ export default async function Home({
     spreadLeaderboard,
     sourceHeatLeaderboard,
     stabilityLeaderboard,
+    modelStrip,
   } = await getHomeData(locale);
+
+  // 「原始 / 分散」拼贴卡里的摘要片段；过滤套话 + 复用方法兜底，两者都没有
+  // 时是 null，下面按 case-card.tsx 的写法不渲染这段，不留空 <p>。
+  const featuredCaseSummary = getPresentableCaseSummary(
+    featuredCase.summary,
+    featuredCase.promptContributionNotes
+  );
 
   const previewCases = uniqueCases([
     ...spreadLeaderboard,
     ...sourceHeatLeaderboard,
     ...stabilityLeaderboard,
   ]);
-  const evidenceCases = previewCases.slice(0, 6);
+  // 首页深度 Case 区在客户端翻页，一次取好整池，翻页不再回源。
+  const evidenceCases = previewCases.slice(0, 24);
 
   const heroTopCases = uniqueCases([
     ...sourceHeatLeaderboard,
@@ -349,8 +398,8 @@ export default async function Home({
             </div>
             <div className="grid grid-cols-3 gap-px border border-[var(--hair)] bg-[var(--hair)]">
               {heroTopCases.map((item, index) => (
-                <Link key={item.slug} href={`/cases/${item.slug}`} className="block bg-white">
-                  <MediaTile item={item} locale={locale} rank={`#0${index + 1}`} className="aspect-[3/4] w-full" />
+                <Link key={item.slug} href={`/cases/${item.slug}`} className="group block bg-white">
+                  <MediaTile item={item} locale={locale} rank={`#0${index + 1}`} className="aspect-[3/4] w-full" useThumbnail hoverReveal />
                 </Link>
               ))}
             </div>
@@ -380,6 +429,8 @@ export default async function Home({
 
         </article>
       </section>
+
+      <ModelStrip items={modelStrip} locale={locale} />
 
       <section className="gc-section">
         <div className="gc-section-head">
@@ -446,37 +497,32 @@ export default async function Home({
             </h2>
           </div>
         </div>
-        <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
-          {evidenceCases.map((item, index) => (
-            <article key={item.slug} className="group flex min-h-[440px] flex-col border-b border-r border-[var(--hair)] bg-white">
-              <Link href={`/cases/${item.slug}`} className="block overflow-hidden border-b border-[var(--hair)]">
-                <MediaTile item={item} locale={locale} className="aspect-[16/9] w-full transition duration-300 group-hover:scale-[1.015]" />
-              </Link>
-              <div className="flex flex-1 flex-col p-6">
-                <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
-                  <span>Case · {String(index + 1).padStart(4, "0")}</span>
-                  <span className="text-[var(--orange)]">Preview</span>
-                </div>
-                <h3 className="mt-5 text-2xl font-semibold tracking-[-0.03em]">{item.title}</h3>
-                <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--mute)]">
-                  {categoryLabels[locale][item.category]} · {item.creator}
-                </p>
-                <p className="mt-4 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
-                  {item.summary}
-                </p>
-                <div className="mt-auto flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
-                  <span>
-                    {isEnglish ? "Stability" : "稳定参考"}{" "}
-                    {formatStabilityScore(item.stabilityScore)}
-                  </span>
-                  <Link href={`/cases/${item.slug}`} className="text-[var(--orange)]">
-                    {isEnglish ? "View prompt" : "查看提示语"} ↗
-                  </Link>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+        <HomeCaseDeck
+          locale={locale}
+          labels={{
+            previewTag: isEnglish ? "Preview" : "Preview",
+            stability: isEnglish ? "Stability" : "稳定参考",
+            viewPrompt: isEnglish ? "View prompt" : "查看提示语",
+            prev: isEnglish ? "Prev" : "上一屏",
+            next: isEnglish ? "Next" : "下一屏",
+          }}
+          items={evidenceCases.map((item) => ({
+            slug: item.slug,
+            title: item.title,
+            summary: getPresentableCaseSummary(
+              item.summary,
+              item.promptContributionNotes
+            ),
+            creator: item.creator,
+            categoryLabel: categoryLabels[locale][item.category],
+            stabilityLabel: formatStabilityScore(item.stabilityScore, locale),
+            mediaType: item.mediaType,
+            mediaUrl: item.mediaUrl,
+            posterUrl: item.posterUrl,
+            thumbnailUrl: item.thumbnailUrl,
+            thumbnailFit: item.thumbnailFit,
+          }))}
+        />
       </section>
 
       <section className="gc-section">
@@ -487,8 +533,8 @@ export default async function Home({
           <div>
             <h2 className="gc-section-title">
               {isEnglish
-                ? "Designed around creators who keep shipping."
-                : "为持续交付的创作者设计。"}
+                ? "Creators who keep shipping, aggregated from their published cases."
+                : "持续出活的作者，按已发布 Case 聚合。"}
             </h2>
           </div>
         </div>
@@ -522,7 +568,10 @@ export default async function Home({
                 />
                 <MiniMetric
                   label="Stab."
-                  value={formatStabilityScore(creator.averageStabilityScore)}
+                  value={formatStabilityScore(
+                    creator.averageStabilityScore,
+                    locale
+                  )}
                 />
               </div>
             </Link>
@@ -552,7 +601,9 @@ export default async function Home({
             <div className="relative mt-8 min-h-[410px]">
               <div className="absolute left-0 top-0 w-[62%] -rotate-2 border border-[var(--hair)] bg-white p-4">
                 <div className="font-mono text-[10px] text-[var(--mute)]">{featuredCase.creator} · {featuredCase.source}</div>
-                <p className="mt-2 text-sm leading-6">{featuredCase.summary}</p>
+                {featuredCaseSummary ? (
+                  <p className="mt-2 text-sm leading-6">{featuredCaseSummary}</p>
+                ) : null}
               </div>
               <div className="absolute right-0 top-8 h-52 w-[34%] rotate-2">
                 <MediaTile item={featuredCase} locale={locale} className="h-full" />
@@ -622,7 +673,10 @@ export default async function Home({
                 <MiniMetric label={isEnglish ? "Signal" : "传播"} value={featuredCase.spreadScore ?? "—"} />
                 <MiniMetric
                   label={isEnglish ? "Stable" : "稳定"}
-                  value={formatStabilityScore(featuredCase.stabilityScore)}
+                  value={formatStabilityScore(
+                    featuredCase.stabilityScore,
+                    locale
+                  )}
                 />
                 <MiniMetric label={isEnglish ? "Cost" : "成本"} value={costLabels[featuredCase.costBand]} />
               </div>

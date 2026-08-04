@@ -28,6 +28,9 @@ create table if not exists public.cases (
   content_locale text not null default 'zh-CN',
   translations jsonb not null default '{}'::jsonb,
   translation_status text not null default 'untranslated',
+  -- 列表卡片只渲染 2–3 行提示语，库侧先截断，别让整段译文走出网流量。
+  prompt_preview_zh text generated always as (left(translations -> 'zh-CN' ->> 'promptFull', 240)) stored,
+  prompt_preview_en text generated always as (left(translations -> 'en' ->> 'promptFull', 240)) stored,
   media_kind text not null,
   media_url text not null,
   poster_url text,
@@ -60,7 +63,11 @@ alter table public.cases
   add column if not exists creator_avatar_url text,
   add column if not exists evidence_level text not null default 'L0',
   add column if not exists tags text[] not null default '{}'::text[],
-  add column if not exists is_published boolean not null default true;
+  add column if not exists is_published boolean not null default true,
+  add column if not exists prompt_preview_zh text
+    generated always as (left(translations -> 'zh-CN' ->> 'promptFull', 240)) stored,
+  add column if not exists prompt_preview_en text
+    generated always as (left(translations -> 'en' ->> 'promptFull', 240)) stored;
 
 do $$
 begin
@@ -94,7 +101,9 @@ create table if not exists public.case_candidates (
   summary text not null,
   prompt_preview text,
   prompt_full text,
-  content_locale text not null default 'zh-CN',
+  -- 可空是刻意的：空值表示上游尚未判定语言，发布阶段按 Prompt 正文判定。
+  -- 给了默认值就等于让数据库替所有候选决定语言，英文 Prompt 会被标成 zh-CN。
+  content_locale text,
   translations jsonb not null default '{}'::jsonb,
   translation_status text not null default 'untranslated',
   media_kind text not null,
@@ -135,7 +144,7 @@ alter table public.case_candidates
   add column if not exists summary text,
   add column if not exists prompt_preview text,
   add column if not exists prompt_full text,
-  add column if not exists content_locale text not null default 'zh-CN',
+  add column if not exists content_locale text,
   add column if not exists translations jsonb not null default '{}'::jsonb,
   add column if not exists translation_status text not null default 'untranslated',
   add column if not exists media_kind text,

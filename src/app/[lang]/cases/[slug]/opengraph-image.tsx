@@ -4,7 +4,8 @@ import { normalizeLocale } from "@/i18n/config";
 import { loadChineseFont } from "@/lib/og-font";
 import { SITE_HOST } from "@/lib/site";
 
-export const revalidate = 300;
+// 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
+export const revalidate = 3_600;
 
 export const alt = "GoodCase.ai case";
 export const size = {

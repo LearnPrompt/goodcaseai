@@ -20,6 +20,7 @@ import {
 } from "@/lib/cases";
 import {
   formatPublishedDate,
+  getPresentableCaseSummary,
 } from "@/lib/case-presentation";
 import { MISSING_MODEL } from "@/lib/related-cases";
 import { absoluteUrl } from "@/lib/site";
@@ -38,9 +39,25 @@ function costBandLabel(
   return "高";
 }
 
-export const revalidate = 300;
+// 详情页内容只在运营点发布时才变，发布会触发一次部署重新生成全站，
+// 所以这里放到一天一次，纯粹当兜底，不指望它承担内容更新。
+export const revalidate = 86_400;
+
+// 关掉按需渲染，是为了让不存在的 slug 拿到真 404。
+//
+// 开着的时候 Next 会先把静态外壳按 200 发出去、再流式渲染「页面不存在」，
+// 状态码已经改不回来了（实测：补上 slug 列表也一样是 200）。软 404 会被搜索
+// 引擎当成薄内容页收进去。关掉之后未列出的 slug 在路由层就被拒，不进渲染、
+// 也不打数据库。
+//
+// 代价是新发布的 Case 要等一次部署才可访问，由发布动作触发 Deploy Hook 补上。
+export const dynamicParams = false;
 
 export async function generateStaticParams() {
+  // 全量预渲染，让详情页在运行期完全不打 Supabase——它们是站内流量的大头。
+  //
+  // 之前这里返回空数组，是因为当时每个详情页都要拉全表（gzip 后 783KB），
+  // 628 次并发能把构建打挂。现在详情页改成单行取数（约 38KB），代价已经降下来了。
   const slugs = await getCaseSlugs();
   return SUPPORTED_LOCALES.flatMap((lang) =>
     slugs.map((slug) => ({ lang, slug }))
@@ -122,6 +139,12 @@ export default async function CaseDetailPage({
   const publishedDate = formatPublishedDate(item.sourcePublishedAt);
   const searchableModels = item.recommendedModels.filter(
     (model) => model !== MISSING_MODEL
+  );
+  // 正文摘要过滤套话 + 复用方法兜底；两者都没有（如 real-case-11-servasyy-ai）
+  // 时是 null，下面按 case-card.tsx 的写法不渲染这段，不留空 <p>。
+  const presentableSummary = getPresentableCaseSummary(
+    item.summary,
+    item.promptContributionNotes
   );
   const jsonLd = {
     "@context": "https://schema.org",
@@ -213,7 +236,11 @@ export default async function CaseDetailPage({
               {messages.common.creator} · {item.creator}
             </p>
           )}
-          <p className="max-w-3xl text-sm leading-7 text-[var(--muted)] sm:text-base sm:leading-8">{item.summary}</p>
+          {presentableSummary ? (
+            <p className="max-w-3xl text-sm leading-7 text-[var(--muted)] sm:text-base sm:leading-8">
+              {presentableSummary}
+            </p>
+          ) : null}
           {item.sourceUrl ? (
             <a
               href={item.sourceUrl}
@@ -238,6 +265,7 @@ export default async function CaseDetailPage({
           mediaType={item.mediaType}
           mediaUrl={item.mediaUrl}
           posterUrl={item.posterUrl}
+          thumbnailUrl={item.thumbnailUrl}
           title={item.title}
         />
       </section>

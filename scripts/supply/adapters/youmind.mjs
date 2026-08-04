@@ -98,17 +98,44 @@ function scoreFromInteractions({ views, likes, comments, shares }) {
   return Math.min(1, Math.log10(weighted + 1) / 6);
 }
 
-function normalizeCategory(work, mediaKind) {
+const VALID_CATEGORIES = new Set(["image", "video", "web"]);
+
+/**
+ * 分类判定。
+ *
+ * 曾经完全依赖 `work.about.applicationCategory`（比如 "WebGenerationApplication"）
+ * 来猜这条 case 是不是网页类。这条线本身就是错位的：那个字段描述的是生成时用的
+ * 模型/工具（claude-fable-5、Gemini 3 Pro……），不是产出物的类型，youmind 把它从
+ * "WebGenerationApplication" 换成 "WebApplication" 之后，这条判断整片失效，
+ * `/prompts/webpage` 抓到的条目全部被误判成 image。
+ *
+ * 真正可靠的信号是抓取时已经知道的入口分类页——`/prompts/video`、`/prompts/webpage`
+ * 是 youmind 自己的策展结论，比任何字符串匹配都稳。调用方（fetchYouMindItems）
+ * 知道每个详情页是从哪个分类页找到的，通过 sourceCategory 传进来，有值就是唯一判据。
+ *
+ * sourceCategory 只有在拿不到的时候（比如 `/prompts` 综合页本身就是混合分类，
+ * 不能代表单条 case 属于哪一类）才会走到下面的兜底逻辑，而兜底逻辑里的
+ * applicationCategory 匹配仍然是不可靠信号，别再把它当成主判据。
+ */
+function normalizeCategory(work, mediaKind, sourceCategory) {
+  if (sourceCategory && VALID_CATEGORIES.has(sourceCategory)) {
+    return sourceCategory;
+  }
   if (mediaKind === "video") {
     return "video";
   }
-  if (work?.about?.applicationCategory === "WebGenerationApplication") {
+  // 兜底：不可靠信号，见上面函数注释。WebApplication / WebGenerationApplication
+  // 这两个值 youmind 站点历史上互相替换过，两个都认，但优先级永远低于 sourceCategory。
+  if (
+    work?.about?.applicationCategory === "WebGenerationApplication" ||
+    work?.about?.applicationCategory === "WebApplication"
+  ) {
     return "web";
   }
   return "image";
 }
 
-export function normalizeYouMindPromptPage(html, pageUrl) {
+export function normalizeYouMindPromptPage(html, pageUrl, { sourceCategory } = {}) {
   const nodes = extractJsonLdGraphs(html);
   const work = nodes.find((node) => typeIncludes(node?.["@type"], "CreativeWork"));
   if (!work) {
@@ -159,7 +186,7 @@ export function normalizeYouMindPromptPage(html, pageUrl) {
     stepsSummary: "复制公开 Prompt，在对应模型中生成，并按需要替换主体、风格或细节。",
     relevanceScore: scoreFromInteractions(metrics),
     summary: firstString(work.description),
-    category: normalizeCategory(work, media.mediaKind),
+    category: normalizeCategory(work, media.mediaKind, sourceCategory),
     modelName: modelName || null,
     tags: [...new Set(["youmind", modelName].filter(Boolean))],
     sourceLikeCount: metrics.likes,
@@ -219,6 +246,25 @@ export function extractPromptUrls(
   return urls;
 }
 
+/** `/prompts/<segment>` 分类页的 URL 段到内部 category 枚举的映射。 */
+const LISTING_PATH_CATEGORY = {
+  video: "video",
+  webpage: "web",
+  image: "image",
+};
+
+/**
+ * 从分类页 URL 推断这一页下面的详情页应该归到哪个 category。
+ * 只有专属分类页（`/prompts/video`、`/prompts/webpage` ……）才有明确答案；
+ * `/prompts` 根首页本身是混合分类的 weekly-highlights，推不出单一 category，
+ * 返回 null 交给 normalizeCategory 的兜底逻辑处理。
+ */
+export function inferSourceCategoryFromListingUrl(listingUrl) {
+  const pathname = new URL(listingUrl).pathname.replace(/\/+$/, "");
+  const segment = pathname.match(/\/prompts\/([^/]+)$/)?.[1];
+  return (segment && LISTING_PATH_CATEGORY[segment]) || null;
+}
+
 async function fetchText(url, timeoutMs) {
   const response = await fetch(url, {
     headers: {
@@ -249,6 +295,7 @@ export async function fetchYouMindItems({
     }))
   );
   const detailUrls = [];
+  const detailSourceCategories = new Map();
   const seen = new Set();
 
   for (const page of listingPages) {
@@ -257,10 +304,14 @@ export async function fetchYouMindItems({
     const pageUrls = isRootIndex
       ? extractWeeklyPromptUrls(page.html, { indexUrl: page.listingUrl })
       : extractPromptUrls(page.html, { indexUrl: page.listingUrl });
+    const listingCategory = inferSourceCategoryFromListingUrl(page.listingUrl);
     for (const detailUrl of pageUrls) {
       if (!seen.has(detailUrl)) {
         seen.add(detailUrl);
         detailUrls.push(detailUrl);
+        if (listingCategory) {
+          detailSourceCategories.set(detailUrl, listingCategory);
+        }
       }
     }
   }
@@ -276,7 +327,9 @@ export async function fetchYouMindItems({
     settled.push(
       ...(await Promise.allSettled(
         batch.map(async (detailUrl) =>
-          normalizeYouMindPromptPage(await fetchText(detailUrl, timeoutMs), detailUrl)
+          normalizeYouMindPromptPage(await fetchText(detailUrl, timeoutMs), detailUrl, {
+            sourceCategory: detailSourceCategories.get(detailUrl),
+          })
         )
       ))
     );

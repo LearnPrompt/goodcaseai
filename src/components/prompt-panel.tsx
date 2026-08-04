@@ -45,16 +45,21 @@ export function PromptPanel({
       <section className="border-t border-[var(--orange)] bg-[rgba(194,65,12,0.055)] p-5 sm:p-7">
         <p className="gc-eyebrow">{messages.prompt.reusableMethod}</p>
         <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.36fr)]">
-          <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2">
-            {promptContributionNotes.slice(1, 3).map((note, index) => (
+          {/* 三段式：关键决定 / 换到你的题材 / 容易翻车。
+              取代原来按类目拼的两段模板，内容按每条 Case 单独撰写。 */}
+          <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-3">
+            {promptContributionNotes.slice(0, 3).map((note, index) => (
               <div key={note} className="border-b border-r border-[var(--hair)] bg-white p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--orange)]">
                   {[
-                    messages.prompt.reusableStructure,
-                    messages.prompt.retestCriteria,
+                    messages.prompt.keyDecisions,
+                    messages.prompt.adaptToYours,
+                    messages.prompt.failureModes,
                   ][index]}
                 </p>
-                <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{note}</p>
+                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-[var(--muted)]">
+                  {note}
+                </p>
               </div>
             ))}
           </div>
@@ -73,8 +78,9 @@ export function PromptPanel({
                   {messages.common.stability}
                 </dt>
                 <dd className="font-semibold">
-                  {formatStabilityScore(stabilityScore)}
-                  {hasMeasuredStability(stabilityScore) ? " / 100" : ""}
+                  {hasMeasuredStability(stabilityScore)
+                    ? `${formatStabilityScore(stabilityScore)} / 100`
+                    : messages.stability.pending}
                 </dd>
               </div>
               <div className="flex justify-between gap-4 border-t border-[var(--concrete)] pt-2">

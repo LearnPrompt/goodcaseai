@@ -64,6 +64,33 @@ test("buildCasePayload carries the source candidate id and evidence", () => {
   assert.equal(payload.is_published, true);
 });
 
+test("buildCasePayload 按 Prompt 正文判定语言，不再无条件默认 zh-CN", () => {
+  const english = buildCasePayload({
+    prompt_full:
+      "A cinematic wide shot of a lone astronaut on a red dune, shot on 35mm film.",
+  });
+  assert.equal(english.content_locale, "en");
+
+  const chinese = buildCasePayload({
+    prompt_full: "电影感广角镜头，一名宇航员独自穿越红色沙丘，35mm 胶片质感。",
+  });
+  assert.equal(chinese.content_locale, "zh-CN");
+
+  const previewOnly = buildCasePayload({
+    prompt_full: null,
+    prompt_preview: "生成一张赛博朋克风格的城市夜景海报。",
+  });
+  assert.equal(previewOnly.content_locale, "zh-CN");
+});
+
+test("buildCasePayload 尊重候选显式声明的 content_locale", () => {
+  const payload = buildCasePayload({
+    content_locale: "zh-CN",
+    prompt_full: "A reproducible English prompt with enough detail to publish.",
+  });
+  assert.equal(payload.content_locale, "zh-CN");
+});
+
 test("publish inserts a new candidate when no case exists", () => {
   assert.deepEqual(
     decidePublish({
