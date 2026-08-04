@@ -31,7 +31,8 @@ export type OperatorCandidate = {
   summary: string;
   prompt_preview: string | null;
   prompt_full: string | null;
-  content_locale: "zh-CN" | "en";
+  // 可空：候选还没补 Prompt 时没有判定依据，语言留空，发布阶段再定。
+  content_locale: "zh-CN" | "en" | null;
   translations: Record<
     string,
     {
