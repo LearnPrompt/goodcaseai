@@ -1,0 +1,36 @@
+# PROJECT_STATE
+
+> 共享真相源。开始任何开发前先读这里，再看 [WORKLOG.md](./WORKLOG.md) 的最新几条。
+> 完成修改后先更新本文件，再向 WORKLOG 追加记录。
+
+## 项目口径
+
+- 正式品牌名：GoodCase.ai
+- 项目阶段：统一版已部署到生产；运营闭环与中文域名迁移继续收敛
+- 一级内容对象：Case；Creator、Lab、Skill 只作为派生视图
+- 认证状态：本月明确不建设账号体系；完整 Prompt 公开
+- 互动状态：收藏和点赞使用 localStorage，不承诺跨设备同步
+- 审核状态：候选通过 review:candidates 人工决策，再由 publish:cases 发布
+- 部署状态：goodcase.ai 已指向统一版生产；常规 Git Preview 仍受 Vercel Git
+  作者访问校验阻断；goodcase.carlwow.com 尚未解析或上线
+
+## 语言判定（content_locale）现状 · 2026-08-04
+
+- 判定逻辑唯一来源：`scripts/review/lib/content-locale.mjs`（中日文字符占比 > 15%
+  判中文，标点空白不计分母；口径已在 314 条真实数据上验证，勿随意调阈值）
+- 全部六个写入口均按 Prompt 正文显式判定：ingest、shadow-run、
+  source-candidate-mapper、publish（脚本与运营后台共用）、网页提交接口、飞书同步
+- 存量已修：已发布 272 条（2026-08-03）、未发布候选 87 条（2026-08-04），
+  备份均在 `tmp/locale-recalibration/`
+- 发布闸门（publish-approved-cases）带语言不匹配哨兵告警；运营后台按正文
+  显示原文语言并对标错候选给橙色提示
+- **未完成**：migration `supabase/migrations/20260804000000_candidate_content_locale_optional.sql`
+  尚未在生产库执行（去掉 case_candidates.content_locale 的 default 与 not null）。
+  不执行不出错——所有写入路径已显式写值——只是少最后一层防线
+- 87 条改标 en 的候选缺 zh-CN 翻译，已委托 Codex 处理；发布闸门要求
+  translation_status=confirmed，不会漏到线上
+
+## 分支状态 · 2026-08-04
+
+- staging 已聚齐 2026-08-03 ~ 08-04 全部改动（含 locale 修复与 image-quota），
+  测试 195 项全绿；staging → main 的合并与生产部署由主控统一决策
