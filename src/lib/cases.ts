@@ -35,7 +35,11 @@ import {
   getModelFamily,
 } from "@/lib/models";
 import { getRelatedCases, MISSING_MODEL } from "@/lib/related-cases";
-import { getThumbnailUrl } from "@/lib/thumbnails";
+import { getThumbnail } from "@/lib/thumbnails";
+import {
+  resolveCardMediaFit,
+  type CardMediaFit,
+} from "@/lib/card-media-fit";
 import {
   formatStabilityScore,
   hasMeasuredStability,
@@ -66,6 +70,11 @@ type BaseDerivedCaseFields = {
   labNote: string[];
   /** 本地 400px 缩略图，只用于列表；没有时回退到原始媒体。详情页始终用原图。 */
   thumbnailUrl?: string;
+  /**
+   * 缩略图在 16:9 卡片框里该用 cover 还是 contain，由缩略图实际宽高算出。
+   * 拿不到尺寸（老 manifest 条目、只有外链原图）时是 "cover"，即改动前的行为。
+   */
+  thumbnailFit: CardMediaFit;
 };
 
 type DerivedCaseFields = BaseDerivedCaseFields &
@@ -442,6 +451,7 @@ function enrichCaseItemBase(
   );
   const localizedItem =
     locale === "en" && translation ? { ...item, ...translation } : { ...item };
+  const thumbnail = getThumbnail(item.slug);
 
   return {
     ...localizedItem,
@@ -455,7 +465,8 @@ function enrichCaseItemBase(
     promptContributionNotes: buildPromptContributionNotes(localizedItem, locale),
     editorNote: buildEditorNote(localizedItem, locale),
     labNote: buildLabNote(localizedItem, locale),
-    thumbnailUrl: getThumbnailUrl(item.slug),
+    thumbnailUrl: thumbnail?.url,
+    thumbnailFit: resolveCardMediaFit(thumbnail?.width, thumbnail?.height),
   };
 }
 

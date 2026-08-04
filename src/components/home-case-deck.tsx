@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { LocalizedLink as Link } from "@/components/localized-link";
+import type { CardMediaFit } from "@/lib/card-media-fit";
 
 export type HomeDeckItem = {
   slug: string;
@@ -16,6 +17,8 @@ export type HomeDeckItem = {
   mediaUrl: string;
   posterUrl?: string;
   thumbnailUrl?: string;
+  /** 缩略图在 16:9 框里的填充方式；只有本地缩略图量得到宽高，其余按 cover。 */
+  thumbnailFit?: CardMediaFit;
 };
 
 const PER_PAGE = 6;
@@ -52,6 +55,10 @@ export function HomeCaseDeck({
       <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
         {visible.map((item, index) => {
           const media = item.thumbnailUrl || item.posterUrl || item.mediaUrl;
+          // 只有本地缩略图量得到宽高；回退到 poster / 原图时按 cover。
+          const mediaFit: CardMediaFit = item.thumbnailUrl
+            ? item.thumbnailFit ?? "cover"
+            : "cover";
           return (
             <article
               key={item.slug}
@@ -61,13 +68,15 @@ export function HomeCaseDeck({
                 href={`/cases/${item.slug}`}
                 className="block overflow-hidden border-b border-[var(--hair)]"
               >
-                <div className="relative aspect-[16/9] w-full overflow-hidden bg-[var(--ink)] transition duration-300 group-hover:scale-[1.015]">
+                <div className="relative aspect-[16/9] w-full overflow-hidden bg-[var(--paper-2)] transition duration-300 group-hover:scale-[1.015]">
                   <Image
                     src={media}
                     alt={item.title}
                     fill
                     sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
-                    className="object-cover grayscale transition duration-300 group-hover:grayscale-0"
+                    className={`${
+                      mediaFit === "contain" ? "object-contain" : "object-cover"
+                    } grayscale transition duration-300 group-hover:grayscale-0`}
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.18),transparent_46%,rgba(10,10,10,0.22))] transition-opacity duration-300 group-hover:opacity-0" />
                   <span className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 font-mono text-[10px] text-white">

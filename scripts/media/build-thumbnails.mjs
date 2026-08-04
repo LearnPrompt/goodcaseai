@@ -13,6 +13,11 @@
  *
  * 依赖 macOS 自带的 sips 做缩放，不引入运行时依赖；产物提交进仓库。
  *
+ * manifest 条目格式：{ file, source, via?, width?, height? }。
+ * width / height 是缩略图自身的像素尺寸，前端据此决定媒体框用 object-cover
+ * 还是 object-contain（见 src/lib/card-media-fit.ts）。这两个字段是后加的，
+ * 老条目缺字段时前端退化成固定裁切，不报错。
+ *
  * 用法：
  *   node scripts/media/build-thumbnails.mjs --limit=10           先看样本
  *   node scripts/media/build-thumbnails.mjs --limit=10 --dry-run 只列计划
@@ -142,6 +147,41 @@ export function thumbnailFileName(slug) {
   return `${slug}.jpg`;
 }
 
+/**
+ * 解析 sips -g pixelWidth -g pixelHeight 的输出：
+ *
+ *   /path/to/foo.jpg
+ *     pixelWidth: 400
+ *     pixelHeight: 225
+ */
+export function parseImageSize(stdout) {
+  const width = stdout.match(/pixelWidth:\s*(\d+)/);
+  const height = stdout.match(/pixelHeight:\s*(\d+)/);
+  if (!width || !height) return null;
+  const size = { width: Number(width[1]), height: Number(height[1]) };
+  return size.width > 0 && size.height > 0 ? size : null;
+}
+
+/**
+ * 读缩略图自身的像素宽高，写进 manifest 供前端决定 cover / contain。
+ *
+ * 只读产物文件，不碰原图与视频；读失败返回 null，让条目保持无尺寸的老格式。
+ */
+async function readImageSize(target) {
+  try {
+    const { stdout } = await execFileAsync("sips", [
+      "-g",
+      "pixelWidth",
+      "-g",
+      "pixelHeight",
+      target,
+    ]);
+    return parseImageSize(stdout);
+  } catch {
+    return null;
+  }
+}
+
 async function exists(target) {
   try {
     await access(target);
@@ -229,6 +269,7 @@ async function main() {
   let done = 0;
   let skipped = 0;
   let failed = 0;
+  let backfilled = 0;
   let thumbBytes = 0;
 
   for (const item of planned) {
@@ -236,6 +277,22 @@ async function main() {
     const destination = path.join(THUMB_DIR, fileName);
     if (!args.force && (await exists(destination))) {
       skipped += 1;
+      // 缩略图已存在，但 manifest 条目可能还是没有宽高的老格式。
+      // 宽高是前端判定 cover / contain 的唯一依据，这里就地量一次补上，
+      // 免得只有新生成的条目才有尺寸（存量 302 条会全部跳过）。
+      const entry = manifest[item.slug];
+      if (!entry || !entry.width || !entry.height) {
+        const size = await readImageSize(destination);
+        if (size) {
+          manifest[item.slug] = {
+            file: `/media/thumbs/${fileName}`,
+            source: entry?.source ?? item.source.url,
+            ...(entry?.via ? { via: entry.via } : {}),
+            ...size,
+          };
+          backfilled += 1;
+        }
+      }
       continue;
     }
 
@@ -260,10 +317,12 @@ async function main() {
       }
 
       thumbBytes += resized;
+      const size = await readImageSize(destination);
       manifest[item.slug] = {
         file: `/media/thumbs/${fileName}`,
         source: item.source.url,
         via: note,
+        ...(size ?? {}),
       };
       done += 1;
       console.log(`  ✓ ${item.slug}  ${(resized / 1024).toFixed(0)}KB  ${note}`);
@@ -276,8 +335,15 @@ async function main() {
 
   await writeFile(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`);
 
+  const withSize = Object.values(manifest).filter(
+    (entry) => entry.width && entry.height
+  ).length;
+
   console.log(
-    `\n生成 ${done} 条，跳过已存在 ${skipped} 条，失败 ${failed} 条`
+    `\n生成 ${done} 条，跳过已存在 ${skipped} 条，失败 ${failed} 条，补齐宽高 ${backfilled} 条`
+  );
+  console.log(
+    `manifest 合计 ${Object.keys(manifest).length} 条，其中带宽高 ${withSize} 条`
   );
   if (done > 0) {
     console.log(

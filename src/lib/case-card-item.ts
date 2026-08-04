@@ -36,6 +36,7 @@ export function toCaseCardItem(
     // 卡片只读 [0]，而且只取它的第一句；整段三条方法没必要全部序列化。
     promptContributionNotes: item.promptContributionNotes?.slice(0, 1),
     thumbnailUrl: item.thumbnailUrl,
+    thumbnailFit: item.thumbnailFit,
     stabilityScore: item.stabilityScore,
     sourceHeatScore: item.sourceHeatScore,
     sourcePublishedAt: item.sourcePublishedAt,

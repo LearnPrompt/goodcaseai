@@ -520,6 +520,7 @@ export default async function Home({
             mediaUrl: item.mediaUrl,
             posterUrl: item.posterUrl,
             thumbnailUrl: item.thumbnailUrl,
+            thumbnailFit: item.thumbnailFit,
           }))}
         />
       </section>

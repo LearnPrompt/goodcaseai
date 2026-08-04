@@ -29,6 +29,7 @@ function makeCase() {
     mediaUrl: "/media/x.png",
     posterUrl: "/media/x.jpg",
     thumbnailUrl: "/media/x-400.png",
+    thumbnailFit: "contain",
     promptContributionNotes: ["第一条方法。", "第二条方法。", "第三条方法。"],
     stabilityScore: 82,
     sourceHeatScore: 91,
@@ -75,6 +76,7 @@ const CASE_CARD_RENDERED_FIELDS = [
   "posterUrl",
   "promptContributionNotes",
   "thumbnailUrl",
+  "thumbnailFit",
   "stabilityScore",
   "sourceHeatScore",
   "sourcePublishedAt",
@@ -135,6 +137,7 @@ test("toCaseCardItem 原样保留卡片要显示的内容", () => {
   assert.equal(result.promptPreview, source.promptPreview);
   assert.equal(result.promptTranslationZh, source.promptTranslationZh);
   assert.equal(result.thumbnailUrl, source.thumbnailUrl);
+  assert.equal(result.thumbnailFit, source.thumbnailFit);
   assert.equal(result.stabilityScore, source.stabilityScore);
   assert.equal(result.sourceHeatScore, source.sourceHeatScore);
   assert.deepEqual(result.skills, skills);
