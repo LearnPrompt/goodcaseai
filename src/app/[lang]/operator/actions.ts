@@ -406,11 +406,14 @@ export async function publishCandidate(formData: FormData) {
 
     const decision = decidePublish({
       candidateId: id,
+      candidate,
       existingByCandidate,
       existingBySlug,
       allowUpdate: false,
     });
-    if (decision.action === "conflict") {
+    // blocked 与 conflict 都是不该发出去的状态，理由直接回给运营，
+    // 让人知道是媒体错配还是 slug 撞车，而不是看到一句发布失败。
+    if (decision.action === "conflict" || decision.action === "blocked") {
       throw new Error(decision.reason);
     }
 

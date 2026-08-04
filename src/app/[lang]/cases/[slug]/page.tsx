@@ -10,14 +10,10 @@ import { PromptPanel } from "@/components/prompt-panel";
 import { CaseMedia } from "@/components/case-media";
 import { TrackEvent } from "@/components/track-event";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { SUPPORTED_LOCALES, localizeHref } from "@/i18n/config";
+import { localizeHref } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
-import {
-  getCaseDetailData,
-  getCaseDetailPageData,
-  getCaseSlugs,
-} from "@/lib/cases";
+import { getCaseDetailData, getCaseDetailPageData } from "@/lib/cases";
 import {
   formatPublishedDate,
 } from "@/lib/case-presentation";
@@ -41,23 +37,16 @@ function costBandLabel(
 export const revalidate = 300;
 
 export async function generateStaticParams() {
+  // 全部按需渲染，构建期一次数据库都不打。
+  //
   // 预渲染是优化，不是正确性前提：dynamicParams 默认开启，没预渲染的 slug
-  // 会在首次访问时按需生成并进入 ISR。而 Supabase 从 Vercel 构建区偶发
-  // 连 30s 超时重试三次都拿不到（本机同一查询 0.3s），今天已经因此挂掉四次构建。
-  // 所以这里吞掉错误、退化成全部按需渲染，绝不让一次数据库抖动阻断整个构建。
-  try {
-    const slugs = await getCaseSlugs();
-    return SUPPORTED_LOCALES.flatMap((lang) =>
-      slugs.map((slug) => ({ lang, slug }))
-    );
-  } catch (error) {
-    console.warn(
-      `[cases] 预渲染 slug 列表获取失败，本次构建改为全部按需渲染：${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
-    return [];
-  }
+  // 会在首次访问时生成并进入 ISR（revalidate 300），之后同样是静态命中，
+  // 代价只有每条 slug 第一次访问慢一点。
+  //
+  // 而按 314 条 × 2 语言全量预渲染，等于构建期向 Supabase 并发打 628 次；
+  // 从 Vercel 构建区打过去偶发超时（本机同一查询 1s），已经因此挂掉五次构建。
+  // 换来的只是首访快一点，不值得拿整条发布链路去赌。
+  return [];
 }
 
 function truncateDescription(text: string, maxLength = 160) {
