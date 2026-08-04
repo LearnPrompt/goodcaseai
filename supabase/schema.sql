@@ -28,6 +28,9 @@ create table if not exists public.cases (
   content_locale text not null default 'zh-CN',
   translations jsonb not null default '{}'::jsonb,
   translation_status text not null default 'untranslated',
+  -- 列表卡片只渲染 2–3 行提示语，库侧先截断，别让整段译文走出网流量。
+  prompt_preview_zh text generated always as (left(translations -> 'zh-CN' ->> 'promptFull', 240)) stored,
+  prompt_preview_en text generated always as (left(translations -> 'en' ->> 'promptFull', 240)) stored,
   media_kind text not null,
   media_url text not null,
   poster_url text,
@@ -60,7 +63,11 @@ alter table public.cases
   add column if not exists creator_avatar_url text,
   add column if not exists evidence_level text not null default 'L0',
   add column if not exists tags text[] not null default '{}'::text[],
-  add column if not exists is_published boolean not null default true;
+  add column if not exists is_published boolean not null default true,
+  add column if not exists prompt_preview_zh text
+    generated always as (left(translations -> 'zh-CN' ->> 'promptFull', 240)) stored,
+  add column if not exists prompt_preview_en text
+    generated always as (left(translations -> 'en' ->> 'promptFull', 240)) stored;
 
 do $$
 begin

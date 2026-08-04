@@ -6,7 +6,7 @@ import { LikeButton } from "@/components/like-button";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { localizeHref } from "@/i18n/config";
+import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 import { getCaseListData } from "@/lib/cases";
@@ -14,20 +14,31 @@ import {
   filterCasesByModel,
   getModelFamily,
   getModelLabel,
+  MODEL_FAMILIES,
 } from "@/lib/models";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
 
-export const revalidate = 300;
+// 模型页内容只在发布新 case 时才变，而发布会触发一次全站部署，
+// 这里的 revalidate 纯粹当兜底，一天一次足够。
+export const revalidate = 86_400;
 
 type PageProps = {
   params: Promise<{ lang: string; slug: string }>;
 };
 
 /**
- * 刻意不做 generateStaticParams：预渲染每个模型页会在构建期额外触发
+ * 之前这里刻意不做 generateStaticParams：预渲染每个模型页会在构建期额外触发
  * 注册表条数 × 语言数 次全表查询，曾把 Vercel 构建拖到 Supabase 12s 超时。
- * 这里改成按需渲染 + revalidate，和 /cases、/skills 的行为一致。
+ *
+ * 现在数据层已经改成瘦列取数（getCaseListData 不再拉全表），代价降下来了，
+ * 重新加回来是安全的。dynamicParams 保持默认 true——注册表新增模型时，
+ * 对应页面仍可按需渲染，不用等下一次部署。
  */
+export function generateStaticParams() {
+  return SUPPORTED_LOCALES.flatMap((lang) =>
+    MODEL_FAMILIES.map((family) => ({ lang, slug: family.slug }))
+  );
+}
 
 export async function generateMetadata({
   params,

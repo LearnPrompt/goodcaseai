@@ -1,7 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
+import { CASES_CACHE_TAG } from "@/lib/case-cache-policy";
+import { triggerDeployHook } from "@/lib/deploy-hook";
 import { redirect } from "next/navigation";
 import { requireOperatorIdentity } from "@/lib/operator/auth";
 import { OPERATOR_SESSION_COOKIE } from "@/lib/operator/shared-session";
@@ -455,6 +457,12 @@ export async function publishCandidate(formData: FormData) {
     revalidatePath("/operator");
     revalidatePath("/cases");
     revalidatePath(`/cases/${candidate.slug}`);
+    // 取数层的跨请求缓存归 Data Cache 管，revalidatePath 清不掉它；
+    // 不打这一下，新发布的 Case 最长要等一小时才出现在列表页上。
+    revalidateTag(CASES_CACHE_TAG, { expire: 0 });
+    // 详情页是构建期全量预渲染的，revalidatePath 生成不了一条还没进过构建的 slug，
+    // 所以新发布的 Case 必须靠一次部署才能上线。
+    await triggerDeployHook(`publish ${candidate.slug}`);
   } catch (error) {
     finish(errorMessage(error, returnTo), "error", returnTo);
   }

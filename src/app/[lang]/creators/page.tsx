@@ -7,11 +7,18 @@ import { SearchBox } from "@/components/search-box";
 import { getCreatorListData } from "@/lib/cases";
 import { filterCreatorsByQuery } from "@/lib/creators";
 import { formatStabilityScore } from "@/lib/stability";
-import { localizeHref } from "@/i18n/config";
+import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 
-export const revalidate = 300;
+// 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
+export const revalidate = 3_600;
+
+// [lang] 是动态段，不加 generateStaticParams 的话上面的 revalidate 完全不起作用——
+// 每次请求都会打 Supabase。只有两种语言，直接枚举。
+export function generateStaticParams() {
+  return SUPPORTED_LOCALES.map((lang) => ({ lang }));
+}
 
 type PageParams = Promise<{ lang: string }>;
 

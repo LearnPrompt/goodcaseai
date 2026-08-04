@@ -10,10 +10,14 @@ import { PromptPanel } from "@/components/prompt-panel";
 import { CaseMedia } from "@/components/case-media";
 import { TrackEvent } from "@/components/track-event";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { localizeHref } from "@/i18n/config";
+import { SUPPORTED_LOCALES, localizeHref } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
-import { getCaseDetailData, getCaseDetailPageData } from "@/lib/cases";
+import {
+  getCaseDetailData,
+  getCaseDetailPageData,
+  getCaseSlugs,
+} from "@/lib/cases";
 import {
   formatPublishedDate,
 } from "@/lib/case-presentation";
@@ -34,19 +38,29 @@ function costBandLabel(
   return "高";
 }
 
-export const revalidate = 300;
+// 详情页内容只在运营点发布时才变，发布会触发一次部署重新生成全站，
+// 所以这里放到一天一次，纯粹当兜底，不指望它承担内容更新。
+export const revalidate = 86_400;
+
+// 关掉按需渲染，是为了让不存在的 slug 拿到真 404。
+//
+// 开着的时候 Next 会先把静态外壳按 200 发出去、再流式渲染「页面不存在」，
+// 状态码已经改不回来了（实测：补上 slug 列表也一样是 200）。软 404 会被搜索
+// 引擎当成薄内容页收进去。关掉之后未列出的 slug 在路由层就被拒，不进渲染、
+// 也不打数据库。
+//
+// 代价是新发布的 Case 要等一次部署才可访问，由发布动作触发 Deploy Hook 补上。
+export const dynamicParams = false;
 
 export async function generateStaticParams() {
-  // 全部按需渲染，构建期一次数据库都不打。
+  // 全量预渲染，让详情页在运行期完全不打 Supabase——它们是站内流量的大头。
   //
-  // 预渲染是优化，不是正确性前提：dynamicParams 默认开启，没预渲染的 slug
-  // 会在首次访问时生成并进入 ISR（revalidate 300），之后同样是静态命中，
-  // 代价只有每条 slug 第一次访问慢一点。
-  //
-  // 而按 314 条 × 2 语言全量预渲染，等于构建期向 Supabase 并发打 628 次；
-  // 从 Vercel 构建区打过去偶发超时（本机同一查询 1s），已经因此挂掉五次构建。
-  // 换来的只是首访快一点，不值得拿整条发布链路去赌。
-  return [];
+  // 之前这里返回空数组，是因为当时每个详情页都要拉全表（gzip 后 783KB），
+  // 628 次并发能把构建打挂。现在详情页改成单行取数（约 38KB），代价已经降下来了。
+  const slugs = await getCaseSlugs();
+  return SUPPORTED_LOCALES.flatMap((lang) =>
+    slugs.map((slug) => ({ lang, slug }))
+  );
 }
 
 function truncateDescription(text: string, maxLength = 160) {

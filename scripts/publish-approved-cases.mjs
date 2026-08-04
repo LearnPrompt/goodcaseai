@@ -186,6 +186,36 @@ async function main() {
       "  多半是 migration 落地前入库的存量候选，跑 scripts/review/recalibrate-candidate-locale.mjs 修。"
     );
   }
+
+  // 详情页是构建期全量预渲染的，新发布的 slug 不重新部署就访问不到。
+  // 没配 hook 就只提示一句，不当成失败——库已经写完了。
+  const published = counters.inserted + counters.updated;
+  if (published > 0) {
+    const hookUrl = process.env.VERCEL_DEPLOY_HOOK_URL;
+    if (!hookUrl) {
+      console.warn(
+        "\n⚠️  未配置 VERCEL_DEPLOY_HOOK_URL，新发布的 Case 要等下一次部署才可访问。"
+      );
+    } else {
+      try {
+        const res = await fetch(hookUrl, {
+          method: "POST",
+          signal: AbortSignal.timeout(10_000),
+        });
+        console.log(
+          res.ok
+            ? "\n已触发部署，几分钟后新 Case 上线。"
+            : `\n⚠️  部署触发失败（HTTP ${res.status}），请手动重新部署。`
+        );
+      } catch (error) {
+        console.warn(
+          `\n⚠️  部署触发失败（${
+            error instanceof Error ? error.message : String(error)
+          }），请手动重新部署。`
+        );
+      }
+    }
+  }
 }
 
 main().catch((error) => {
