@@ -651,12 +651,34 @@ export async function getCaseDetailData(
   return enrichCaseItems(caseItems, locale).find((item) => item.slug === slug) || null;
 }
 
+/**
+ * 数据库不可用时抛出，让详情页走错误边界而不是 notFound。
+ *
+ * 之前的行为是 Supabase 拿不到数据就回退到本地 12 条样例，
+ * 于是线上 302 条真实 Case 全部变成「页面不存在」，
+ * 而且这个 404 会被 ISR 缓存下来，数据库恢复后仍然维持一段时间。
+ */
+export class CaseDataUnavailableError extends Error {
+  constructor() {
+    super("Case data source unavailable");
+    this.name = "CaseDataUnavailableError";
+  }
+}
+
 export async function getCaseDetailPageData(
   slug: string,
   locale: Locale = "zh-CN"
 ) {
-  const list = (await fetchPublishedCases(locale)) || enrichCaseItems(caseItems, locale);
+  const fromDb = await fetchPublishedCases(locale);
+  const fallback = enrichCaseItems(caseItems, locale);
+  const list = fromDb || fallback;
   const item = list.find((candidate) => candidate.slug === slug) || null;
+
+  // 数据库没响应、而这条 slug 又不在本地样例里：这是数据源故障，不是页面不存在。
+  // 抛错让 Next 走错误边界并重试，避免把临时故障固化成缓存的 404。
+  if (!item && !fromDb) {
+    throw new CaseDataUnavailableError();
+  }
 
   if (!item) {
     return {

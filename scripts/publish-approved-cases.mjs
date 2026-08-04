@@ -93,10 +93,16 @@ async function main() {
 
     const decision = decidePublish({
       candidateId: item.id,
+      candidate: item,
       existingByCandidate,
       existingBySlug,
       allowUpdate,
     });
+    if (decision.action === "blocked") {
+      throw new Error(
+        `发布拦截（${item.slug}）：${decision.reason}。请修好候选的媒体字段再发布。`
+      );
+    }
     if (decision.action === "conflict") {
       throw new Error(
         `发布冲突（${item.slug}）：${decision.reason}。${

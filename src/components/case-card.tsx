@@ -25,6 +25,8 @@ export type CaseCardItem = {
   mediaType: string;
   mediaUrl: string | null;
   posterUrl?: string | null;
+  /** 三段式复用方法，第一段是关键决定；摘要是自动生成的套话时拿它兜底。 */
+  promptContributionNotes?: string[];
   /** 本地 400px 缩略图；列表用它省流量与图片转换额度，详情页仍用原图。 */
   thumbnailUrl?: string;
   stabilityScore: number;
@@ -58,6 +60,15 @@ function formatCardPublishedDate(
   }).format(date);
 }
 
+/** 取第一句作为卡片上的推荐理由，过长时截断，避免把整段方法塞进卡片。 */
+function firstSentence(text?: string) {
+  const normalized = (text || "").trim();
+  if (!normalized) return null;
+  const [first] = normalized.split(/(?<=[。！？])/);
+  const picked = (first || normalized).trim();
+  return picked.length > 90 ? `${picked.slice(0, 89)}…` : picked;
+}
+
 export function CaseCard({
   item,
   actions,
@@ -73,7 +84,12 @@ export function CaseCard({
   const label =
     messages.category[item.category as keyof typeof messages.category] ||
     item.category;
-  const summary = getCaseCardSummary(item.summary);
+  // 自动生成的通用摘要（来自 X 的真实 XX 案例…）已被 getCaseCardSummary 判为无效，
+  // 于是同一排卡片有的有推荐理由有的没有。这里用复用方法的第一句兜底，
+  // 让每张卡都有一句能读的推荐理由，排版也不再忽长忽短。
+  const summary =
+    getCaseCardSummary(item.summary) ||
+    firstSentence(item.promptContributionNotes?.[0]);
   const creatorSlug = item.creator ? slugifyCreatorName(item.creator) : "";
   const publishedDate = formatCardPublishedDate(item.sourcePublishedAt, locale);
   // 列表卡片一律优先本地缩略图：外链原图动辄几 MB，一页 24 张会拖垮首屏。

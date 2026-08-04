@@ -37,12 +37,58 @@ export function buildCasePayload(candidate) {
   };
 }
 
+/**
+ * 发布前的媒体一致性校验。
+ *
+ * 线上出现过两条：category 标成 video，media_kind 却是 image、media_url 是一张 jpg，
+ * 用户点进标着 AI 视频的案例只看到静图。这类错配只能在入库这一层拦，
+ * 前端无从判断作者到底想放什么。
+ */
+export function validateMediaConsistency(candidate) {
+  const problems = [];
+  const url = candidate.media_url || "";
+  const looksLikeVideo = /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url);
+
+  if (!url) {
+    problems.push("缺少 media_url");
+  }
+
+  if (candidate.category === "video" && candidate.media_kind !== "video") {
+    problems.push(
+      `分类是 video 但 media_kind 是 ${candidate.media_kind || "空"}，详情页放不出视频`
+    );
+  }
+
+  if (candidate.media_kind === "video" && url && !looksLikeVideo) {
+    problems.push("media_kind 是 video 但 media_url 不是视频文件");
+  }
+
+  if (candidate.media_kind === "video" && !candidate.poster_url) {
+    problems.push("视频缺少 poster_url，列表里会是黑块");
+  }
+
+  return problems;
+}
+
 export function decidePublish({
   candidateId,
+  candidate,
   existingByCandidate,
   existingBySlug,
   allowUpdate,
 }) {
+  // 媒体错配一律拦在发布前，宁可漏发也不要发出点不开的视频案例。
+  if (candidate) {
+    const mediaProblems = validateMediaConsistency(candidate);
+    if (mediaProblems.length) {
+      return {
+        action: "blocked",
+        caseId: existingBySlug?.id || null,
+        reason: `媒体不一致：${mediaProblems.join("；")}`,
+      };
+    }
+  }
+
   if (existingByCandidate) {
     return {
       action: "resume",

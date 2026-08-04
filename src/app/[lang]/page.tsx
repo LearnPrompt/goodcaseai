@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { LocalizedLink as Link } from "@/components/localized-link";
+import { HomeCaseDeck } from "@/components/home-case-deck";
 import { ModelStrip } from "@/components/model-strip";
 import { SiteShell } from "@/components/site-shell";
 import type { Locale } from "@/i18n/config";
@@ -287,7 +288,8 @@ export default async function Home({
     ...sourceHeatLeaderboard,
     ...stabilityLeaderboard,
   ]);
-  const evidenceCases = previewCases.slice(0, 6);
+  // 首页深度 Case 区在客户端翻页，一次取好整池，翻页不再回源。
+  const evidenceCases = previewCases.slice(0, 24);
 
   const heroTopCases = uniqueCases([
     ...sourceHeatLeaderboard,
@@ -480,37 +482,28 @@ export default async function Home({
             </h2>
           </div>
         </div>
-        <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
-          {evidenceCases.map((item, index) => (
-            <article key={item.slug} className="group flex min-h-[440px] flex-col border-b border-r border-[var(--hair)] bg-white">
-              <Link href={`/cases/${item.slug}`} className="block overflow-hidden border-b border-[var(--hair)]">
-                <MediaTile item={item} locale={locale} className="aspect-[16/9] w-full transition duration-300 group-hover:scale-[1.015]" />
-              </Link>
-              <div className="flex flex-1 flex-col p-6">
-                <div className="flex justify-between font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--mute)]">
-                  <span>Case · {String(index + 1).padStart(4, "0")}</span>
-                  <span className="text-[var(--orange)]">Preview</span>
-                </div>
-                <h3 className="mt-5 text-2xl font-semibold tracking-[-0.03em]">{item.title}</h3>
-                <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--mute)]">
-                  {categoryLabels[locale][item.category]} · {item.creator}
-                </p>
-                <p className="mt-4 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
-                  {item.summary}
-                </p>
-                <div className="mt-auto flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
-                  <span>
-                    {isEnglish ? "Stability" : "稳定参考"}{" "}
-                    {formatStabilityScore(item.stabilityScore, locale)}
-                  </span>
-                  <Link href={`/cases/${item.slug}`} className="text-[var(--orange)]">
-                    {isEnglish ? "View prompt" : "查看提示语"} ↗
-                  </Link>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+        <HomeCaseDeck
+          locale={locale}
+          labels={{
+            previewTag: isEnglish ? "Preview" : "Preview",
+            stability: isEnglish ? "Stability" : "稳定参考",
+            viewPrompt: isEnglish ? "View prompt" : "查看提示语",
+            prev: isEnglish ? "Prev" : "上一屏",
+            next: isEnglish ? "Next" : "下一屏",
+          }}
+          items={evidenceCases.map((item) => ({
+            slug: item.slug,
+            title: item.title,
+            summary: item.summary,
+            creator: item.creator,
+            categoryLabel: categoryLabels[locale][item.category],
+            stabilityLabel: formatStabilityScore(item.stabilityScore, locale),
+            mediaType: item.mediaType,
+            mediaUrl: item.mediaUrl,
+            posterUrl: item.posterUrl,
+            thumbnailUrl: item.thumbnailUrl,
+          }))}
+        />
       </section>
 
       <section className="gc-section">

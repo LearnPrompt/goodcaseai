@@ -61,8 +61,8 @@ export function CaseCardPrompt({
   if (prompt.resourceUrl) {
     return (
       <div
-        className={`border-t border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 ${
-          compact ? "mt-4" : "mt-5"
+        className={`border-y border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 ${
+          compact ? "mt-4 min-h-[104px]" : "mt-5"
         }`}
       >
         <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--orange)]">
@@ -83,7 +83,7 @@ export function CaseCardPrompt({
   return (
     <div
       className={`border-y border-[var(--hair)] bg-[var(--paper-2)] px-4 py-3 ${
-        compact ? "mt-4" : "mt-5"
+        compact ? "mt-4 min-h-[104px]" : "mt-5"
       }`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
