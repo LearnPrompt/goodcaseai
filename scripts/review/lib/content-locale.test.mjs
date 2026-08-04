@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   cjkRatio,
+  describeLocaleMismatch,
   detectLocale,
   resolveContentLocale,
   similarity,
@@ -90,6 +91,52 @@ test("不合法的 content_locale 当作没给，避免写进库违反 check 约
       "zh-CN"
     );
   }
+});
+
+test("resolveContentLocale 把 null 当作未判定，按正文走", () => {
+  // migration 之后候选表的 content_locale 可以是 null，这是刻意的「尚未判定」。
+  assert.equal(
+    resolveContentLocale({ content_locale: null, prompt_full: ENGLISH_PROMPT }),
+    "en"
+  );
+  assert.equal(
+    resolveContentLocale({ content_locale: null, prompt_full: CHINESE_PROMPT }),
+    "zh-CN"
+  );
+});
+
+test("describeLocaleMismatch 只在声明与正文冲突时报警", () => {
+  assert.equal(
+    describeLocaleMismatch({ content_locale: "en", prompt_full: ENGLISH_PROMPT }),
+    null
+  );
+  assert.equal(
+    describeLocaleMismatch({ content_locale: "zh-CN", prompt_full: CHINESE_PROMPT }),
+    null
+  );
+
+  const mismatch = describeLocaleMismatch({
+    content_locale: "zh-CN",
+    prompt_full: ENGLISH_PROMPT,
+  });
+  assert.equal(mismatch.declared, "zh-CN");
+  assert.equal(mismatch.detected, "en");
+  assert.equal(mismatch.cjkRatio, 0);
+});
+
+test("describeLocaleMismatch 在没有依据时保持沉默", () => {
+  // 没声明、声明非法、或者根本没正文，都没有可比对的东西，不该刷警告。
+  assert.equal(describeLocaleMismatch({ prompt_full: ENGLISH_PROMPT }), null);
+  assert.equal(describeLocaleMismatch({ content_locale: null }), null);
+  assert.equal(
+    describeLocaleMismatch({ content_locale: "ja", prompt_full: ENGLISH_PROMPT }),
+    null
+  );
+  assert.equal(
+    describeLocaleMismatch({ content_locale: "zh-CN", prompt_full: "   " }),
+    null
+  );
+  assert.equal(describeLocaleMismatch(null), null);
 });
 
 test("similarity 能识别译文等于原文", () => {

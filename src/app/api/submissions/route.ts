@@ -5,6 +5,7 @@ import { buildDedupeKey, normalizeCategory, slugify } from "@/lib/candidate-dedu
 import { sendOwnerNotification } from "@/lib/owner-notification";
 import { absoluteUrl } from "@/lib/site";
 import { normalizeLocale, type Locale } from "@/i18n/config";
+import { resolveContentLocale } from "../../../../scripts/review/lib/content-locale.mjs";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 5;
@@ -173,7 +174,13 @@ export async function POST(request: NextRequest) {
       creator_name: creatorName || null,
       summary: summary || "暂无摘要",
       prompt_full: prompt || null,
-      content_locale: locale,
+      // locale 是提交时的界面语言，不是 Prompt 的语言。中文站上提交英文 Prompt 是常态，
+      // 直接拿界面语言当内容语言正是线上 275 条被标错的根因。有正文就按正文判定。
+      // 没有正文时整个字段不带：显式写 null 会在 migration 落地前撞 not null 约束，
+      // 而省略字段无论 migration 有没有跑都是安全的（跑之前走库默认值，跑之后是 null）。
+      ...(prompt
+        ? { content_locale: resolveContentLocale({ prompt_full: prompt }) }
+        : {}),
       translations: {},
       translation_status: "untranslated",
       media_kind: category === "video" ? "video" : "image",

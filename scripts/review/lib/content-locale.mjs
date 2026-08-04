@@ -62,3 +62,20 @@ export function resolveContentLocale(candidate) {
   }
   return detectLocale(candidate?.prompt_full || candidate?.prompt_preview || "");
 }
+
+/**
+ * 声明的语言和正文对不上时返回详情，否则返回 null。
+ * 存量候选的 content_locale 是数据库默认值填的，看起来像显式声明，
+ * resolveContentLocale 会照单全收；这个函数是发布前的哨兵，用来把这类行喊出来。
+ */
+export function describeLocaleMismatch(candidate) {
+  const declared = candidate?.content_locale;
+  if (typeof declared !== "string" || !SUPPORTED_LOCALES.includes(declared.trim())) {
+    return null;
+  }
+  const text = candidate?.prompt_full || candidate?.prompt_preview || "";
+  if (!text.trim()) return null;
+  const detected = detectLocale(text);
+  if (detected === declared.trim()) return null;
+  return { declared: declared.trim(), detected, cjkRatio: cjkRatio(text) };
+}
