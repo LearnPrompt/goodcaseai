@@ -34,6 +34,18 @@
 - staging 已聚齐 2026-08-03 ~ 08-04 全部改动（含 locale 修复与 image-quota），
   测试 195 项全绿；staging → main 的合并与生产部署由主控统一决策
 
+## Seedance 2.5 上线 · 2026-08-04
+
+- 模型注册表新增 `seedance-2-5`（badge `new`，置顶到首页模型条第一位），
+  首页硬上限仍是 6 个，Grok Imagine 因此挤到 /models 全量页
+- `seedance-2` 的别名从 `["seedance"]` 收紧成三种 2.0 显式写法：旧别名会把
+  `seedance-2.5` 的数据一并吃掉，两个模型页互相串案例。线上数据里 seedance
+  只有 `Seedance 2.0`（108 条）和 `seedance-2.5` 两种写法，收紧后 2.0 仍是 108
+- 三条 Seedance 2.5 Case 已 approved 待发布，batch `seedance-25-20260804`，
+  原始数据存档在 `scripts/review/data/seedance-25-cases-2026-08-04.json`
+- **发布顺序有讲究**：必须先部署代码再跑 `publish:cases`。反过来的话，线上
+  旧别名会先把这三条算进 Seedance 2.0，首页也不会出现 2.5 的格子
+
 ## 额度警报 · 2026-08-04
 
 - Supabase Free Plan 上个账期 Egress 超限，宽限期到 2026-09-01，逾期后请求

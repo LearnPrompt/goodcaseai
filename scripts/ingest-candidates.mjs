@@ -41,6 +41,24 @@ function normalizeCategory(value) {
   return "image";
 }
 
+function normalizeTranslations(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value;
+  }
+  return {};
+}
+
+function normalizeTranslationStatus(value) {
+  if (
+    value === "untranslated" ||
+    value === "machine_draft" ||
+    value === "confirmed"
+  ) {
+    return value;
+  }
+  return "untranslated";
+}
+
 function normalizeOptionalCount(value) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -114,6 +132,12 @@ function mapCandidate(raw, importBatchId) {
       prompt_full: promptFull,
       prompt_preview: promptPreview,
     }),
+    // 必须显式写入：case_candidates.translations / translation_status 不写就等于
+    // 把离线加工好的双语内容丢在导入这一步，跟上面 content_locale 那条注释是同一类坑。
+    translations: normalizeTranslations(raw.translations),
+    translation_status: normalizeTranslationStatus(
+      raw.translation_status ?? raw.translationStatus
+    ),
     media_kind: normalizeMediaKind(raw.media_kind || raw.mediaType),
     media_url: mediaUrl,
     poster_url: String(raw.poster_url || raw.posterUrl || "").trim() || null,

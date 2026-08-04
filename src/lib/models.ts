@@ -29,13 +29,24 @@ export const HOME_MODEL_STRIP_LIMIT = 6;
 /**
  * 按案例数排序。新模型发布时把它插到对应位置并打上 badge: "new" 即可，
  * 首页栏、/cases?model=、/models/<slug> 和 sitemap 会自动跟上。
+ * 新模型刚发布、案例数还没起来时，可以临时把它置顶并打 badge: "new"，
+ * 等案例数追上来了再挪回按数量排序该在的位置。
  */
 export const MODEL_FAMILIES: ModelFamily[] = [
+  {
+    slug: "seedance-2-5",
+    label: "Seedance 2.5",
+    media: "video",
+    aliases: ["seedance 2.5", "seedance-2.5", "seedance2.5"],
+    badge: "new",
+  },
+  // seedance 的 aliases 必须写全版本号——只写 "seedance" 会把 2.0 和 2.5 都匹配上，
+  // 两个模型页就会互相串案例。
   {
     slug: "seedance-2",
     label: "Seedance 2.0",
     media: "video",
-    aliases: ["seedance"],
+    aliases: ["seedance 2.0", "seedance-2.0", "seedance2.0"],
     badge: "hot",
   },
   {

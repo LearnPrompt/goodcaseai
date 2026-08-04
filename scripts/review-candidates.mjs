@@ -53,10 +53,12 @@ async function reviewCandidate(supabase, action) {
     throw new Error("审核操作必须提供 --id=<candidate uuid>。");
   }
 
+  // media_url 必须在这里 select 出来：validateReview 会拿它判断有没有真实媒体，
+  // 漏掉这一列的话读回来永远是 undefined，任何候选都会被判成占位图而批不过。
   const { data: candidate, error: fetchError } = await supabase
     .from("case_candidates")
     .select(
-      "id, status, title, creator_name, summary, prompt_preview, prompt_full, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, evidence_level, tags"
+      "id, status, title, creator_name, summary, prompt_preview, prompt_full, source_url, source_like_count, source_comment_count, source_share_count, source_save_count, source_published_at, source_metrics_captured_at, evidence_level, tags, media_url"
     )
     .eq("id", id)
     .maybeSingle();

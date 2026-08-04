@@ -2,6 +2,25 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-04 · Seedance 2.5 模型上线 + 三条案例入库
+
+- `src/lib/models.ts` 新增 `seedance-2-5` 家族并置顶打 `new`；`seedance-2` 的
+  别名收紧成 `seedance 2.0 / seedance-2.0 / seedance2.0`。旧别名 `seedance`
+  用 `includes` 匹配，会把 `seedance-2.5` 也算进 2.0，新增家族后一条 Case
+  会同时出现在两个模型页
+- 收录 3 条 Seedance 2.5 视频 Case（TechHalla 时间冻结倒放、Sharon Riley
+  双人 K-pop MV、Strength04_X mini DV 咖啡 vlog），Prompt 与视频均取自原推文，
+  经 SocialData 取指标与 mp4 直链；已 approved，等代码部署后再 publish
+- 修 `scripts/ingest-candidates.mjs`：`mapCandidate()` 漏了 `translations` 和
+  `translation_status` 两列，离线加工好的双语内容走 import:candidates 会被
+  静默丢掉，发出去的 Case 永远没有译文
+- 修 `scripts/review-candidates.mjs`：approve 时 select 的列里没有 `media_url`，
+  而 `validateReview` 拿它判断有没有真实媒体，读回来永远是 undefined，
+  CLI 审核路径实际上批不过任何候选（此前审核都走运营后台，所以没暴露）
+- 遗留：`src/app/[lang]/operator/actions.ts:407` 调 `decidePublish()` 没传
+  `candidate`，`npx tsc --noEmit` 报错，且今天新加的媒体一致性闸门在运营后台
+  发布路径上等于没生效。改动前就存在，本次未动
+
 ## 2026-08-04 · migration 落地 + 额度警报记录
 
 - `20260804000000_candidate_content_locale_optional` 由主控在 Supabase SQL Editor
