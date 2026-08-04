@@ -46,3 +46,4 @@ tmp/
 .hermes/
 .partner/
 logs/
+.gstack/

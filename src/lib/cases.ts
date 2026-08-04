@@ -466,7 +466,11 @@ function enrichCaseItemBase(
     editorNote: buildEditorNote(localizedItem, locale),
     labNote: buildLabNote(localizedItem, locale),
     thumbnailUrl: thumbnail?.url,
-    thumbnailFit: resolveCardMediaFit(thumbnail?.width, thumbnail?.height),
+    thumbnailFit: resolveCardMediaFit(
+      thumbnail?.width,
+      thumbnail?.height,
+      item.category
+    ),
   };
 }
 

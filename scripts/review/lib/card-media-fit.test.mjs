@@ -85,3 +85,20 @@ test("sips 量到的尺寸能直接喂给判定，两端接得上", () => {
   const size = parseImageSize("/x/y.jpg\n  pixelWidth: 400\n  pixelHeight: 711\n");
   assert.equal(resolveCardMediaFit(size.width, size.height), "contain");
 });
+
+test("web 分类容差收紧到 0.10：11% 偏离判 contain，同样偏离的 video 仍判 cover（线上真实案例：落地页截图偏离 11%，旧的全局 0.25 容差下走 cover 把标题啃掉一行）", () => {
+  const target = CARD_MEDIA_ASPECT_RATIO;
+  const width = 1000;
+  const height = width / (target * 1.11); // 相对 16:9 偏离 11%
+  assert.equal(resolveCardMediaFit(width, height, "web"), "contain");
+  assert.equal(resolveCardMediaFit(width, height, "video"), "cover");
+});
+
+test("分类拿不到（缺省 / null / 未知字符串）时退化到默认容差 0.25，不抛错", () => {
+  const target = CARD_MEDIA_ASPECT_RATIO;
+  const width = 1000;
+  const height = width / (target * 1.11); // 11% 偏离：超过 web 的 0.10，仍在默认 0.25 内
+  assert.equal(resolveCardMediaFit(width, height), "cover");
+  assert.equal(resolveCardMediaFit(width, height, null), "cover");
+  assert.equal(resolveCardMediaFit(width, height, "unknown-category"), "cover");
+});
