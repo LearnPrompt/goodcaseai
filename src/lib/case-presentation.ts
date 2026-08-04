@@ -38,6 +38,34 @@ export function getCaseCardSummary(value: string) {
   return summary;
 }
 
+/** 取第一句作为兜底推荐理由，过长时截断，避免把整段方法塞进渲染点。 */
+function firstSentence(text?: string) {
+  const normalized = (text || "").trim();
+  if (!normalized) return null;
+  const [first] = normalized.split(/(?<=[。！？])/);
+  const picked = (first || normalized).trim();
+  return picked.length > 90 ? `${picked.slice(0, 89)}…` : picked;
+}
+
+/**
+ * 案例摘要展示前统一过滤 + 兜底，所有对外渲染点（列表卡片、创作者卡片、详情页、
+ * 首页、RSS）都应该走这一个函数，不要各自裸取 `item.summary`。
+ *
+ * 1. 自动生成的套话摘要（「来自 X 的真实…适合观察 Prompt 结构…」）被
+ *    `getCaseCardSummary` 判为无效，不展示原文；
+ * 2. 退而求其次，用三段式复用方法（`promptContributionNotes`）的第一句顶上；
+ * 3. 两者都没有时返回 null——调用方按各自布局决定怎么处理空值（通常是不渲染
+ *    对应的段落，而不是渲染一个空 `<p>`）。
+ */
+export function getPresentableCaseSummary(
+  summary: string,
+  promptContributionNotes?: string[]
+): string | null {
+  return (
+    getCaseCardSummary(summary) || firstSentence(promptContributionNotes?.[0])
+  );
+}
+
 function getStandaloneResourceUrl(value: string) {
   const markdownLink = value.match(
     /^\[\s*(https?:\/\/[^\]\s]+)\s*\]\(\s*(https?:\/\/[^\)\s]+)\s*\)$/i

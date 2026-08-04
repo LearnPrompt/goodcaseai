@@ -1,5 +1,10 @@
 import type { CreatorCardItem } from "@/components/creator-card";
 import type { CreatorItem } from "@/lib/creators";
+// 相对路径 + 显式 .ts 后缀：这个文件会被 scripts/review/lib/*.test.mjs 用相对路径
+// 直接 import（node --test 原生跑 TS，不认 tsconfig 的 "@/*" 路径别名），
+// 之前这里全是 import type（编译期整句被抹掉，不受影响），这是第一个值导入，
+// 用 "@/lib/case-presentation" 会在测试里报 ERR_MODULE_NOT_FOUND。
+import { getPresentableCaseSummary } from "./case-presentation.ts";
 
 /**
  * 从完整 CreatorItem 里挑出卡片真正要渲染的字段。
@@ -28,6 +33,12 @@ export function toCreatorCardItem(creator: CreatorItem): CreatorCardItem {
     averageStabilityScore: creator.averageStabilityScore,
     heroCaseSlug: creator.heroCase.slug,
     heroCaseTitle: creator.heroCase.title,
-    heroCaseSummary: creator.heroCase.summary,
+    // 裸取 summary 会把「来自 X 的真实…」这类自动生成套话原样传出去；
+    // 这里在服务端就把摘要过滤 + 兜底解析成最终字符串，只往下传一个 string | null，
+    // 不把 promptContributionNotes 整个数组带进 CreatorCardItem，payload 不会因此变大。
+    heroCaseSummary: getPresentableCaseSummary(
+      creator.heroCase.summary,
+      creator.heroCase.promptContributionNotes
+    ),
   };
 }

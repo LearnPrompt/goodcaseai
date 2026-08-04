@@ -8,6 +8,7 @@ import { SiteShell } from "@/components/site-shell";
 import { SUPPORTED_LOCALES, type Locale } from "@/i18n/config";
 import { getLocaleFromParams } from "@/i18n/server";
 import { getHomeData, type DisplayCaseItem } from "@/lib/cases";
+import { getPresentableCaseSummary } from "@/lib/case-presentation";
 import {
   formatStabilityScore,
   hasMeasuredStability,
@@ -290,6 +291,13 @@ export default async function Home({
     modelStrip,
   } = await getHomeData(locale);
 
+  // 「原始 / 分散」拼贴卡里的摘要片段；过滤套话 + 复用方法兜底，两者都没有
+  // 时是 null，下面按 case-card.tsx 的写法不渲染这段，不留空 <p>。
+  const featuredCaseSummary = getPresentableCaseSummary(
+    featuredCase.summary,
+    featuredCase.promptContributionNotes
+  );
+
   const previewCases = uniqueCases([
     ...spreadLeaderboard,
     ...sourceHeatLeaderboard,
@@ -501,7 +509,10 @@ export default async function Home({
           items={evidenceCases.map((item) => ({
             slug: item.slug,
             title: item.title,
-            summary: item.summary,
+            summary: getPresentableCaseSummary(
+              item.summary,
+              item.promptContributionNotes
+            ),
             creator: item.creator,
             categoryLabel: categoryLabels[locale][item.category],
             stabilityLabel: formatStabilityScore(item.stabilityScore, locale),
@@ -589,7 +600,9 @@ export default async function Home({
             <div className="relative mt-8 min-h-[410px]">
               <div className="absolute left-0 top-0 w-[62%] -rotate-2 border border-[var(--hair)] bg-white p-4">
                 <div className="font-mono text-[10px] text-[var(--mute)]">{featuredCase.creator} · {featuredCase.source}</div>
-                <p className="mt-2 text-sm leading-6">{featuredCase.summary}</p>
+                {featuredCaseSummary ? (
+                  <p className="mt-2 text-sm leading-6">{featuredCaseSummary}</p>
+                ) : null}
               </div>
               <div className="absolute right-0 top-8 h-52 w-[34%] rotate-2">
                 <MediaTile item={featuredCase} locale={locale} className="h-full" />

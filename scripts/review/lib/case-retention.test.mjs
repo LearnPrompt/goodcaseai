@@ -4,6 +4,7 @@ import {
   formatPublishedDate,
   getCaseCardPrompt,
   getCaseCardSummary,
+  getPresentableCaseSummary,
   MISSING_PROMPT_PREVIEW,
 } from "../../../src/lib/case-presentation.ts";
 import {
@@ -114,4 +115,50 @@ test("generic source summaries are hidden while specific summaries remain", () =
     getCaseCardSummary("镜头沿箭矢连续推进，并从宏观战场切入微观世界。"),
     "镜头沿箭矢连续推进，并从宏观战场切入微观世界。"
   );
+});
+
+const GENERIC_SUMMARY =
+  "来自 X / 𝕏 的真实 编程/UI 案例，由 @xxx 发布。适合观察 Prompt 结构、素材组织和可复用的创作模式。";
+const CONTRIBUTION_NOTES = [
+  "先不改：完整复制提示语，生成一版基线结果。",
+  "只替换：先改画面主体，其余结构保持不动。",
+  "再对比：优先用主力模型起步，每次只改一个变量。",
+];
+
+test("getPresentableCaseSummary keeps a specific summary untouched and ignores the fallback", () => {
+  assert.equal(
+    getPresentableCaseSummary(
+      "镜头沿箭矢连续推进，并从宏观战场切入微观世界。",
+      CONTRIBUTION_NOTES
+    ),
+    "镜头沿箭矢连续推进，并从宏观战场切入微观世界。"
+  );
+});
+
+test("getPresentableCaseSummary falls back to the first sentence of the reuse method when the summary is generic", () => {
+  assert.equal(
+    getPresentableCaseSummary(GENERIC_SUMMARY, CONTRIBUTION_NOTES),
+    "先不改：完整复制提示语，生成一版基线结果。"
+  );
+});
+
+test("getPresentableCaseSummary falls back the same way when the summary is empty", () => {
+  assert.equal(
+    getPresentableCaseSummary("", CONTRIBUTION_NOTES),
+    "先不改：完整复制提示语，生成一版基线结果。"
+  );
+});
+
+test("getPresentableCaseSummary returns null when neither the summary nor the fallback notes are usable", () => {
+  assert.equal(getPresentableCaseSummary(GENERIC_SUMMARY, undefined), null);
+  assert.equal(getPresentableCaseSummary(GENERIC_SUMMARY, []), null);
+  assert.equal(getPresentableCaseSummary("   ", []), null);
+});
+
+test("getPresentableCaseSummary truncates an overlong fallback sentence with an ellipsis", () => {
+  const longNote = "极".repeat(120); // 没有句读，firstSentence 拿到的是整段文本
+  const result = getPresentableCaseSummary(GENERIC_SUMMARY, [longNote]);
+  assert.equal(result.length, 90);
+  assert.ok(result.endsWith("…"));
+  assert.equal(result.slice(0, -1), longNote.slice(0, 89));
 });

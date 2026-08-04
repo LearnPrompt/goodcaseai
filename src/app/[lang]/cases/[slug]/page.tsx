@@ -20,6 +20,7 @@ import {
 } from "@/lib/cases";
 import {
   formatPublishedDate,
+  getPresentableCaseSummary,
 } from "@/lib/case-presentation";
 import { MISSING_MODEL } from "@/lib/related-cases";
 import { absoluteUrl } from "@/lib/site";
@@ -139,6 +140,12 @@ export default async function CaseDetailPage({
   const searchableModels = item.recommendedModels.filter(
     (model) => model !== MISSING_MODEL
   );
+  // 正文摘要过滤套话 + 复用方法兜底；两者都没有（如 real-case-11-servasyy-ai）
+  // 时是 null，下面按 case-card.tsx 的写法不渲染这段，不留空 <p>。
+  const presentableSummary = getPresentableCaseSummary(
+    item.summary,
+    item.promptContributionNotes
+  );
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -229,7 +236,11 @@ export default async function CaseDetailPage({
               {messages.common.creator} · {item.creator}
             </p>
           )}
-          <p className="max-w-3xl text-sm leading-7 text-[var(--muted)] sm:text-base sm:leading-8">{item.summary}</p>
+          {presentableSummary ? (
+            <p className="max-w-3xl text-sm leading-7 text-[var(--muted)] sm:text-base sm:leading-8">
+              {presentableSummary}
+            </p>
+          ) : null}
           {item.sourceUrl ? (
             <a
               href={item.sourceUrl}

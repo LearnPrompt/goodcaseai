@@ -9,6 +9,12 @@ import {
 export type CreatorCaseItem = CaseItem & {
   sourceHeatScore: number | null;
   sourceInteractionCount: number | null;
+  /**
+   * 摘要是自动生成的套话时用来兜底的三段式复用方法（只取第一句）。
+   * 实际调用方传进来的都是 DisplayCaseItem（结构上是 CaseItem 的超集，
+   * 恒有这个字段），这里补进类型只是让 TS 认得它，不代表要多取数据。
+   */
+  promptContributionNotes: string[];
 };
 
 export type CreatorItem = {

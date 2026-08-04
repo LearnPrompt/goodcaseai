@@ -25,7 +25,8 @@ export type CreatorCardItem = {
   averageStabilityScore: number | null;
   heroCaseSlug: string;
   heroCaseTitle: string;
-  heroCaseSummary: string;
+  /** 过滤套话 + 复用方法兜底之后的结果；两者都没有时是 null，不渲染摘要段。 */
+  heroCaseSummary: string | null;
 };
 
 export function CreatorCard({
@@ -92,7 +93,11 @@ export function CreatorCard({
           {isEnglish ? "Representative case" : "代表案例"}
         </p>
         <h3 className="mt-3 text-lg font-semibold text-[var(--ink)]">{creator.heroCaseTitle}</h3>
-        <p className="mt-2 line-clamp-2 text-sm leading-7 text-[var(--muted)]">{creator.heroCaseSummary}</p>
+        {creator.heroCaseSummary ? (
+          <p className="mt-2 line-clamp-2 text-sm leading-7 text-[var(--muted)]">
+            {creator.heroCaseSummary}
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-auto flex flex-wrap gap-2 border-t border-[var(--hair)] pt-5">

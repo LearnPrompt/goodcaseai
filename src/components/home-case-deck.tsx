@@ -7,7 +7,8 @@ import { LocalizedLink as Link } from "@/components/localized-link";
 export type HomeDeckItem = {
   slug: string;
   title: string;
-  summary: string;
+  /** 过滤套话 + 复用方法兜底之后的结果；两者都没有时是 null，不渲染摘要段。 */
+  summary: string | null;
   creator: string;
   categoryLabel: string;
   stabilityLabel: string;
@@ -91,9 +92,11 @@ export function HomeCaseDeck({
                 <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--mute)]">
                   {item.categoryLabel} · {item.creator}
                 </p>
-                <p className="mt-4 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
-                  {item.summary}
-                </p>
+                {item.summary ? (
+                  <p className="mt-4 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
+                    {item.summary}
+                  </p>
+                ) : null}
                 <div className="mt-auto flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
                   <span>
                     {labels.stability} {item.stabilityLabel}

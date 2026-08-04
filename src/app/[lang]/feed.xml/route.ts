@@ -1,4 +1,5 @@
 import { getCaseListData } from "@/lib/cases";
+import { getPresentableCaseSummary } from "@/lib/case-presentation";
 import { localizeHref, normalizeLocale } from "@/i18n/config";
 import { SITE_ORIGIN } from "@/lib/site";
 
@@ -52,9 +53,18 @@ export async function GET(
         `/cases/${item.slug}`
       )}`;
       // 只放摘要与 Prompt 预览，绝不输出 promptFull，保持与公开列表 API 一致的暴露面。
-      const description = `${item.summary}\n\n${
+      // 摘要过滤套话 + 复用方法兜底；两者都没有（如 real-case-11-servasyy-ai）
+      // 时不留一段空行，description 直接从 Prompt 预览开始。
+      const summary = getPresentableCaseSummary(
+        item.summary,
+        item.promptContributionNotes
+      );
+      const promptPreviewLine = `${
         isEnglish ? "Prompt preview" : "Prompt 预览"
       }：${item.promptPreview}`;
+      const description = summary
+        ? `${summary}\n\n${promptPreviewLine}`
+        : promptPreviewLine;
       const pubDate = toPubDate(item.createdAt);
       const enclosureUrl = `${SITE_ORIGIN}${localizeHref(
         locale,
