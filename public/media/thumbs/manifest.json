@@ -2091,5 +2091,33 @@
     "via": "帧@2s",
     "width": 400,
     "height": 226
+  },
+  "tattoo-generator": {
+    "file": "/media/thumbs/tattoo-generator.jpg",
+    "source": "https://comfy-hub-assets.comfy.org/uploads/9233fd77-5343-4ca7-aeeb-d06e04792d38.mp4",
+    "via": "帧@2s",
+    "width": 400,
+    "height": 300
+  },
+  "4k-seedance-2-0-reference-to-video": {
+    "file": "/media/thumbs/4k-seedance-2-0-reference-to-video.jpg",
+    "source": "https://comfy-hub-assets.comfy.org/uploads/4ab73364-859d-41f2-943d-fba5f600cc66.mp4",
+    "via": "帧@2s",
+    "width": 400,
+    "height": 400
+  },
+  "seedance-2-0-llm-prompt-helper": {
+    "file": "/media/thumbs/seedance-2-0-llm-prompt-helper.jpg",
+    "source": "https://comfy-hub-assets.comfy.org/uploads/0f9d96df-15b5-4839-b9f7-26c2ddfbd5a0.mp4",
+    "via": "帧@2s",
+    "width": 400,
+    "height": 712
+  },
+  "ai-on-the-lot-2026-ltx-2-3-ic-lora-union-control": {
+    "file": "/media/thumbs/ai-on-the-lot-2026-ltx-2-3-ic-lora-union-control.jpg",
+    "source": "https://comfy-hub-assets.comfy.org/uploads/e896534c-85c3-4811-97ad-408a4691ec75.mp4",
+    "via": "帧@2s",
+    "width": 400,
+    "height": 214
   }
 }

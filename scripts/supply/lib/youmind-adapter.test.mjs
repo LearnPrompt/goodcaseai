@@ -5,6 +5,7 @@ import {
   extractWeeklyPromptUrls,
   inferSourceCategoryFromListingUrl,
   normalizeYouMindPromptPage,
+  splitSourceReference,
 } from "../adapters/youmind.mjs";
 
 const creativeWork = {
@@ -190,4 +191,48 @@ test("normalizeYouMindPromptPage rejects pages without an original source", () =
     ),
     null
   );
+});
+
+test("normalizeYouMindPromptPage 保留 isBasedOn 的 #reversed-N 锚点，sourceUrl 仍然去 hash", () => {
+  const html = `
+    <script type="application/ld+json">
+      ${JSON.stringify({ "@context": "https://schema.org", "@graph": [creativeWork, video] })}
+    </script>
+  `;
+  const item = normalizeYouMindPromptPage(
+    html,
+    "https://youmind.com/zh-CN/video-prompts/pixel-fairy-7697"
+  );
+
+  // 这是根因：以前 stripSourceFragment() 在这一层就把锚点抹了，
+  // 全库 source_url 含 #reversed 的数量因此是 0，唯一的自动溯源信号被自己销毁。
+  assert.equal(item.provenanceAnchor, "reversed-0");
+  assert.equal(item.promptReverseEngineered, true);
+  assert.equal(
+    item.sourceUrl,
+    "https://x.com/paranoidream/status/2079799074325422343"
+  );
+});
+
+test("splitSourceReference 对不带锚点的出处返回空锚点", () => {
+  assert.deepEqual(
+    splitSourceReference("https://x.com/foo/status/123"),
+    {
+      sourceUrl: "https://x.com/foo/status/123",
+      provenanceAnchor: "",
+      promptReverseEngineered: false,
+    }
+  );
+  assert.deepEqual(splitSourceReference(""), {
+    sourceUrl: "",
+    provenanceAnchor: "",
+    promptReverseEngineered: false,
+  });
+});
+
+test("splitSourceReference 只把 reversed 系列当逆向标记，普通锚点不算", () => {
+  const plain = splitSourceReference("https://x.com/foo/status/123#section-2");
+  assert.equal(plain.provenanceAnchor, "section-2");
+  assert.equal(plain.promptReverseEngineered, false);
+  assert.equal(plain.sourceUrl, "https://x.com/foo/status/123");
 });

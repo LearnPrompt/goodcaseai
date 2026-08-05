@@ -1,13 +1,30 @@
 #!/usr/bin/env node
 
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import {
   buildCandidateDedupeKey,
   slugifyCandidate,
 } from "./supply/lib/candidate-slug.mjs";
+import {
+  checkPromptProvenance,
+  provenanceTags,
+  stripUrlFragment,
+} from "./supply/lib/prompt-provenance.mjs";
 import { resolveContentLocale } from "./review/lib/content-locale.mjs";
+
+/**
+ * 溯源被判定为「不是作者原文」的候选，一律不许自动进 pending 队列。
+ *
+ * 这一层是最后一道闸门：不管候选是 shadow-run 产的、手写的还是别的适配器来的，
+ * 只要 source_url 上还留着 `#reversed-N` 锚点，或者调用方已经带了判定结果，
+ * 都在这里拦下来，写进单独的拒收文件并打日志，绝不静默丢弃。
+ */
+const BLOCKED_PROVENANCE_STATUSES = new Set([
+  "reversed-anchor",
+  "prompt-not-in-source",
+]);
 
 function getArg(name) {
   const match = process.argv.find((arg) => arg.startsWith(`${name}=`));
@@ -79,8 +96,11 @@ function normalizeOptionalTimestamp(value) {
 
 function mapCandidate(raw, importBatchId) {
   const title = String(raw.title || "").trim();
-  const sourceUrl = String(raw.source_url || raw.sourceUrl || "").trim();
+  const rawSourceUrl = String(raw.source_url || raw.sourceUrl || "").trim();
   const mediaUrl = String(raw.media_url || raw.mediaUrl || "").trim();
+  // source_url 本身仍然去 hash（展示、去重、和已有数据对齐都靠它），
+  // fragment 单独留在 provenance_anchor 上。
+  const sourceUrl = stripUrlFragment(rawSourceUrl);
   const slug =
     String(raw.slug || "").trim() ||
     slugifyCandidate(title || mediaUrl, sourceUrl || mediaUrl || title);
@@ -160,9 +180,33 @@ function mapCandidate(raw, importBatchId) {
     import_batch_id: importBatchId,
   };
 
+  // 溯源判定。锚点优先取调用方显式给的 provenance_anchor，取不到就从原始
+  // source_url 的 fragment 里现挖——历史文件里的 URL 还带着 `#reversed-N`。
+  const provenance = checkPromptProvenance({
+    promptText: promptFull || promptPreview,
+    sourceUrl: rawSourceUrl,
+    anchor: raw.provenance_anchor ?? raw.provenanceAnchor ?? undefined,
+    sourceText: raw.source_text ?? raw.sourceText ?? undefined,
+  });
+  const declaredStatus = String(
+    raw.provenance_status ?? raw.provenanceStatus ?? ""
+  ).trim();
+  // 调用方已经判过并且判成拦截的，不许在这里被重新洗白。
+  const status = BLOCKED_PROVENANCE_STATUSES.has(declaredStatus)
+    ? declaredStatus
+    : provenance.status;
+
+  candidate.provenance_anchor = provenance.anchor || null;
+  candidate.tags = [
+    ...new Set([...candidate.tags, ...provenanceTags({ ...provenance, status })]),
+  ].slice(0, 20);
+
   return {
-    ...candidate,
-    dedupe_key: buildCandidateDedupeKey(candidate),
+    candidate: {
+      ...candidate,
+      dedupe_key: buildCandidateDedupeKey(candidate),
+    },
+    provenance: { ...provenance, status },
   };
 }
 
@@ -185,17 +229,81 @@ async function main() {
     throw new Error("导入文件必须是 JSON 数组。示例：[{\"title\":\"...\"}]。");
   }
 
-  const candidates = parsed
+  const mapped = parsed
     .map((item) => mapCandidate(item, importBatchId))
-    .filter((item) => item.slug && item.title && item.media_url);
+    .filter(
+      ({ candidate }) =>
+        candidate.slug && candidate.title && candidate.media_url
+    );
+
+  // 溯源闸门：带 #reversed-N 锚点、或 prompt 在原帖里找不到的，一律不入库。
+  const blocked = mapped.filter(({ provenance }) =>
+    BLOCKED_PROVENANCE_STATUSES.has(provenance.status)
+  );
+  const candidates = mapped
+    .filter(({ provenance }) => !BLOCKED_PROVENANCE_STATUSES.has(provenance.status))
+    .map(({ candidate }) => candidate);
+
+  if (blocked.length > 0) {
+    const blockedPath = path.resolve(
+      path.dirname(filePath),
+      `${path.basename(filePath, ".json")}-provenance-blocked.json`
+    );
+    await writeFile(
+      blockedPath,
+      `${JSON.stringify(
+        blocked.map(({ candidate, provenance }) => ({
+          slug: candidate.slug,
+          title: candidate.title,
+          source_url: candidate.source_url,
+          provenance_anchor: candidate.provenance_anchor,
+          provenance_status: provenance.status,
+          reason: provenance.reason,
+          match_ratio: provenance.matchRatio,
+        })),
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+    console.warn(
+      `溯源拦截 ${blocked.length} 条，未写入 pending，清单：${blockedPath}`
+    );
+    for (const { candidate, provenance } of blocked) {
+      console.warn(
+        `  - [${provenance.status}] ${candidate.title} ${candidate.source_url} — ${provenance.reason}`
+      );
+    }
+  }
 
   if (candidates.length === 0) {
-    throw new Error("没有可导入数据，请检查 slug/title/media_url 是否存在。");
+    throw new Error(
+      blocked.length > 0
+        ? `没有可导入数据：${blocked.length} 条全部被溯源闸门拦下。`
+        : "没有可导入数据，请检查 slug/title/media_url 是否存在。"
+    );
   }
 
   const supabase = createClient(url, serviceRole, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // provenance_anchor 是新加的列，迁移没跑之前库里还没有它。
+  // 探一下再决定写不写，免得迁移落地前整条导入链路直接挂掉。
+  const anchorProbe = await supabase
+    .from("case_candidates")
+    .select("provenance_anchor")
+    .limit(1);
+  const supportsProvenanceAnchor = !anchorProbe.error;
+  if (!supportsProvenanceAnchor) {
+    console.warn(
+      "case_candidates.provenance_anchor 列不存在，本次不写该字段（溯源标记仍然写进 tags）。" +
+        "跑一下 supabase/migrations/20260805100000_candidate_provenance_anchor.sql 之后即可生效。"
+    );
+    for (const candidate of candidates) {
+      delete candidate.provenance_anchor;
+    }
+  }
 
   const sourceUrls = candidates.map((item) => item.source_url).filter(Boolean);
   const emptyResult = Promise.resolve({ data: [], error: null });

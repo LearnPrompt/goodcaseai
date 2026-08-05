@@ -23,9 +23,19 @@ import {
   loadRunCanonicalKeys,
   rememberCanonicalKeys,
 } from "./lib/history.mjs";
+import {
+  checkPromptProvenance,
+  provenanceTags,
+} from "./lib/prompt-provenance.mjs";
 import { resolveContentLocale } from "../review/lib/content-locale.mjs";
 
 const APP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
+/** 这两种判定一律不许自动进 pending 队列，必须人工复核。 */
+const BLOCKED_PROVENANCE_STATUSES = new Set([
+  "reversed-anchor",
+  "prompt-not-in-source",
+]);
 
 function getArg(name) {
   const match = process.argv.find((arg) => arg.startsWith(`${name}=`));
@@ -72,6 +82,14 @@ function dedupeItems(items) {
 
 function toReportItem(item) {
   const evidence = evaluateEvidence(item);
+  // 溯源判定放在报告层，报告里能看见、下游 toImportCandidate 靠它拦人。
+  // 影子跑不抓原帖正文，所以这里只有锚点这一道闸门在起作用；
+  // 正文比对留给拿得到原帖正文的调用方（见 lib/prompt-provenance.mjs）。
+  const provenance = checkPromptProvenance({
+    promptText: evidence.safePromptText,
+    sourceUrl: item.sourceUrl,
+    anchor: item.provenanceAnchor ?? undefined,
+  });
   return {
     canonicalKey: item.canonicalKey,
     canonicalUrl: item.canonicalUrl,
@@ -99,7 +117,14 @@ function toReportItem(item) {
       views: item.sourceViewCount ?? null,
       capturedAt: item.sourceMetricsCapturedAt || null,
     },
-    tags: Array.isArray(item.tags) ? item.tags : [],
+    tags: [
+      ...new Set([
+        ...(Array.isArray(item.tags) ? item.tags : []),
+        ...provenanceTags(provenance),
+      ]),
+    ],
+    provenanceAnchor: provenance.anchor || null,
+    provenance,
     candidateType: evidence.candidateType,
     evidence: {
       checks: evidence.checks,
@@ -117,6 +142,8 @@ function toImportCandidate(item, capturedAt) {
   }
 
   return {
+    provenance_anchor: item.provenanceAnchor,
+    provenance_status: item.provenance?.status || "unchecked",
     title: item.title,
     category: item.category || (item.mediaKind === "video" ? "video" : "image"),
     source_platform: "X",
@@ -174,6 +201,7 @@ function renderMarkdown(report) {
     `- 无效 URL：${report.stats.invalidUrls}`,
     `- Case：${report.stats.cases}`,
     `- Topic seed：${report.stats.topicSeeds}`,
+    `- 溯源拦截（不进 pending）：${report.stats.provenanceBlocked ?? 0}`,
     `- 来源错误：${report.errors.length}`,
     "",
   ];
@@ -233,6 +261,10 @@ async function main() {
   const candidatePath = path.join(
     outputDir,
     `${reportStem}-case-candidates.json`
+  );
+  const blockedPath = path.join(
+    outputDir,
+    `${reportStem}-provenance-blocked.json`
   );
   const sameDayKeys = await loadRunCanonicalKeys(jsonPath, { schemaVersion: 2 });
   const previousKeys = await loadRecentCanonicalKeys({
@@ -312,6 +344,9 @@ async function main() {
       invalidUrls: deduped.invalidUrlCount,
       cases: items.filter((item) => item.candidateType === "case").length,
       topicSeeds: items.filter((item) => item.candidateType === "topic_seed").length,
+      provenanceBlocked: items.filter((item) =>
+        BLOCKED_PROVENANCE_STATUSES.has(item.provenance?.status)
+      ).length,
     },
     errors,
     items,
@@ -325,20 +360,45 @@ async function main() {
   });
   await writeFile(jsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   await writeFile(markdownPath, renderMarkdown(report), "utf8");
+  let blockedCandidates = [];
   if (sourceId === "youmind") {
-    const importCandidates = items
+    const allCandidates = items
       .map((item) => toImportCandidate(item, generatedAt))
       .filter(Boolean);
+    // 溯源被拦下的条目不写进导入文件，但要单独落盘 + 打日志，不能静默丢。
+    blockedCandidates = allCandidates.filter((candidate) =>
+      BLOCKED_PROVENANCE_STATUSES.has(candidate.provenance_status)
+    );
+    const importCandidates = allCandidates.filter(
+      (candidate) => !BLOCKED_PROVENANCE_STATUSES.has(candidate.provenance_status)
+    );
     await writeFile(
       candidatePath,
       `${JSON.stringify(importCandidates, null, 2)}\n`,
       "utf8"
     );
+    if (blockedCandidates.length > 0) {
+      await writeFile(
+        blockedPath,
+        `${JSON.stringify(blockedCandidates, null, 2)}\n`,
+        "utf8"
+      );
+    }
   }
 
   console.log(`影子日报：${markdownPath}`);
   if (sourceId === "youmind") {
     console.log(`候选导入文件：${candidatePath}`);
+    if (blockedCandidates.length > 0) {
+      console.warn(
+        `溯源拦截 ${blockedCandidates.length} 条（不进 pending）：${blockedPath}`
+      );
+      for (const candidate of blockedCandidates) {
+        console.warn(
+          `  - [${candidate.provenance_status}] ${candidate.title} ${candidate.source_url}`
+        );
+      }
+    }
   }
   console.log(
     `抓取 ${report.stats.fetched}，选取 ${report.stats.selected}，Case ${report.stats.cases}，Topic seed ${report.stats.topicSeeds}，近 7 日重复 ${report.stats.historicalDuplicates}`

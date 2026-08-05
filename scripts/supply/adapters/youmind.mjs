@@ -1,3 +1,9 @@
+import {
+  extractUrlFragment,
+  isReversedAnchor,
+  stripUrlFragment,
+} from "../lib/prompt-provenance.mjs";
+
 export const YOUMIND_INDEX_URL = "https://youmind.com/zh-CN/prompts";
 
 export const meta = {
@@ -23,19 +29,26 @@ function typeIncludes(value, expected) {
   return asArray(value).includes(expected);
 }
 
-function stripSourceFragment(value) {
+/**
+ * 拆开 `isBasedOn`：URL 主体去 hash 用于展示和去重，fragment 单独留下来。
+ *
+ * 以前这里只做 `url.hash = ""`，等于在入库前把唯一的自动溯源信号销毁掉——
+ * youmind 的 `#reversed-N` 锚点是它自己承认「这段 prompt 是拿产出图逆向重构的」，
+ * 抹掉之后从库里看就只剩「出处链接有效」，完全看不出 prompt 是编的。
+ * 详见 scripts/supply/lib/prompt-provenance.mjs 的文件注释。
+ */
+export function splitSourceReference(value) {
   const sourceUrl = firstString(value);
   if (!sourceUrl) {
-    return "";
+    return { sourceUrl: "", provenanceAnchor: "", promptReverseEngineered: false };
   }
 
-  try {
-    const url = new URL(sourceUrl);
-    url.hash = "";
-    return url.toString();
-  } catch {
-    return sourceUrl;
-  }
+  const provenanceAnchor = extractUrlFragment(sourceUrl);
+  return {
+    sourceUrl: stripUrlFragment(sourceUrl),
+    provenanceAnchor,
+    promptReverseEngineered: isReversedAnchor(provenanceAnchor),
+  };
 }
 
 function extractJsonLdGraphs(html) {
@@ -144,7 +157,8 @@ export function normalizeYouMindPromptPage(html, pageUrl, { sourceCategory } = {
 
   const title = firstString(work.name);
   const promptText = firstString(work.text);
-  const sourceUrl = stripSourceFragment(work.isBasedOn);
+  const { sourceUrl, provenanceAnchor, promptReverseEngineered } =
+    splitSourceReference(work.isBasedOn);
   const author = firstString(work.author?.name);
   const media = normalizeMedia(nodes, work);
   if (
@@ -173,6 +187,9 @@ export function normalizeYouMindPromptPage(html, pageUrl, { sourceCategory } = {
     sourceLabel: "YouMind Prompt Library",
     title,
     sourceUrl,
+    // `isBasedOn` 上的 fragment 原样带出来，绝不能再在这一层被抹掉。
+    provenanceAnchor: provenanceAnchor || null,
+    promptReverseEngineered,
     evidencePageUrl: canonicalPageUrl,
     author,
     authorUrl: firstString(work.author?.url) || null,
