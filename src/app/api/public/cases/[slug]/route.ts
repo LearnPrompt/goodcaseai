@@ -1,6 +1,7 @@
 import { getCaseDetailData } from "@/lib/cases";
 import { normalizeLocale } from "@/i18n/config";
 import { getPublicApiHeaders, toPublicDetailItem } from "../../_lib/public-case";
+import { lookupReactionCounts } from "../../_lib/reaction-lookup";
 
 export async function GET(
   request: Request,
@@ -19,8 +20,26 @@ export async function GET(
     );
   }
 
-  return Response.json(toPublicDetailItem(item, locale), {
-    status: 200,
-    headers,
-  });
+  const publicItem = toPublicDetailItem(item, locale);
+
+  // 同一次批量查询接口，单条也走它，slug 数组长度为 1。
+  let reactionCounts: Awaited<ReturnType<typeof lookupReactionCounts>> = null;
+  try {
+    reactionCounts = await lookupReactionCounts([publicItem.slug]);
+  } catch {
+    reactionCounts = null;
+  }
+  const counts = reactionCounts?.[publicItem.slug];
+
+  return Response.json(
+    {
+      ...publicItem,
+      likedCount: counts ? counts.like : publicItem.likedCount,
+      retestVoteCount: counts ? counts.retestVote : 0,
+    },
+    {
+      status: 200,
+      headers,
+    }
+  );
 }

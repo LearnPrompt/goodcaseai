@@ -3,6 +3,7 @@ import { filterCasesByQuery, getCaseListData } from "@/lib/cases";
 import type { CaseCategory } from "@/lib/mock-data";
 import { normalizeLocale } from "@/i18n/config";
 import { getPublicApiHeaders, toPublicListItem } from "../_lib/public-case";
+import { lookupReactionCounts } from "../_lib/reaction-lookup";
 
 const VALID_CATEGORIES: readonly CaseCategory[] = [
   "image",
@@ -63,8 +64,27 @@ export async function GET(request: NextRequest) {
 
   const items = list.slice(0, take).map((item) => toPublicListItem(item, locale));
 
+  // 站内 UI 已经不读 likedCount（走 /api/reactions 客户端接口），这里的批量查询
+  // 只为了给外部 Agent 用的公开 API 出真数，不影响站内渲染路径。
+  let reactionCounts: Awaited<ReturnType<typeof lookupReactionCounts>> = null;
+  try {
+    reactionCounts = await lookupReactionCounts(items.map((item) => item.slug));
+  } catch {
+    // 查询失败（非"表不存在"的真错误）不该连累案例列表本身返回失败，降级回 0。
+    reactionCounts = null;
+  }
+
+  const itemsWithReactionCounts = items.map((item) => {
+    const counts = reactionCounts?.[item.slug];
+    return {
+      ...item,
+      likedCount: counts ? counts.like : item.likedCount,
+      retestVoteCount: counts ? counts.retestVote : 0,
+    };
+  });
+
   return Response.json(
-    { count: items.length, locale, items },
+    { count: itemsWithReactionCounts.length, locale, items: itemsWithReactionCounts },
     { status: 200, headers }
   );
 }
