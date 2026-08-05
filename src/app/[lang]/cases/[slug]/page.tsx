@@ -272,6 +272,7 @@ export default async function CaseDetailPage({
 
       <section className="grid gap-5 border-b border-[var(--hair)] py-8">
         <PromptPanel
+          caseSlug={item.slug}
           promptPreview={item.promptPreview}
           promptFull={item.promptFull}
           contentLocale={item.contentLocale}

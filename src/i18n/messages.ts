@@ -59,6 +59,7 @@ export const zhCNMessages = {
   // 那个模块被纯 node 测试直接加载，无法从这里引入，所以文案在两处各存一份。
   stability: {
     pending: "投票催复测",
+    voted: "已催复测",
   },
   card: {
     prompt: "提示语",
@@ -251,6 +252,7 @@ export const enMessages = {
   },
   stability: {
     pending: "Vote to retest",
+    voted: "Retest requested",
   },
   card: {
     prompt: "Prompt",

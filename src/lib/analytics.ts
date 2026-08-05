@@ -1,28 +1,10 @@
 import type { AnalyticsEventName } from "@/lib/analytics-payload";
+// 会话 ID 的生成端已经提到 anonymous-session.ts，埋点和反应共用同一个 ID。
+import { getAnonymousSessionId } from "@/lib/anonymous-session";
 
 export type { AnalyticsEventName } from "@/lib/analytics-payload";
 
 type EventProperties = Record<string, string | number | boolean | null>;
-
-const SESSION_KEY = "goodcase:analytics-session";
-
-function getSessionId() {
-  try {
-    const existing = window.sessionStorage.getItem(SESSION_KEY);
-    if (existing) {
-      return existing;
-    }
-
-    const created =
-      typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    window.sessionStorage.setItem(SESSION_KEY, created);
-    return created;
-  } catch {
-    return "ephemeral";
-  }
-}
 
 export function trackEvent(
   eventName: AnalyticsEventName,
@@ -39,7 +21,7 @@ export function trackEvent(
       eventName,
       path: window.location.pathname,
       referrer: document.referrer,
-      sessionId: getSessionId(),
+      sessionId: getAnonymousSessionId(),
       properties: {
         ...properties,
         locale: window.location.pathname === "/en" ||

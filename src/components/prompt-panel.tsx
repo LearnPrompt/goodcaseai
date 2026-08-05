@@ -1,6 +1,7 @@
 "use client";
 
 import { PromptViewer } from "@/components/prompt-viewer";
+import { RetestVoteButton } from "@/components/retest-vote-button";
 import { useMessages } from "@/i18n/client";
 import {
   formatStabilityScore,
@@ -8,6 +9,7 @@ import {
 } from "@/lib/stability";
 
 export function PromptPanel({
+  caseSlug,
   promptPreview,
   promptFull,
   contentLocale,
@@ -18,6 +20,7 @@ export function PromptPanel({
   stabilityScore,
   costBand,
 }: {
+  caseSlug: string;
   promptPreview: string;
   promptFull: string;
   contentLocale?: "zh-CN" | "en";
@@ -73,14 +76,18 @@ export function PromptPanel({
               ))}
             </div>
             <dl className="mt-4 grid gap-2 text-sm leading-6">
-              <div className="flex justify-between gap-4 border-t border-[var(--concrete)] pt-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--concrete)] pt-2">
                 <dt className="text-[var(--muted)]">
                   {messages.common.stability}
                 </dt>
+                {/* 缺测时这一格从一句死文案换成真能投的按钮，
+                    有实测分时维持原样，不塞多余交互。 */}
                 <dd className="font-semibold">
-                  {hasMeasuredStability(stabilityScore)
-                    ? `${formatStabilityScore(stabilityScore)} / 100`
-                    : messages.stability.pending}
+                  {hasMeasuredStability(stabilityScore) ? (
+                    `${formatStabilityScore(stabilityScore)} / 100`
+                  ) : (
+                    <RetestVoteButton caseSlug={caseSlug} />
+                  )}
                 </dd>
               </div>
               <div className="flex justify-between gap-4 border-t border-[var(--concrete)] pt-2">
