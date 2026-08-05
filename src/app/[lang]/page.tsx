@@ -515,7 +515,7 @@ export default async function Home({
             ),
             creator: item.creator,
             categoryLabel: categoryLabels[locale][item.category],
-            stabilityLabel: formatStabilityScore(item.stabilityScore, locale),
+            stabilityScore: item.stabilityScore,
             mediaType: item.mediaType,
             mediaUrl: item.mediaUrl,
             posterUrl: item.posterUrl,

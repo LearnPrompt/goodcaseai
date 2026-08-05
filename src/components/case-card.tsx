@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { CaseCardPrompt } from "@/components/case-card-prompt";
+import { CaseCardStabilityVote } from "@/components/case-card-stability";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { useLocale, useMessages } from "@/i18n/client";
 import type { CardMediaFit } from "@/lib/card-media-fit";
@@ -135,7 +136,13 @@ export function CaseCard({
         className={`flex flex-1 flex-col ${isGallery ? "p-4 sm:p-5" : "p-5"}`}
       >
         <div>
-          <div className="flex flex-wrap items-center gap-2">
+          {/*
+            顶部 chips 行：锁单行高度（跟 gc-chip 的 min-height:1.75rem 对齐），
+            flex-nowrap + overflow-hidden 不让 chip 数量不一致时换到第二行——
+            换行正是卡片高度失控的一个来源。溢出的 chip 直接被裁掉，
+            这一行卡片一般只有 2-4 个 chip，实测不会裁到关键信息。
+          */}
+          <div className="flex h-7 flex-nowrap items-center gap-2 overflow-hidden">
             <span className="gc-chip gc-chip-accent">{label}</span>
             <span className="gc-chip">{item.source}</span>
             {publishedDate ? (
@@ -157,63 +164,96 @@ export function CaseCard({
             href={`/cases/${item.slug}`}
             className={isGallery ? "mt-4 block" : "mt-5 block"}
           >
+            {/*
+              标题锁两行高度：一行的标题也占两行位，同一排卡片的标题块底边
+              才能对齐。min-height 按当前字号 × leading 算的两行高度：
+              gallery 移动端 20px×1.16×2≈46.4px、sm+ 24px×1.16×2≈55.7px；
+              默认变体移动端 24px×1.02×2≈48.96px、sm+ 30px×1.02×2≈61.2px。
+            */}
             <h2
-              className={`font-semibold tracking-[-0.035em] text-[var(--ink)] ${
+              className={`line-clamp-2 font-semibold tracking-[-0.035em] text-[var(--ink)] ${
                 isGallery
-                  ? "line-clamp-2 text-xl leading-[1.16] sm:text-2xl"
-                  : "text-2xl leading-[1.02] sm:text-3xl"
+                  ? "min-h-[47px] text-xl leading-[1.16] sm:min-h-[56px] sm:text-2xl"
+                  : "min-h-[49px] text-2xl leading-[1.02] sm:min-h-[62px] sm:text-3xl"
               }`}
             >
               {item.title}
             </h2>
           </Link>
 
-          {isGallery && item.creator ? (
-            <p className="mt-3 truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
-              {messages.common.creator}{" "}
-              {creatorSlug ? (
-                <Link
-                  href={`/creators/${creatorSlug}`}
-                  className="font-semibold text-[var(--ink)] hover:text-[var(--orange)]"
-                >
-                  {item.creator} →
-                </Link>
+          {/*
+            创作者行只在 gallery 变体单独成行（默认变体的创作者在上面 chips 行里）。
+            之前没有创作者时整行不渲染，导致有/无创作者的卡片高度差一行；
+            现在永远占位，min-h 按 10px 字号 × 默认行高 1.5 算（15px），
+            没有创作者时塞一个不换行空格保证盒子不塌陷。
+          */}
+          {isGallery ? (
+            <p className="mt-3 min-h-[15px] truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
+              {item.creator ? (
+                <>
+                  {messages.common.creator}{" "}
+                  {creatorSlug ? (
+                    <Link
+                      href={`/creators/${creatorSlug}`}
+                      className="font-semibold text-[var(--ink)] hover:text-[var(--orange)]"
+                    >
+                      {item.creator} →
+                    </Link>
+                  ) : (
+                    <span className="font-semibold text-[var(--ink)]">
+                      {item.creator}
+                    </span>
+                  )}
+                </>
               ) : (
-                <span className="font-semibold text-[var(--ink)]">{item.creator}</span>
+                " "
               )}
             </p>
           ) : null}
 
-          {summary ? (
-            <p
-              className={`mt-3 text-sm text-[var(--muted)] ${
-                isGallery ? "line-clamp-2 leading-6" : "line-clamp-3 leading-7"
-              }`}
-            >
-              {summary}
-            </p>
-          ) : null}
+          {/*
+            摘要块永远渲染并锁高度（按 clamp 行数 × leading 算）：
+            gallery 2 行 × 14px×1.5=24px → 48px；默认 3 行 × 14px×1.75=28px → 84px。
+            summary 为空时塞空格占位，不再让整块高度塌到 0。
+          */}
+          <p
+            className={`mt-3 text-sm text-[var(--muted)] ${
+              isGallery
+                ? "line-clamp-2 min-h-[48px] leading-6"
+                : "line-clamp-3 min-h-[84px] leading-7"
+            }`}
+          >
+            {summary || " "}
+          </p>
         </div>
 
         <div className="flex-1">
-          {item.skills?.length ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {item.skills
-                .slice(0, isGallery ? 1 : item.skills.length)
-                .map((skill) => (
-                  <Link
-                    key={skill.slug}
-                    href={`/skills/${skill.slug}`}
-                    className="gc-chip transition hover:border-[var(--orange)] hover:text-[var(--orange)]"
-                  >
-                    Skill · {skill.title}
-                  </Link>
-                ))}
-              {isGallery && item.skills.length > 1 ? (
-                <span className="gc-chip">+{item.skills.length - 1}</span>
-              ) : null}
-            </div>
-          ) : null}
+          {/*
+            SKILL 标签行永远占位（min-h 对齐 gc-chip 的 1.75rem），
+            没有 SKILL 的卡片渲染同高度的空行，不再让提示语块因为这行
+            有没有渲染而落在不同 y 上。这行本身允许换行/长高——不clamp，
+            多 SKILL 的卡片可以比空卡高，只保证「至少一行」这条下限。
+          */}
+          <div className="mt-4 flex min-h-7 flex-wrap gap-2">
+            {item.skills?.length ? (
+              <>
+                {item.skills
+                  .slice(0, isGallery ? 1 : item.skills.length)
+                  .map((skill) => (
+                    <Link
+                      key={skill.slug}
+                      href={`/skills/${skill.slug}`}
+                      className="gc-chip transition hover:border-[var(--orange)] hover:text-[var(--orange)]"
+                    >
+                      Skill · {skill.title}
+                    </Link>
+                  ))}
+                {isGallery && item.skills.length > 1 ? (
+                  <span className="gc-chip">+{item.skills.length - 1}</span>
+                ) : null}
+              </>
+            ) : null}
+          </div>
 
           <CaseCardPrompt
             promptPreview={item.promptPreview}
@@ -259,7 +299,7 @@ export function CaseCard({
               >
                 {hasMeasuredStability(item.stabilityScore)
                   ? formatStabilityScore(item.stabilityScore)
-                  : messages.stability.pending}
+                  : <CaseCardStabilityVote caseSlug={item.slug} />}
               </div>
             </div>
           </div>
