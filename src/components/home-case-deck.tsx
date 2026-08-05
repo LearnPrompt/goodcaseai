@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { CaseCardStabilityVote } from "@/components/case-card-stability";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import type { CardMediaFit } from "@/lib/card-media-fit";
+import { hasMeasuredStability, formatStabilityScore } from "@/lib/stability";
 
 export type HomeDeckItem = {
   slug: string;
@@ -12,7 +14,8 @@ export type HomeDeckItem = {
   summary: string | null;
   creator: string;
   categoryLabel: string;
-  stabilityLabel: string;
+  /** 原始分数，不是格式化好的文案——未实测时要在这里订阅票数徽标，需要拿到原始值判断。 */
+  stabilityScore: number | null;
   mediaType: "image" | "video";
   mediaUrl: string;
   posterUrl?: string;
@@ -95,20 +98,29 @@ export function HomeCaseDeck({
                     {labels.previewTag}
                   </span>
                 </div>
-                <h3 className="mt-5 text-2xl font-semibold tracking-[-0.03em]">
+                {/*
+                  标题锁两行高度：text-2xl 默认行高 2rem(32px)，line-clamp-2
+                  两行即 4rem(64px)，一行的标题也占两行位，同排卡片才能对齐。
+                */}
+                <h3 className="mt-5 line-clamp-2 min-h-16 text-2xl font-semibold tracking-[-0.03em]">
                   {item.title}
                 </h3>
-                <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--mute)]">
+                <p className="mt-2 truncate font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--mute)]">
                   {item.categoryLabel} · {item.creator}
                 </p>
-                {item.summary ? (
-                  <p className="mt-4 line-clamp-3 text-sm leading-7 text-[var(--muted)]">
-                    {item.summary}
-                  </p>
-                ) : null}
+                {/*
+                  摘要块永远渲染并锁高度：3 行 × leading-7(28px) = 84px，
+                  跟 case-card.tsx 默认变体的摘要高度对齐；没有摘要时占位不塌陷。
+                */}
+                <p className="mt-4 line-clamp-3 min-h-[84px] text-sm leading-7 text-[var(--muted)]">
+                  {item.summary || " "}
+                </p>
                 <div className="mt-auto flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
                   <span>
-                    {labels.stability} {item.stabilityLabel}
+                    {labels.stability}{" "}
+                    {hasMeasuredStability(item.stabilityScore)
+                      ? formatStabilityScore(item.stabilityScore, locale)
+                      : <CaseCardStabilityVote caseSlug={item.slug} />}
                   </span>
                   <Link
                     href={`/cases/${item.slug}`}

@@ -280,6 +280,7 @@ export default async function CaseDetailPage({
           posterUrl={item.posterUrl}
           thumbnailUrl={item.thumbnailUrl}
           title={item.title}
+          sourceUrl={item.sourceUrl}
         />
       </section>
 

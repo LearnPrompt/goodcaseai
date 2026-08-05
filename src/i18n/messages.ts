@@ -69,6 +69,10 @@ export const zhCNMessages = {
     sourceHeat: "来源热度",
     stability: "稳定度",
   },
+  mediaFallback: {
+    videoError: "视频加载失败，可能是网络原因",
+    viewSource: "去原帖观看",
+  },
   sort: {
     label: "排序",
     heat: "来源热度",
@@ -263,6 +267,10 @@ export const enMessages = {
     viewMethod: "View method",
     sourceHeat: "Source heat",
     stability: "Stability",
+  },
+  mediaFallback: {
+    videoError: "Video failed to load — this may be a network issue",
+    viewSource: "Watch on source",
   },
   sort: {
     label: "Sort",
