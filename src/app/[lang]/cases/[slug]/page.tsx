@@ -22,6 +22,7 @@ import {
   formatPublishedDate,
   getPresentableCaseSummary,
 } from "@/lib/case-presentation";
+import { formatCompactCount } from "@/lib/format-compact-count";
 import { MISSING_MODEL } from "@/lib/related-cases";
 import { absoluteUrl } from "@/lib/site";
 
@@ -140,6 +141,12 @@ export default async function CaseDetailPage({
   const searchableModels = item.recommendedModels.filter(
     (model) => model !== MISSING_MODEL
   );
+  // 原帖真实点赞数是录入时抓取的快照，详情页又是构建期预渲染的静态 HTML，
+  // 这个数字不会跟着原帖实时变化——预期行为，不接实时轮询。
+  // 为空或 0 时不展示，不留一个只有标签没有数字的空壳。
+  const formattedSourceLikeCount = item.sourceLikeCount
+    ? formatCompactCount(item.sourceLikeCount)
+    : null;
   // 正文摘要过滤套话 + 复用方法兜底；两者都没有（如 real-case-11-servasyy-ai）
   // 时是 null，下面按 case-card.tsx 的写法不渲染这段，不留空 <p>。
   const presentableSummary = getPresentableCaseSummary(
@@ -256,6 +263,12 @@ export default async function CaseDetailPage({
               caseSlug={item.slug}
               initialCount={item.likedCount}
             />
+            {formattedSourceLikeCount ? (
+              <span className="gc-chip" title={messages.interaction.sourceLikeHint}>
+                {messages.interaction.sourceLikeLabel}{" "}
+                <span aria-hidden="true">♥</span> {formattedSourceLikeCount}
+              </span>
+            ) : null}
             <FavoriteButton caseSlug={item.slug} />
             <ShareButton caseSlug={item.slug} title={item.title} />
           </div>

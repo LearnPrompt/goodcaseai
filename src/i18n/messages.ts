@@ -115,6 +115,8 @@ export const zhCNMessages = {
     sharePoster: "分享海报",
     generating: "生成中…",
     shareHint: "海报已打开，长按/右键保存；链接已复制",
+    sourceLikeLabel: "原帖",
+    sourceLikeHint: "原帖点赞数快照，录入时抓取，不实时更新。",
   },
   search: {
     placeholder: "搜索关键词、模型或创作者",
@@ -309,6 +311,8 @@ export const enMessages = {
     sharePoster: "Share poster",
     generating: "Generating…",
     shareHint: "Poster opened; save it by long-press or right-click. Link copied.",
+    sourceLikeLabel: "Source",
+    sourceLikeHint: "Snapshot of the original post's like count, captured at intake time.",
   },
   search: {
     placeholder: "Search keywords, models, or creators",
