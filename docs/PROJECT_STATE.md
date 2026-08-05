@@ -9,10 +9,18 @@
 - 项目阶段：统一版已部署到生产；运营闭环与中文域名迁移继续收敛
 - 一级内容对象：Case；Creator、Lab、Skill 只作为派生视图
 - 认证状态：本月明确不建设账号体系；完整 Prompt 公开
-- 互动状态：收藏和点赞使用 localStorage，不承诺跨设备同步
+- 互动状态：点赞与催复测投票为无账号真计数（case_reactions 表，浏览器持久
+  匿名身份防重，读写只走 /api/reactions）；收藏仍为 localStorage
 - 审核状态：候选通过 review:candidates 人工决策，再由 publish:cases 发布
-- 部署状态：goodcase.ai 已指向统一版生产；常规 Git Preview 仍受 Vercel Git
-  作者访问校验阻断；goodcase.carlwow.com 尚未解析或上线
+- 部署状态：goodcase.ai 与 test.goodcase.ai 代码/数据完全一致（staging 持续
+  合入 main）；详情页构建期全量预渲染 + dynamicParams=false，发布/下架必须
+  触发部署（Deploy Hook 两环境已配好并接入发布链路）；goodcase.carlwow.com
+  尚未解析或上线
+- 媒体状态：全部案例媒体已迁自有 Vercel Blob（goodcase-media，566.7MB/1GB），
+  原始 URL 存 scripts/media/blob-migration-manifest.json；流量额度 10GB/月，
+  到量升 Pro 或按 manifest 重跑脚本挪 R2
+- 溯源状态：youmind #reversed 锚点三道闸在管线（适配器保留锚点、双层拦截、
+  入库窗口命中率比对）；已发布 youmind 案例 223 条全部核对，29 条编造已下架
 
 ## 语言判定（content_locale）现状 · 2026-08-04
 
@@ -48,6 +56,9 @@
 
 ## 额度警报 · 2026-08-04
 
-- Supabase Free Plan 上个账期 Egress 超限，宽限期到 2026-09-01，逾期后请求
-  返回 402。列表页已于 08-03 切本地缩略图，本账期流量应明显回落；
-  9 月前需回 Usage 页确认降没降下来，没降就把详情页媒体也本地化或升 Pro
+- Supabase Free Plan 上个账期 Egress 超限，宽限期到 2026-09-01。08-05 承压
+  改造后：详情页运行期零 Supabase、列表页取数 0.61MB + 跨请求缓存窗口内
+  稳态零回源，主要泄漏源已掐断；9 月前回 Usage 页确认曲线回落
+- Vercel Blob（Hobby）：存储 566.7MB/1GB、流量 10GB/月、写操作 500/2000·月。
+  流量是下一个天花板，播放量上来后需升级或迁 R2
+- BLOB_READ_WRITE_TOKEN 曾进聊天记录，待在 Vercel 后台轮换（公开读不受影响）

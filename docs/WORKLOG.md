@@ -2,6 +2,121 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-06 · 媒体全量迁移自有 Blob（500 个，零失败）
+
+- 新建 Vercel Blob store `goodcase-media`（Public，iad1）。外链媒体 500 个
+  （视频 207、封面 210、图片 83）全部镜像并翻库：youmind CDN 194、twimg 75+209、
+  comfy 8、liblib 5、github 6、xiaoyaoyou 3。站点播放与第三方 CDN 可达性解耦
+- 视频统一 720p h264 crf26 + `-movflags +faststart`（moov 前置；未 faststart 的
+  mp4 在弱网下拿不到元数据，就是详情页 `--:--` 播不动的根因之一）；39 条转码
+  反而更大的传原片。1382MB → 566.7MB，占 Hobby Blob 1GB 额度 55%
+- 每条先上传并 HEAD 验证 200 与 content-type 才 PATCH 翻库；manifest
+  `scripts/media/blob-migration-manifest.json` 保留全部原始 URL（回退/溯源）；
+  逐行快照 `tmp/blob-migration-backup/`；脚本 `migrate-media-to-blob.mjs`
+  支持 --dry-run 与断点续跑，dry-run 与实跑共用同一条 prepareUpload 路径
+- 生产抽验三条（原 youmind/twimg/comfy 源）：全部 blob 源、readyState=4、play() 成功
+- 遗留：未发布候选 29 条媒体仍挂 youmind；Blob 流量 10GB/月是下一个天花板，
+  到量升 Pro 或按 manifest 重跑脚本挪 R2；BLOB_READ_WRITE_TOKEN 进过聊天记录
+  **需在 Vercel 后台轮换**
+
+## 2026-08-06 · 卡片等高、稳定度票数、视频加载兜底（PR #24）
+
+- 卡片「一高一低」根因：外框与底栏其实等高，中段提示语块跟着标题行数/摘要
+  长短/SKILL 行有无浮动。照 youmind 把每个分区高度锁死：标题 clamp 两行且
+  一行也占两行位、摘要占满 clamp 高度、chips 单行不换行、SKILL 行永远占位
+  （此前「不占位」的推理被用户眼睛否决）。验收线：同一行任意卡片提示语块/
+  统计行/底栏 y 逐张相同，/cases、/models gallery、/creators 三种页面实测通过
+- 稳定度格子接真实票数：`CaseCardStabilityVote` 订阅 reaction-counts 全局单例，
+  票数 >0 显示「投票催复测 · N」，整页仍只有一条批量计数请求
+- 视频三层兜底：source error（capture 监听，不冒泡到 video）、15 秒
+  readyState===0 超时、兜底 UI（提示 + 重试 + 去原帖观看 ↗）。中英双语
+
+## 2026-08-05 · 无账号点赞/催复测投票 + 原帖心数 + 公开 API 真计数（PR #22/#23）
+
+- 站内互动从 localStorage 假数字改为真计数：`case_reactions` 一张表管
+  like/retest_vote 两种 kind，唯一索引 (case_slug, session_id, kind) 防重；
+  RLS 开且零 policy + revoke 表级权限，读写只走 `/api/reactions`（60s 边缘缓存，
+  POST/DELETE 幂等）。防重身份是 localStorage 持久 `goodcase:reactor-id`，
+  与埋点 sessionStorage 会话口径刻意分开
+- 优雅降级：表未建时接口回 `available:false` 前端藏计数，代码可先上线迁移后
+  自动激活。降级判定认 PGRST205（supabase-js 实际报的码）而不只是 42703
+- 踩掉两坑：线上有中文 slug（ASCII 校验会打挂列表页批量请求，改 Unicode 类别
+  校验）；reaction-counts 被 Turbopack 复制进 4 个 chunk 导致模块级去重失效，
+  改 globalThis 单例
+- 详情页点赞旁并排展示「原帖 ♥ N」（source_like_count 快照，267/304 条有值，
+  明确署名不混入站内计数——冷启动不靠造假解决）；公开 API likedCount 接真数
+  并新增 retestVoteCount，覆盖只做在公开 route 层
+- migration `20260805200000_case_reactions` 已在生产执行；激活态六项验收
+  （防重/幂等/撤销/越权 401/计数/清场）全过
+
+## 2026-08-05 · 溯源审计与三道闸：全库 223 条零悬案，29 条编造下架
+
+- 发现 youmind image 类 prompt 约 45% 是拿产出图逆向重构的（youmind 自标
+  `#reversed-N` 锚点），`isBasedOn` 照样指向原推——「出处真、prompt 编」。
+  判别力：带锚点已核对 6/6 对不上，不带锚点 30/30 一致。而锚点曾被
+  `stripSourceFragment()` 在入库时抹掉（url.hash=""），全库残留 0
+- 全库反查 223 条 youmind 案例（SocialData 补齐被折叠/受限原推）：
+  195+1 干净、29 编造（分四批全部下架，备份于 tmp/unpublish-cases/，
+  `unpublish-cases.mjs --restore` 可翻回）、2 改写（已换回作者中文原文重发，
+  原英文版转为译文）、1 原推已删无法核实
+- 三道闸进管线：`splitSourceReference()` 保留锚点存 provenance_anchor；
+  带 reversed 锚点禁止自动进 pending（shadow-run + ingest 双层拦截，落
+  *-provenance-blocked.json 逐条 warn）；入库窗口命中率比对原帖正文
+  （`prompt-provenance.mjs`，40 字窗口命中率 <0.5 拦下，24 样本零漏报零误报；
+  否决了「前 60 字符+引导词」方案：被 {argument} 参数化一票否决）
+- migration `20260805100000_candidate_provenance_anchor` 已在生产执行，
+  库级 CHECK 实测拒写（给 pending 候选写 reversed-1 返回 400）
+- 另发现截断问题：`reviewed-web-video-20260728-v1` 批次约 58% 的 prompt
+  只抓了主推开头、完整版在回复串（约 70 条），影响「可复现」，待批次级补全
+
+## 2026-08-05 · 供给追新与积压清零
+
+- youmind 三个分类页新录 11 条（batch `youmind-2026-08-05`），逐条打开原推
+  人工核对（两条 youmind 展示的 prompt 与原推对不上，直接排除未入库）；
+  适配器分类判定改以抓取入口页为准（applicationCategory 描述的是所用模型
+  不是产出物，对方改枚举值即整片失效），/prompts/webpage 不再误判 image
+- ComfyUI 4 条加工发布（双语 + 三段式方法论），发布严格按 batch 圈定；
+  发布时媒体校验第一次实战拦截（poster_url 缺失），从 comfy.org og:image
+  补齐而非绕过校验
+- 76 条历史 pending 清零：拒 68（60 条开发期占位数据、8 条测试/空投稿），
+  留 8（4 条 ComfyUI 已发布、2 条 youmind 无锚点待加工、2 条待人工）
+- web 类 10 条静态图案例查原推，4 条原帖实为录屏，升级为视频
+  （最高码率 mp4 + 官方封面）；全库 511 媒体 URL 探活死链为零
+- `real-case-11-servasyy-ai` 补真实摘要与三段式方法论（全库最后一条模板
+  兜底清零）；其创意归属有公开争议，详情页摘要末尾加中性说明（列表卡片
+  因行数裁切不显示）
+
+## 2026-08-05 · 承压改造上生产（PR #20/#21），Supabase 出网降一个量级
+
+- 三列改版、模型页、i18n 整条线合入 main（45 commits / 404 文件），生产站
+  从旧版直接切换：/cases 4578KB→178KB、/creators 1104KB→97KB、
+  /models/[slug] 从 404 到 145KB
+- 取数分三档（index 全表瘦列 / card 渲染行 / detail 单行）：冷渲染出网
+  783KB → 详情页 0、首页 65KB、列表页 185KB。详情页构建期全量预渲染 +
+  dynamicParams=false：运行期零 Supabase、真 404（流式渲染下 200 软 404
+  救不回来，补 slug 列表也一样）；新发布 Case 需一次部署，Deploy Hook
+  两环境已配好并接进发布/下架链路，全自动闭环已多次实战
+- 读 searchParams 的三个列表页无法 SSG，改在取数层加 unstable_cache 跨请求
+  缓存（缓存原始行不缓存 enrich 对象——后者 en 档已占单条 2MB 上限六成）；
+  /cases 连续 10 次请求出网 5.01MB→0.50MB。发布链路补 revalidateTag
+- 卡片 props 收窄（toCaseCardItem/toCreatorCardItem，必须放普通模块——挂
+  "use client" 文件上 tsc/build 全过、运行期才炸）；卡片提示语按 360px 实测
+  截断（中 44/英 75 字）；/creators、/models/[slug] 接分页
+- 媒体按比例自适应：16:9 框 + 纸色底，偏离容差内 cover 否则 contain；
+  容差按分类分档（web 0.10，video/image 0.25——阈值只对 web 类起作用，
+  该类中位偏离 13% 恰在阈值间，且 UI 截图最不该裁）。manifest 记宽高
+- migration `20260805000000_goodcase_prompt_preview_columns`（译文预览
+  生成列）已在生产执行：列表档出网 1.12MB → 0.61MB
+- 404 边界改客户端取语言修好全站详情页 500（not-found 读 headers 把整条
+  路由拖成动态）；运营发布路径补上媒体校验（tsc 挡下的正是这个洞）
+
+## 2026-08-04 · 晚间前端修复与 404 治理（47d8a61 / 0ecda5e / 0381d31）
+
+- 首页深度 Case 客户端翻页（24 池 6/屏）、§02 悬停回原色、卡片对齐、
+  推荐理由兜底；SocialData 修复两条视频案例的 media_url
+- Supabase 故障时详情页抛 CaseDataUnavailableError 走错误边界，不再把临时
+  故障固化成缓存 404；发布前媒体一致性校验入库（8 测试）
+
 ## 2026-08-04 · Seedance 2.5 模型上线 + 三条案例入库
 
 - `src/lib/models.ts` 新增 `seedance-2-5` 家族并置顶打 `new`；`seedance-2` 的
