@@ -8,6 +8,16 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-08-07",
+    title: "每日早报与 Agent API 上线，复测实验室开跑",
+    items: [
+      "新增每日早报（/daily）：每天固定推两条——一条最近 14 天的新爆款、一条值得复习的旧案例，选择按日期确定，所有人同一天看到同一对；提供早报专属 RSS 订阅。",
+      "Agent API 正式化（/agent-api）：公开 API 保持免密钥可用并新增速率说明，接入方可申请 API key 获得更高配额；每条案例的响应新增 provenance 字段，标明该提示语已核对过原帖。",
+      "复测实验室开始运转：首批 10 条图像与网页类案例已用当前模型重新生成对照，催复测票数最高的案例排在最前。人工判定后结果将陆续展示。",
+    ],
+    tags: ["功能", "API"],
+  },
+  {
+    date: "2026-08-07",
     title: "真机体验修复：手机图片直出彩色、投票全站可点",
     items: [
       "手机上图片不再永远是灰色：灰度转彩的悬停效果只保留给有鼠标的设备，触屏直接显示彩色。",
@@ -156,6 +166,16 @@ export const CHANGELOG: ChangelogEntry[] = [
 ];
 
 export const CHANGELOG_EN: ChangelogEntry[] = [
+  {
+    date: "2026-08-07",
+    title: "Daily digest and Agent API launch; retest lab starts running",
+    items: [
+      "New daily digest (/daily): two cases a day — one fresh hit from the last 14 days and one worth revisiting. Selection is deterministic by date, so everyone sees the same pair, with a dedicated RSS feed.",
+      "Agent API formalized (/agent-api): the public API stays usable without a key, now with documented rate limits; integrators can request an API key for higher quotas. Every case response now carries a provenance field confirming the prompt was verified against its source post.",
+      "The retest lab is running: the first 10 image and web cases have been regenerated with current models for side-by-side comparison, prioritized by retest votes. Verdicts will appear after human review.",
+    ],
+    tags: ["Feature", "API"],
+  },
   {
     date: "2026-08-07",
     title: "Real-device fixes: full-color images on mobile, vote anywhere",

@@ -2,7 +2,12 @@ import type { NextRequest } from "next/server";
 import { filterCasesByQuery, getCaseListData } from "@/lib/cases";
 import type { CaseCategory } from "@/lib/mock-data";
 import { normalizeLocale } from "@/i18n/config";
-import { getPublicApiHeaders, toPublicListItem } from "../_lib/public-case";
+import { apiAccessErrorMessage, resolveApiAccess } from "../_lib/api-access";
+import {
+  getPublicApiHeaders,
+  publicApiPreflightResponse,
+  toPublicListItem,
+} from "../_lib/public-case";
 import { lookupReactionCounts } from "../_lib/reaction-lookup";
 
 const VALID_CATEGORIES: readonly CaseCategory[] = [
@@ -30,10 +35,30 @@ function parseTake(rawTake: string | null): number {
   return Math.min(Math.max(parsed, MIN_TAKE), MAX_TAKE);
 }
 
+export function OPTIONS() {
+  return publicApiPreflightResponse();
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const locale = normalizeLocale(searchParams.get("locale"));
-  const headers = getPublicApiHeaders(locale);
+
+  // 准入判定在参数校验之前：被限流的请求不该再去碰数据层。
+  const access = await resolveApiAccess(request);
+  if (!access.ok) {
+    return Response.json(
+      { error: apiAccessErrorMessage(access.code, locale) },
+      {
+        status: access.status,
+        headers: getPublicApiHeaders(locale, access.headers),
+      }
+    );
+  }
+
+  const headers = getPublicApiHeaders(locale, {
+    ...access.headers,
+    ...(access.cacheControl ? { "Cache-Control": access.cacheControl } : {}),
+  });
 
   const rawCategory = searchParams.get("category");
   if (rawCategory && !VALID_CATEGORIES.includes(rawCategory as CaseCategory)) {

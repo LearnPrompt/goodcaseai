@@ -1,7 +1,16 @@
 import { getCaseDetailData } from "@/lib/cases";
 import { normalizeLocale } from "@/i18n/config";
-import { getPublicApiHeaders, toPublicDetailItem } from "../../_lib/public-case";
+import { apiAccessErrorMessage, resolveApiAccess } from "../../_lib/api-access";
+import {
+  getPublicApiHeaders,
+  publicApiPreflightResponse,
+  toPublicDetailItem,
+} from "../../_lib/public-case";
 import { lookupReactionCounts } from "../../_lib/reaction-lookup";
+
+export function OPTIONS() {
+  return publicApiPreflightResponse();
+}
 
 export async function GET(
   request: Request,
@@ -9,7 +18,23 @@ export async function GET(
 ) {
   const { slug } = await params;
   const locale = normalizeLocale(new URL(request.url).searchParams.get("locale"));
-  const headers = getPublicApiHeaders(locale);
+
+  // 准入判定在取数之前，理由同列表接口。
+  const access = await resolveApiAccess(request);
+  if (!access.ok) {
+    return Response.json(
+      { error: apiAccessErrorMessage(access.code, locale) },
+      {
+        status: access.status,
+        headers: getPublicApiHeaders(locale, access.headers),
+      }
+    );
+  }
+
+  const headers = getPublicApiHeaders(locale, {
+    ...access.headers,
+    ...(access.cacheControl ? { "Cache-Control": access.cacheControl } : {}),
+  });
 
   const item = await getCaseDetailData(slug, locale);
 

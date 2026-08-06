@@ -1,0 +1,11 @@
+-- 回滚 20260807010000_case_retests.sql。
+--
+-- 直接 drop 是安全的：这张表是本次迁移新建的，之前不存在同名对象，
+-- 也没有任何别的表对它有外键依赖（case_retests 引用 cases 用的是 slug 文本，
+-- 反方向没有引用）。
+--
+-- 但要清楚这条语句会**丢数据**：复测记录是人一条一条看图判出来的，
+-- 删掉就没了，重跑一遍模型也复原不了当时的人审结论。
+-- 真要回滚，先把表导出来：
+--   \copy public.case_retests to 'case_retests_backup.csv' csv header
+drop table if exists public.case_retests;

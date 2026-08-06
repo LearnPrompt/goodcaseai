@@ -15,6 +15,10 @@
 - 移动端口径：灰度回彩只在 hover:hover 设备生效，触屏直接彩色；
   提示语语言偏好按具体语言存储（original/zh/en，按界面语言分桶）
 - 审核状态：候选通过 review:candidates 人工决策，再由 publish:cases 发布
+- Agent API 状态：`/api/public/*` 免 key 匿名可用不变（新增按 IP 60 次/小时
+  内存软限）；带 `gc_` 开头的 key 走日配额，key 由运营手动签发
+  （`npm run api-keys`）。迁移 `20260807000000_agent_api_keys` **尚未执行**，
+  当前所有请求都走降级后的免 key 路径；文档页 `/agent-api`
 - 部署状态：goodcase.ai 与 test.goodcase.ai 代码/数据完全一致（staging 持续
   合入 main）；详情页构建期全量预渲染 + dynamicParams=false，发布/下架必须
   触发部署（Deploy Hook 两环境已配好并接入发布链路）；goodcase.carlwow.com
@@ -65,3 +69,25 @@
 - Vercel Blob（Hobby）：存储 566.7MB/1GB、流量 10GB/月、写操作 500/2000·月。
   流量是下一个天花板，播放量上来后需升级或迁 R2
 - BLOB_READ_WRITE_TOKEN 曾进聊天记录，待在 Vercel 后台轮换（公开读不受影响）
+
+## Agent API 正式化 · 2026-08-07（代码就绪，迁移未跑）
+
+- 定位：Agent 生成图 / 视频 / UI 之前来查经过核验的 prompt，是机器流量这条
+  第二增长曲线的计费入口。免 key 继续开放是硬约束——已发布的 goodcase Skill
+  用裸 curl 调用，不能被弄坏
+- 两档配额：免 key 按 IP 60 次/小时（进程内滑动窗口，Serverless 下是**软限**，
+  实际放行量 = 60 × 活跃实例数）；带 key 默认 2000 次/UTC 天，计数落
+  `api_usage`，由 `consume_api_quota` 行级锁做原子的判额 + 计数
+- key 只存 sha-256 hash，明文只在签发那一刻打印一次。签发 / 吊销 / 列表走
+  `scripts/api-keys/issue.mjs`（`npm run api-keys`），v1 不做自助注册
+- **认定规则**：只有以 `gc_` 开头的凭据才被当作 API key。请求里出现无关的
+  Authorization 头（企业代理常见）继续按匿名放行，不会 401
+- 降级：`api_keys` / `api_usage` / `consume_api_quota` 任一缺失时整体退回免 key
+  模式，所以代码可以先上线、迁移后跑。**代价是迁移前伪造的 key 也会被当匿名
+  请求放行**，这是刻意选择——向后兼容优先于迁移窗口期内的防伪
+- 响应新增 `provenance` 对象（sourceUrl + verifiedAgainstSource + method +
+  policyEffectiveAt + note）。没有 sourceUrl 的案例 verifiedAgainstSource 为
+  false，不做无依据的核验声明
+- 迁移文件 `supabase/migrations/20260807000000_agent_api_keys.sql` 与回滚
+  `supabase/rollbacks/20260807000000_agent_api_keys.rollback.sql` 已写好但
+  **未在任何环境执行**。跑之前无须回退应用；跑完之后签发第一把 key 才算闭环

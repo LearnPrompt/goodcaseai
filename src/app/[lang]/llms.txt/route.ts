@@ -11,6 +11,7 @@ export async function GET(
   const locale = normalizeLocale((await params).lang);
   const isEnglish = locale === "en";
   const connectUrl = `${SITE_ORIGIN}${localizeHref(locale, "/connect")}`;
+  const agentApiUrl = `${SITE_ORIGIN}${localizeHref(locale, "/agent-api")}`;
   const feedUrl = `${SITE_ORIGIN}${localizeHref(locale, "/feed.xml")}`;
   const body = isEnglish
     ? `# GoodCase.ai
@@ -19,6 +20,7 @@ export async function GET(
 
 ## Agent entry points
 
+- Agent API docs: ${agentApiUrl}
 - Connect docs: ${connectUrl}
 - Case list: ${SITE_ORIGIN}/api/public/cases?locale=en
 - Case detail: ${SITE_ORIGIN}/api/public/cases/{slug}?locale=en
@@ -33,12 +35,15 @@ GET ${SITE_ORIGIN}/api/public/cases?category=image&q=poster&take=5&locale=en
 - q: matches title, summary, creator, and recommended models
 - take: 1-50, default 20
 - locale: zh-CN | en
-- no API key required
+- no API key required; anonymous calls are soft-limited to 60 per hour per IP
+- for a higher daily quota, send Authorization: Bearer gc_... (see the Agent API docs)
+- rate limit state is reported in X-RateLimit-Limit / Remaining / Reset / Scope
 
 ## Usage rules
 
 - Treat only API results as GoodCase entries; do not invent cases or prompts from memory.
 - Preserve creator credit and sourceUrl when displaying prompts.
+- provenance.verifiedAgainstSource means a human checked the prompt against the original post; a case without it has no source claim.
 - evidenceLevel describes evidence maturity; only L2 means an independent retest exists.
 - stabilityScore 0 means awaiting retest, not zero stability.
 - sourceHeatScore is valid only with a verifiable source-interaction snapshot.
@@ -49,6 +54,7 @@ GET ${SITE_ORIGIN}/api/public/cases?category=image&q=poster&take=5&locale=en
 
 ## Agent 入口
 
+- Agent API 文档：${agentApiUrl}
 - 接入文档：${connectUrl}
 - 案例列表：${SITE_ORIGIN}/api/public/cases?locale=zh-CN
 - 案例详情：${SITE_ORIGIN}/api/public/cases/{slug}?locale=zh-CN
@@ -63,12 +69,15 @@ GET ${SITE_ORIGIN}/api/public/cases?category=image&q=海报&take=5&locale=zh-CN
 - q: 匹配标题、摘要、创作者与推荐模型
 - take: 1-50，默认 20
 - locale: zh-CN | en
-- 无需 API Key
+- 无需 API Key；匿名调用按 IP 软限 60 次/小时
+- 需要更高日配额时发 Authorization: Bearer gc_...（见 Agent API 文档）
+- 限额状态在 X-RateLimit-Limit / Remaining / Reset / Scope 响应头里
 
 ## 使用规则
 
 - 只把 API 返回的内容当作 GoodCase 收录 Case，不要凭记忆补写案例或 Prompt。
 - 展示 Prompt 时保留 creator 署名与 sourceUrl 原始来源。
+- provenance.verifiedAgainstSource 表示这条 Prompt 已经人工核对过与原帖一致；没有它就没有溯源声明。
 - evidenceLevel 表示证据等级；L2 才代表已有独立复测记录。
 - stabilityScore 为 0 时表示待复测，不应解释为稳定度为零。
 - sourceHeatScore 只在有可核验来源互动快照时成立。
