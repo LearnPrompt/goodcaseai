@@ -214,6 +214,59 @@ test("normalizeYouMindPromptPage 保留 isBasedOn 的 #reversed-N 锚点，sourc
   );
 });
 
+test("normalizeYouMindPromptPage 对超长 prompt 一字不截", () => {
+  // 钉死根因边界：2026-07-28 批次那堵「2950 字墙」不是我们截的，
+  // 是 youmind 在原推第 3000 个字符上下的刀（见 lib/prompt-truncation.mjs）。
+  // 这一层只要有任何 slice/substring 冒出来，这条就会红。
+  const hugePrompt = "1234567890".repeat(2_000);
+  assert.equal(hugePrompt.length, 20_000);
+
+  const html = `
+    <script type="application/ld+json">
+      ${JSON.stringify({
+        "@context": "https://schema.org",
+        "@graph": [{ ...creativeWork, text: hugePrompt }, video],
+      })}
+    </script>
+  `;
+  const item = normalizeYouMindPromptPage(
+    html,
+    "https://youmind.com/zh-CN/video-prompts/pixel-fairy-7697"
+  );
+
+  assert.equal(item.promptText.length, 20_000);
+  assert.equal(item.promptText, hugePrompt);
+  // 超过截断带就不再是嫌疑，别把正常的长 prompt 标脏。
+  assert.equal(item.promptTruncation.suspected, false);
+});
+
+test("normalizeYouMindPromptPage 把 youmind 侧的截断嫌疑标出来，但照样原样带出正文", () => {
+  const cappedTail = "Black ice cubes and red bottle cap float a";
+  const cappedPrompt =
+    "cinematic handheld shot of a city street, "
+      .repeat(100)
+      .slice(0, 2_928 - cappedTail.length) + cappedTail;
+  assert.equal(cappedPrompt.length, 2_928);
+
+  const html = `
+    <script type="application/ld+json">
+      ${JSON.stringify({
+        "@context": "https://schema.org",
+        "@graph": [{ ...creativeWork, text: cappedPrompt }, video],
+      })}
+    </script>
+  `;
+  const item = normalizeYouMindPromptPage(
+    html,
+    "https://youmind.com/zh-CN/video-prompts/pixel-fairy-7697"
+  );
+
+  assert.equal(item.promptTruncation.suspected, true);
+  assert.equal(item.promptTruncation.length, 2_928);
+  // 标记归标记，正文一个字都不许动——补全要靠这段残文去原帖里对齐。
+  assert.equal(item.promptText, cappedPrompt);
+});
+
 test("splitSourceReference 对不带锚点的出处返回空锚点", () => {
   assert.deepEqual(
     splitSourceReference("https://x.com/foo/status/123"),

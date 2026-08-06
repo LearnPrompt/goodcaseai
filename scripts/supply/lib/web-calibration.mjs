@@ -1125,12 +1125,34 @@ export function extractBestMedia(tweet) {
 }
 
 function decodeTweetText(value) {
-  return String(value || "")
+  const decoded = String(value || "")
     .replaceAll("&amp;", "&")
     .replaceAll("&lt;", "<")
     .replaceAll("&gt;", ">")
     .replaceAll("&quot;", '"')
     .replaceAll("&#39;", "'");
+  return unescapeDoubleEncodedText(decoded);
+}
+
+/**
+ * 修上游双重编码：多行推文正文被某个环节按 JSON 字符串二次序列化后，
+ * 换行变成了字面量反斜杠 n，一路穿透到 cases.prompt_full，页面直接显示 \n
+ * （2026-08-06 全库清出 6 条，5 条来自本管线的批次）。
+ *
+ * 不能无脑全局反转义：代码/YAML 类 prompt 可能合法包含 \n 字面量。
+ * 判据是双重编码的特征——一段多行文本被压成单行后必然「有字面量换行、
+ * 零真实换行」；两者混在一起的文本按原样放行，宁可漏修不误伤。
+ */
+export function unescapeDoubleEncodedText(value) {
+  const text = String(value || "");
+  const literalNewlines = (text.match(/\\n/g) || []).length;
+  if (literalNewlines < 2 || text.includes("\n")) {
+    return text;
+  }
+  return text
+    .replaceAll("\\n", "\n")
+    .replaceAll("\\t", "\t")
+    .replaceAll('\\"', '"');
 }
 
 function promptMarkerIndex(value) {
