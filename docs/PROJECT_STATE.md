@@ -91,3 +91,68 @@
 - 迁移文件 `supabase/migrations/20260807000000_agent_api_keys.sql` 与回滚
   `supabase/rollbacks/20260807000000_agent_api_keys.rollback.sql` 已写好但
   **未在任何环境执行**。跑之前无须回退应用；跑完之后签发第一把 key 才算闭环
+
+## 本地全栈开发工具 · 2026-08-06
+
+- `next.config.ts` 的 CSP 仅在 `NODE_ENV=development` 放行 `unsafe-eval`，用于 React
+  开发模式调试调用栈；生产 CSP 保持不放行。
+- `next.config.ts` 显式设 `turbopack.root = import.meta.dirname`。Turbopack 靠向上找
+  lockfile 推断 workspace root，开发机主目录若有无关的 `~/package-lock.json` 会把 root
+  推断成主目录（模块解析范围放大，报错路径变成 `./Desktop/...`）。钉死后与开发机其它
+  目录无关，`npm run build` 的 extra-lockfile 警告一并消失。
+- 已补 `npm run ops:migrate`：默认只读状态；`--baseline` 只登记当前
+  `supabase/migrations/` 的文件名与 SHA-256；`--apply` 才执行未登记 migration，
+  已应用文件 checksum 改变会直接拒绝。数据库记录表为 `public.schema_migrations`，
+  baseline 运行时创建并限制 anon/authenticated 权限。
+- 已补 `npm run dev:seed`：生产使用 `PROD_SUPABASE_URL` + `PROD_SUPABASE_ANON_KEY`
+  只读已发布 `cases`，本地使用 `NEXT_PUBLIC_SUPABASE_URL` + service role 分批按
+  slug upsert；`--dry-run` 不写库，同 host 直接拒绝，生成列和生产候选外键不复制。
+- 两个最新 migration 已补对应 rollback 文件，migration/rollback 文件名现在一一对应。
+- 本机 `.env.local` 已配置自己的 Supabase 项目与 `DATABASE_URL`；`PROD_*` 只读值也已配置。
+- `schema.sql` 已回补 `20260807` 两个 migration（`api_keys` / `api_usage` /
+  `consume_api_quota` / `case_retests`），与 migrations 目录逐语句一致；两个 migration
+  已在本机库 `--apply`。生产尚未执行，交付 Carl 前须先备份。
+- 当前使用可解析的 Session pooler host `aws-0-ca-central-1.pooler.supabase.com:5432`；
+  已在自己的 Supabase 库成功写入 `schema_migrations`，7 个现有 migration 全部登记，
+  status 显示 pending=0。此前认证失败的根因是终端旧的 `DATABASE_URL` 覆盖了 `.env.local`；
+  运行前需 `unset DATABASE_URL`，或在新终端执行。
+
+## GitHub 入库安全审计 · 2026-08-06
+
+- `LearnPrompt/goodcaseai` 的本地 `HEAD` 与 GitHub `main` 同为
+  `684f5950a4cf4ed3dfcae00d301bace75874f8d1`；该提交的 Vercel status 为 success，
+  GitHub Actions workflow runs 为空（仓库当前没有可用的 Actions CI）。
+- `ONBOARDING-FULLSTACK.md` 与 `goodcase-dev-env-readonly.example.txt` 已整理成不含
+  实值的交接文档，但**按决定不进版本控制**，与含真实值的
+  `goodcase-dev-env-readonly.txt` 一并由 `.gitignore` 排除，只在本机流转。
+- `.env.local` 含 service-role key、数据库连接串、运营密码和会话密钥，均未进入
+  Git 追踪；仓库已追踪文件扫描未发现这类实值。`NEXT_PUBLIC_*` anon 值虽属公开运行时
+  配置，也不把真实环境文件当作交接物提交。
+- 入库前验证：`npm run lint`、`npx tsc --noEmit`、`npm test`（310/310）和
+  `npm run build` 均通过。build 仅有上层目录存在额外 lockfile 的 workspace root 警告，
+  不影响本次验证。
+
+## schema.sql 漏了两个 migration（已修文件，本地库待同步）· 2026-08-06
+
+**症状**：新建库按 ONBOARDING-FULLSTACK 第 2 节「跑一次 schema.sql + `--baseline`」建成后，
+`ops:migrate` 报 pending=0，但库里既没有 `case_candidates.provenance_anchor` 列，
+也没有 `case_reactions` 表。
+
+**根因**：`schema.sql` 只同步到 `20260805000000`，后加的
+`20260805100000_candidate_provenance_anchor` 与 `20260805200000_case_reactions`
+没有回补进去。`--baseline` 只写记录不执行 SQL，于是把这两个从未在新库执行过的
+migration 也登记成已应用——记录说应用了，结构其实不存在，且 `ops:migrate`
+此后永远不会再跑它们。这违反了「新库跑 schema.sql 一个就够」这条性质。
+
+**实际影响**：`/api/reactions` 优雅降级返回 `{"available":false}`，点赞与催复测
+投票在这类库上静默失效，不报错所以极难发现；`import:candidates` 探测到
+`provenance_anchor` 列不存在会跳过该字段写入（溯源标记仍进 tags，不影响拦截）。
+生产库是逐条 `--apply` 上去的，不受影响；只影响照文档新建的开发库。
+
+**已修**：`schema.sql` 已补齐这两个 migration 的全部 DDL（列 + comment + 约束
++ 索引 + 建表 + RLS + revoke），保持幂等写法。
+
+**已闭环（2026-08-06）**：本机库已重跑补全后的 `schema.sql` 全文，`case_reactions`
+建出，306 条 cases 与其余各表行数逐表核对无一丢失，`/api/reactions` 从
+`available:false` 转为 `available:true`。做法确认为重跑 schema.sql（幂等）而不是删
+`schema_migrations` 记录再 `--apply`。其它按旧文档 baseline 建成的开发库同样处理。
