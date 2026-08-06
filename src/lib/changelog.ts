@@ -7,6 +7,18 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-08-07",
+    title: "真机体验修复：手机图片直出彩色、投票全站可点",
+    items: [
+      "手机上图片不再永远是灰色：灰度转彩的悬停效果只保留给有鼠标的设备，触屏直接显示彩色。",
+      "催复测投票在所有卡片上都能直接点了，不用再进详情页；投过的案例在任何页面都显示已投状态。",
+      "修复提示语翻译切换：中文原文案例此前点英文翻译没有反应，现已正常，偏好会按界面语言分别记住。",
+      "Skill 页的安装命令不再把手机页面横向撑出屏幕，命令可在框内左右滑动并完整复制。",
+      "详情页的原帖点赞数改为与点赞、收藏按钮同规格的展示样式。",
+    ],
+    tags: ["体验", "移动端"],
+  },
+  {
     date: "2026-08-06",
     title: "视频播放全面自托管，卡片排版等高",
     items: [
@@ -144,6 +156,18 @@ export const CHANGELOG: ChangelogEntry[] = [
 ];
 
 export const CHANGELOG_EN: ChangelogEntry[] = [
+  {
+    date: "2026-08-07",
+    title: "Real-device fixes: full-color images on mobile, vote anywhere",
+    items: [
+      "Images on phones are no longer stuck in grayscale: the hover-to-color effect is kept only for devices with a pointer; touch screens show full color right away.",
+      "Retest votes can now be cast directly from any card, not just the detail page; a voted case shows its voted state everywhere.",
+      "Fixed the prompt-translation toggle: on Chinese-original cases, tapping the English translation used to do nothing; it now switches correctly and remembers your preference per interface language.",
+      "The install command on Skill pages no longer stretches mobile pages sideways; it scrolls within its own box and stays fully copyable.",
+      "The source-post like count on detail pages now matches the size and style of the neighboring action buttons.",
+    ],
+    tags: ["Experience", "Mobile"],
+  },
   {
     date: "2026-08-06",
     title: "Self-hosted video playback and equal-height cards",
