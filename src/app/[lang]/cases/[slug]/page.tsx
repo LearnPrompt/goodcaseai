@@ -264,9 +264,16 @@ export default async function CaseDetailPage({
               initialCount={item.likedCount}
             />
             {formattedSourceLikeCount ? (
-              <span className="gc-chip" title={messages.interaction.sourceLikeHint}>
+              // 样式对齐旁边的点赞/收藏按钮（gc-action 的盒子规格），但它是数据
+              // 展示不是操作，所以不用 gc-action 类本身——那会带上悬停反色和上浮，
+              // 误导用户以为可点。
+              <span
+                className="inline-flex min-h-11 items-center justify-center gap-2 border border-[var(--hair)] bg-white px-4 text-[0.8125rem] font-semibold text-[var(--muted)]"
+                title={messages.interaction.sourceLikeHint}
+              >
                 {messages.interaction.sourceLikeLabel}{" "}
-                <span aria-hidden="true">♥</span> {formattedSourceLikeCount}
+                <span aria-hidden="true" className="text-[var(--orange)]">♥</span>{" "}
+                {formattedSourceLikeCount}
               </span>
             ) : null}
             <FavoriteButton caseSlug={item.slug} />
