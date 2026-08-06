@@ -21,17 +21,20 @@
     "ops:i18n-smoke": "node scripts/ops/check-i18n-pages.mjs",
     "ops:translate-cases": "node --env-file=.env.local scripts/ops/backfill-case-translations.mjs",
     "ops:creator-avatars": "node --env-file=.env.local scripts/ops/backfill-creator-avatars.mjs",
+    "ops:migrate": "node --env-file=.env.local scripts/ops/migrate.mjs",
+    "dev:seed": "node --env-file=.env.local scripts/dev-seed.mjs",
     "skills:generate": "node --env-file=.env.local scripts/skills/generate-installable-skills.mjs",
     "daily:digest": "node --env-file=.env.local scripts/daily/build-digest.mjs",
     "api-keys": "node --env-file=.env.local scripts/api-keys/issue.mjs",
-    "import:candidates": "node scripts/ingest-candidates.mjs",
-    "review:candidates": "node scripts/review-candidates.mjs",
-    "publish:cases": "node scripts/publish-approved-cases.mjs"
+    "import:candidates": "node --env-file=.env.local scripts/ingest-candidates.mjs",
+    "review:candidates": "node --env-file=.env.local scripts/review-candidates.mjs",
+    "publish:cases": "node --env-file=.env.local scripts/publish-approved-cases.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.101.1",
     "next": "16.2.12",
+    "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "uqr": "^0.1.3"

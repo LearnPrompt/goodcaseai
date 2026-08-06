@@ -46,6 +46,13 @@ npm run dev
 
 数据层用 Supabase。把 `.env.example` 复制成 `.env.local`，填入 Supabase 与站点 origin；表结构在 `supabase/schema.sql`。没配 Supabase 也能跑，页面会退回内置案例数据。
 
+本地全量建库后，用 `npm run ops:migrate -- --baseline` 只登记现有 migration；
+`npm run ops:migrate` 只读显示待应用项，确认后用 `npm run ops:migrate -- --apply` 执行增量。
+要把生产已发布 Case 复制到自己的库，临时配置 `PROD_SUPABASE_URL` 与
+`PROD_SUPABASE_ANON_KEY`，先跑 `npm run dev:seed -- --dry-run`，再跑
+`npm run dev:seed`。seed 只读生产、写入本地，并拒绝 source/target 同 host。
+如果终端曾经 export 过旧的 `DATABASE_URL`，先运行 `unset DATABASE_URL`，避免它覆盖 `.env.local`。
+
 ## 内容管道
 
 自动发现与人工发布分开。影子供给只生成本地报告，不写数据库：
