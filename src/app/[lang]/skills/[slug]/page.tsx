@@ -167,8 +167,8 @@ export default async function SkillDetailPage({
       </PageHero>
 
       {installablePackage ? (
-        <section className="grid gap-5 border-b border-[var(--hair)] py-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.45fr)]">
-          <article className="border border-[var(--orange)] bg-[var(--orange)] p-5 text-white sm:p-6">
+        <section className="grid min-w-0 gap-5 border-b border-[var(--hair)] py-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.45fr)]">
+          <article className="min-w-0 border border-[var(--orange)] bg-[var(--orange)] p-5 text-white sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-white/75">
                 {isEnglish ? "Verified installable Agent Skill" : "已验证 · 可安装 Agent Skill"}
@@ -180,7 +180,7 @@ export default async function SkillDetailPage({
             <h2 className="mt-5 text-3xl font-medium leading-none tracking-[-0.04em]">
               {isEnglish ? "Install into your agent." : "把这套方法装进你的 Agent。"}
             </h2>
-            <pre className="mt-5 overflow-x-auto border border-white/30 bg-black/20 p-4 font-mono text-xs leading-6 text-white">
+            <pre className="mt-5 w-full min-w-0 max-w-full overflow-x-auto border border-white/30 bg-black/20 p-4 font-mono text-xs leading-6 text-white">
               <code>{getSkillInstallCommand(skill.slug)}</code>
             </pre>
             <div className="mt-5 flex flex-wrap gap-3">
@@ -202,7 +202,7 @@ export default async function SkillDetailPage({
             </div>
           </article>
 
-          <aside className="gc-panel-muted p-5 sm:p-6">
+          <aside className="min-w-0 gc-panel-muted p-5 sm:p-6">
             <p className="gc-eyebrow">
               {isEnglish ? "Installation contract" : "安装合约"}
             </p>
@@ -223,8 +223,8 @@ export default async function SkillDetailPage({
         </section>
       ) : null}
 
-      <section className="grid gap-5 border-b border-[var(--hair)] py-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.45fr)]">
-        <article className="gc-panel p-5 sm:p-6">
+      <section className="grid min-w-0 gap-5 border-b border-[var(--hair)] py-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.45fr)]">
+        <article className="min-w-0 gc-panel p-5 sm:p-6">
           <p className="gc-eyebrow">
             {isEnglish ? "Method skeleton" : "方法骨架"}
           </p>
@@ -243,7 +243,7 @@ export default async function SkillDetailPage({
           </ol>
         </article>
 
-        <aside className="gc-panel-muted p-5 sm:p-6">
+        <aside className="min-w-0 gc-panel-muted p-5 sm:p-6">
           <p className="gc-eyebrow">
             {isEnglish ? "Why it exists" : "为什么形成 Skill"}
           </p>

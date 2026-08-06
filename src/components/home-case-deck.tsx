@@ -79,9 +79,9 @@ export function HomeCaseDeck({
                     sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
                     className={`${
                       mediaFit === "contain" ? "object-contain" : "object-cover"
-                    } grayscale transition duration-300 group-hover:grayscale-0`}
+                    } [@media(hover:hover)]:grayscale transition duration-300 group-hover:grayscale-0`}
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.18),transparent_46%,rgba(10,10,10,0.22))] transition-opacity duration-300 group-hover:opacity-0" />
+                  <div className="absolute inset-0 [@media(hover:hover)]:bg-[linear-gradient(135deg,rgba(194,65,12,0.18),transparent_46%,rgba(10,10,10,0.22))] transition-opacity duration-300 group-hover:opacity-0" />
                   <span className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 font-mono text-[10px] text-white">
                     {item.categoryLabel}
                   </span>

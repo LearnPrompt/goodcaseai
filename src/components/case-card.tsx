@@ -110,7 +110,7 @@ export function CaseCard({
               sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
               className={`${
                 mediaFit === "contain" ? "object-contain" : "object-cover"
-              } grayscale transition duration-300 group-hover:scale-[1.015] group-hover:grayscale-0`}
+              } [@media(hover:hover)]:grayscale transition duration-300 group-hover:scale-[1.015] group-hover:grayscale-0`}
             />
           ) : (
             <video
@@ -118,7 +118,7 @@ export function CaseCard({
               playsInline
               preload="none"
               poster={item.posterUrl || undefined}
-              className="h-full w-full object-cover grayscale transition duration-300 group-hover:scale-[1.015] group-hover:grayscale-0"
+              className="h-full w-full object-cover [@media(hover:hover)]:grayscale transition duration-300 group-hover:scale-[1.015] group-hover:grayscale-0"
             >
               <source src={item.mediaUrl} type="video/mp4" />
             </video>
