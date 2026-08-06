@@ -21,6 +21,32 @@
   自托管媒体），中英同步。**注意：这个文件每次发版要手动补，别再忘**
 - 测试 291 → 301
 
+## 2026-08-06 · 真机反馈修复轮：投票全站可点、语言切换状态机缺陷、移动端三处（PR #30/#31）
+
+- **提示语语言切换点了没反应（所有端）**：偏好状态机把语言压成
+  original/localized 二值，表达不了「中文界面看英文译文」——点 en → 存
+  localized → 同步事件把 localized 解析回 fallback（中文界面无中文译文时
+  是 original），状态当场被打回。常见组合（英文原文配中文译文）恰好
+  fallback 是 zh 所以长期未暴露，本批中文原文 + 仅英文译文的新案例一上
+  即露馅。偏好改存具体语言，旧二值按 fallback 兼容
+- **投票催复测铺到全部出现处**：抽 use-retest-vote 共用 hook（缝合
+  local-retest-votes 已投状态 + reaction-counts 全局单例计数），卡片稳定度
+  格子变可点按钮（虚线下划线 + hover 变橙的最小暗示；已投显示已催复测；
+  preventDefault/stopPropagation 不触发卡片链接）。列表页仍只有一条批量
+  计数请求；同一行卡片 y 对齐逐像素未变
+- **触屏图片永久灰**：灰度回彩设计靠 hover，触屏没有 hover。裸 grayscale
+  全部改 [@media(hover:hover)]:grayscale，触屏一开始就是彩色，hover 才
+  消失的暗色渐变遮罩同样条件化；桌面行为一字不变
+- **Skill 页安装命令把手机页面横向撑到约 900px**：CSS Grid 经典陷阱——
+  移动端外层 section 无显式列定义，隐式轨道按 max-content 撑开且 grid item
+  默认 min-width:auto，代码块自身的 overflow-x 救不了外层。全链路 min-w-0，
+  与 /connect 既有防御一致；顶栏导航格加 shrink-0 grow-0 basis-auto 防拉伸
+  （用户截图的拉伸未能复现，防御性加固）
+- **原帖 ♥ N 样式对齐**：从 gc-chip 小药丸改为与点赞/收藏同规格盒子
+  （min-h-11、1px 边框），刻意不用 gc-action 类避免悬停反色误导为可点
+- 生产验收：375 视口英文切换往返成功、/cases 一页 18 个可点投票按钮、
+  chip 44px、Skill 页 scrollWidth===clientWidth。测试 301/301
+
 ## 2026-08-06 · 截断收尾：补全 32 条、方法论重写 14 条、两个上游损坏源堵死
 
 - 全批次扫 `reviewed-web-video-20260728-v1` 121 条：补全 32 条截断 prompt
