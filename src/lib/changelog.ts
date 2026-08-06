@@ -7,6 +7,50 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-08-06",
+    title: "视频播放全面自托管，卡片排版等高",
+    items: [
+      "全部案例的视频与封面迁移到站点自有存储，播放不再依赖第三方图床的可达性；加载失败时会明确提示并提供重试和原帖入口。",
+      "32 条案例的提示语按原帖补全为完整版——此前部分长提示语被来源方截断，最长的一条从 253 字补到一万余字；对应的方法拆解同步重写。",
+      "列表卡片同一行严格等高：标题、摘要、标签区高度固定，提示语块与统计行逐张对齐。",
+      "稳定度待复测的案例显示当前催复测票数。",
+    ],
+    tags: ["体验", "数据"],
+  },
+  {
+    date: "2026-08-05",
+    title: "无账号点赞与催复测投票上线",
+    items: [
+      "点赞从本地假计数改为全站真实计数：无需注册，同一浏览器对同一案例只算一次，跨设备可见。",
+      "稳定度缺测的案例可以投票催复测，票数公开累计。",
+      "案例详情页并排展示原帖在来源平台的真实点赞数，明确标注为录入时快照，与站内计数互不混淆。",
+      "公开 API 新增真实的 likedCount 与 retestVoteCount 字段，Agent 可获取站内互动数据。",
+    ],
+    tags: ["功能", "透明度"],
+  },
+  {
+    date: "2026-08-05",
+    title: "内容溯源治理：下架 33 条对不上原始出处的案例",
+    items: [
+      "对全部经聚合渠道入库的案例逐条核对原始出处，下架 33 条提示语与原帖对不上（疑似逆向重构或原帖并未公开提示语）的案例。",
+      "两条案例换回作者的中文原文提示语，此前展示的英文版转为译文保留。",
+      "入库管线新增三道溯源校验：保留来源方的逆向重构标记、带标记的候选不再自动进入待审、入库时自动比对提示语是否出自原帖。",
+      "一条创意归属存在公开争议的案例在详情页加注了中性说明。",
+    ],
+    tags: ["数据", "透明度"],
+  },
+  {
+    date: "2026-08-05",
+    title: "全站提速与模型浏览上线正式站",
+    items: [
+      "案例、创作者、模型页全面提速：案例列表页体积从 4.5MB 降到约 180KB，创作者页从 1.1MB 降到约 97KB。",
+      "模型浏览上线：按 Seedance、GPT Image 等模型家族筛选案例，首页新增模型条。",
+      "中英双语全站可用，语言切换不再丢失当前页面。",
+      "案例列表与创作者列表支持分页；卡片媒体按比例自适应展示，竖版视频与界面截图不再被裁切。",
+    ],
+    tags: ["体验", "功能"],
+  },
+  {
     date: "2026-07-28",
     title: "从 Case 派生作者方法与通用 Skill",
     items: [
@@ -100,6 +144,50 @@ export const CHANGELOG: ChangelogEntry[] = [
 ];
 
 export const CHANGELOG_EN: ChangelogEntry[] = [
+  {
+    date: "2026-08-06",
+    title: "Self-hosted video playback and equal-height cards",
+    items: [
+      "All case videos and posters now live on our own storage — playback no longer depends on third-party CDNs; failed loads show a clear message with retry and a link to the source post.",
+      "32 cases had their prompts restored to the full original-post version (some had been truncated upstream; the longest grew from 253 to over 10,000 characters), with method breakdowns rewritten to match.",
+      "Cards in the same row are now strictly equal-height: title, summary, and tag zones have fixed heights, and prompt blocks and stat rows align across cards.",
+      "Cases awaiting a stability retest now show their current vote count.",
+    ],
+    tags: ["Experience", "Data"],
+  },
+  {
+    date: "2026-08-05",
+    title: "Account-free likes and retest votes",
+    items: [
+      "Likes are now real site-wide counts instead of local-only numbers: no signup, one count per browser per case, visible across devices.",
+      "Cases without a measured stability score accept retest votes, with public running counts.",
+      "Detail pages show the source post's real like count alongside, clearly labeled as an ingestion-time snapshot, never mixed into site counts.",
+      "The public API gains real likedCount and retestVoteCount fields for agents.",
+    ],
+    tags: ["Features", "Transparency"],
+  },
+  {
+    date: "2026-08-05",
+    title: "Provenance cleanup: 33 cases unpublished",
+    items: [
+      "Every case ingested via aggregator channels was checked against its original source; 33 whose prompts could not be matched to the source post (likely reverse-engineered, or the author never published a prompt) were unpublished.",
+      "Two cases were restored to the author's original Chinese prompt, keeping the previous English version as a translation.",
+      "The ingestion pipeline gained three provenance gates: aggregator reverse-engineering markers are preserved, flagged candidates no longer auto-enter review, and prompts are automatically matched against source-post text at ingestion.",
+      "One case with a publicly disputed attribution now carries a neutral note on its detail page.",
+    ],
+    tags: ["Data", "Transparency"],
+  },
+  {
+    date: "2026-08-05",
+    title: "Site-wide speedup and model browsing on production",
+    items: [
+      "Major page-weight cuts: the case list dropped from 4.5MB to about 180KB, creator pages from 1.1MB to about 97KB.",
+      "Model browsing launched: filter cases by model family (Seedance, GPT Image, and more), with a model strip on the home page.",
+      "Full bilingual support; switching languages keeps you on the current page.",
+      "Case and creator lists are paginated; card media adapts to aspect ratio, so vertical videos and UI screenshots are no longer cropped.",
+    ],
+    tags: ["Experience", "Features"],
+  },
   {
     date: "2026-07-28",
     title: "Creator methods and shared Skills derived from Cases",
