@@ -359,6 +359,25 @@ export default async function Home({
               {isEnglish ? "Submit a case" : "提交案例"}
             </Link>
           </div>
+          {/*
+            每日早报入口。放在主 CTA 下面、统计行上面：想每天回来的人一眼看得到，
+            又不跟「查看榜单」抢首屏的主动作。样式压到一行细边框，不做成第四个按钮。
+          */}
+          <Link
+            href="/daily"
+            className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-l-2 border-[var(--orange)] pl-3 transition hover:bg-[var(--paper-2)]"
+          >
+            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--orange)]">
+              {isEnglish ? "Daily digest" : "今日早报"}
+            </span>
+            <span className="text-sm leading-6 text-[var(--mute)]">
+              {isEnglish
+                ? "One new hit and one retested older hit, two cases every day."
+                : "一条新爆款，一条复测过的旧爆款，每天两条。"}
+            </span>
+            <span className="font-mono text-xs text-[var(--orange)]">→</span>
+          </Link>
+
           <div className="mt-6 flex flex-wrap gap-5 font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--mute)]">
             <span>
               <b className="text-[var(--ink)]">{totalCaseCount}</b>{" "}

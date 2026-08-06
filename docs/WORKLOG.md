@@ -2,6 +2,39 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-07 · Agent API 正式化：免 key 保底 + key 配额 + 溯源字段 + /agent-api 文档页
+
+- `/api/public/cases` 与 `/api/public/cases/[slug]` 加准入判定。免 key 请求
+  照常返回同样的数据，只是多了按 IP 60 次/小时的内存滑动窗口软限，
+  Cache-Control 一字未改（仍是 public, s-maxage=300）；带 key 请求走
+  日配额并回 `X-RateLimit-*`，Cache-Control 改成 private, no-store
+  （逐请求变化的 Remaining 不能进 CDN，也不能把一把 key 的响应喂给另一把）
+- **只有以 `gc_` 开头的凭据才算带 key 调用**。这条是向后兼容的关键：
+  企业代理塞进来的无关 Authorization 头必须继续按匿名放行，不能 401。
+  前缀对但形状不对（打错了 key）才 401，免得用户以为配额生效了
+- 新增迁移 `20260807000000_agent_api_keys`（**未执行**）：`api_keys`（只存
+  sha-256 hash）+ `api_usage`（按 key × UTC 日一行 upsert，不是逐请求明细）
+  + `consume_api_quota` 函数。函数存在的唯一理由是把「查用量 → 判限额 →
+  计数 +1」用行级锁做成原子操作；应用层 select-then-update 会因读改写竞态
+  少算计数并放过超额请求
+- 三张关系任一缺失时整体降级为免 key 模式（`isMissingApiKeyRelationError`，
+  认 42P01 / 42883 / PGRST205 / PGRST202），所以代码可以先上线迁移后跑
+- key 签发走 `scripts/api-keys/issue.mjs`（`npm run api-keys`，含 issue /
+  revoke / list）。明文只在签发那一刻打印一次，库里、日志里都没有
+- 公开响应新增 `provenance` 对象：sourceUrl + verifiedAgainstSource +
+  method + policyEffectiveAt + note。2026-08-05 溯源审计的准入规则以前只活在
+  运营流程里，机器读不到就等于没有。**没有 sourceUrl 时布尔为 false** ——
+  无从对照就不做声明，这个字段的全部价值建立在它不虚报上
+- 新增 `/agent-api` 文档页（zh/en），文案走页面自己的 `copy.ts` 局部字典，
+  不进全站 messages.ts。响应示例是真实一次 curl 的输出，只截断了长字符串
+- `llms.txt` 补 Agent API 入口、限额口径与 provenance 说明；sitemap 补
+  `/agent-api`；`/api/public/*` 补 OPTIONS 预检（带 Authorization 的浏览器
+  调用会先发 preflight，没有它前端根本连不上）
+- 纯逻辑抽到 `src/lib/api-keys.ts` / `rate-limit.ts` / `provenance.ts`，
+  node:test 覆盖哈希验证、限额边界、窗口滑动、降级判定、key 行判定四条
+  401 分支（这四条只有迁移跑完才可能在线上走到，只能靠单测保证）
+- 测试 334 → 335（新增三个测试文件共 22 个用例）
+
 ## 2026-08-06 · 截断补全收尾：管线双修 + 14 条方法论重写 + 站上更新日志追平
 
 - `reviewed-web-video-20260728-v1` 批次 121 条全评：83 完整、32 截断已按原帖
@@ -46,6 +79,26 @@
   （min-h-11、1px 边框），刻意不用 gc-action 类避免悬停反色误导为可点
 - 生产验收：375 视口英文切换往返成功、/cases 一页 18 个可点投票按钮、
   chip 44px、Skill 页 scrollWidth===clientWidth。测试 301/301
+
+## 2026-08-07 · 早报 / Agent API / 复测实验室三线并发落地
+
+- **每日早报**：/daily（1 新爆款 + 1 复习旧款，按日期确定性选择、可回放）、
+  /daily/feed.xml（14 期重放）、scripts/daily/build-digest.mjs 出公众号 markdown。
+  revalidate=3600（对齐自然日的滞后上限 1 小时）；期数自站点公开首日 05-17 起算。
+  票数未进 ISR 数据层，复习位暂按稳定分排（页面与脚本同函数保证同对）
+- **Agent API 正式化**：免 key 照常（软限 60/h/IP，goodcase skill 四条 curl
+  原样重放验证 38 字段零变化）；gc_ 前缀 key + sha-256 hash 入库 +
+  consume_api_quota 原子日配额；响应新增 provenance 字段；/agent-api 文档页；
+  scripts/api-keys/issue.mjs 手动签发。迁移 20260807000000_agent_api_keys
+- **复测实验室 v1**：codex 内置 image_generation（无模型选择权，记为
+  codex-builtin-image-generation）+ gpt-5.6-sol 出单文件 HTML 截图。
+  首批 image 5 + web 5 全部产出证据，报告落 ~/Downloads，产物上 Blob
+  （+10.5MB，总 577MB）。脚本永不写 verdict、永不碰 stability_score。
+  排队按催复测票（当前仅 5 票/2 条，实际靠热度）。迁移 20260807010000_case_retests
+- 已知留白：goodcase skill 待出引用 provenance 的新版（要重新打包）；
+  /connect 与 /agent-api 口径待收敛；10 条 media_url 站内相对路径未迁 Blob
+  （复测下载器已兜底）；需要输入图的复测（3 条）缺原始输入素材
+- 测试 301 → 349；两份迁移待主控在 Supabase 执行
 
 ## 2026-08-06 · 截断收尾：补全 32 条、方法论重写 14 条、两个上游损坏源堵死
 

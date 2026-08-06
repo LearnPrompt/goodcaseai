@@ -64,6 +64,8 @@ test("localized href preserves path, query and hash without double prefixes", ()
 test("only page-like paths participate in locale rewrites", () => {
   assert.equal(isLocaleRoutablePath("/cases/example"), true);
   assert.equal(isLocaleRoutablePath("/feed.xml"), true);
+  assert.equal(isLocaleRoutablePath("/daily/feed.xml"), true);
+  assert.equal(isLocaleRoutablePath("/daily"), true);
   assert.equal(isLocaleRoutablePath("/llms.txt"), true);
   assert.equal(isLocaleRoutablePath("/api/public/cases"), false);
   assert.equal(isLocaleRoutablePath("/_next/static/file.js"), false);

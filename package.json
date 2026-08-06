@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test scripts/supply/lib/*.test.mjs scripts/review/lib/*.test.mjs scripts/ops/lib/*.test.mjs",
+    "test": "node --test scripts/supply/lib/*.test.mjs scripts/review/lib/*.test.mjs scripts/ops/lib/*.test.mjs scripts/retest/lib/*.test.mjs",
     "supply:shadow": "node scripts/supply/shadow-run.mjs",
     "supply:youmind": "node scripts/supply/shadow-run.mjs --source=youmind --max-items=8",
     "supply:multisource": "node scripts/supply/collect-alternative-samples.mjs",
@@ -22,6 +22,8 @@
     "ops:translate-cases": "node --env-file=.env.local scripts/ops/backfill-case-translations.mjs",
     "ops:creator-avatars": "node --env-file=.env.local scripts/ops/backfill-creator-avatars.mjs",
     "skills:generate": "node --env-file=.env.local scripts/skills/generate-installable-skills.mjs",
+    "daily:digest": "node --env-file=.env.local scripts/daily/build-digest.mjs",
+    "api-keys": "node --env-file=.env.local scripts/api-keys/issue.mjs",
     "import:candidates": "node scripts/ingest-candidates.mjs",
     "review:candidates": "node scripts/review-candidates.mjs",
     "publish:cases": "node scripts/publish-approved-cases.mjs"

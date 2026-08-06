@@ -75,8 +75,18 @@ export function localizeHref(locale: Locale, href: string) {
   return `${localizedPathname}${url.search}${url.hash}`;
 }
 
+/**
+ * 带扩展名的路径默认被当成静态资源、不做语种改写，但 RSS 和 llms.txt 是
+ * [lang] 段下的真实路由，必须逐条放行，否则不带 /en 前缀的那个地址会 404。
+ */
+const LOCALE_ROUTABLE_FILE_PATHS = [
+  "/feed.xml",
+  "/daily/feed.xml",
+  "/llms.txt",
+];
+
 export function isLocaleRoutablePath(pathname: string) {
-  if (pathname === "/feed.xml" || pathname === "/llms.txt") {
+  if (LOCALE_ROUTABLE_FILE_PATHS.includes(pathname)) {
     return true;
   }
 

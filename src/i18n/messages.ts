@@ -79,6 +79,27 @@ export const zhCNMessages = {
     stability: "稳定度",
     latest: "最新",
   },
+  daily: {
+    eyebrow: "每日早报",
+    issue: "第 {issue} 期",
+    title: "今天只看两条。",
+    description:
+      "一条最近发布、来源热度靠前的新案例，一条已经发布满两周、复测证据还站得住的旧案例。选择按日期确定，同一天谁打开都是同一对。",
+    freshLabel: "今日新案例",
+    freshNote: "最近两周发布的案例里，原帖互动热度靠前的一条。",
+    freshFallbackNote: "最近两周没有新发布，这里先放全库最新的一条。",
+    reviewLabel: "今日复习",
+    reviewNote: "发布满两周、稳定分或催复测票数靠前的一条，回头看看现在还能不能用。",
+    empty: "今天这一档还没凑齐案例，先去案例库逛逛。",
+    subscribe: "订阅早报 RSS",
+    browseAll: "去案例库",
+    homeEntry: "今日早报",
+    homeEntryHint: "一条新爆款，一条复测过的旧爆款，每天两条。",
+    footerNote: "早报按日期确定性选出，不随刷新变化，也可以用 RSS 回看最近两周。",
+    feedTitle: "GoodCase.ai 每日早报",
+    feedDescription:
+      "每天两条：一条最近发布的新案例，一条发布满两周、复测证据还站得住的旧案例。",
+  },
   model: {
     browseTitle: "按模型浏览",
     browseHint: "新模型上线后，这里会先出现",
@@ -277,6 +298,32 @@ export const enMessages = {
     heat: "Source heat",
     stability: "Stability",
     latest: "Latest",
+  },
+  daily: {
+    eyebrow: "Daily Digest",
+    issue: "Issue {issue}",
+    title: "Two cases a day.",
+    description:
+      "One recent case with strong source heat, and one older case that still holds up after two weeks of retest evidence. The pair is derived from the date, so everyone opening the page today sees the same two.",
+    freshLabel: "New today",
+    freshNote:
+      "Published in the last two weeks, ranked by interaction on the original post.",
+    freshFallbackNote:
+      "Nothing was published in the last two weeks, so the newest case in the library stands in.",
+    reviewLabel: "Revisit today",
+    reviewNote:
+      "Published more than two weeks ago and ranked high on stability or retest votes. Worth checking whether it still works.",
+    empty: "This slot has no case today. Browse the library instead.",
+    subscribe: "Subscribe via RSS",
+    browseAll: "Browse cases",
+    homeEntry: "Daily digest",
+    homeEntryHint:
+      "One new hit and one retested older hit, two cases every day.",
+    footerNote:
+      "The digest is derived from the date, so it does not change on refresh. The RSS feed replays the last two weeks.",
+    feedTitle: "GoodCase.ai Daily Digest",
+    feedDescription:
+      "Two cases a day: one recently published, one published more than two weeks ago whose retest evidence still holds up.",
   },
   model: {
     browseTitle: "Browse by model",
