@@ -10,7 +10,10 @@
 - 一级内容对象：Case；Creator、Lab、Skill 只作为派生视图
 - 认证状态：本月明确不建设账号体系；完整 Prompt 公开
 - 互动状态：点赞与催复测投票为无账号真计数（case_reactions 表，浏览器持久
-  匿名身份防重，读写只走 /api/reactions）；收藏仍为 localStorage
+  匿名身份防重，读写只走 /api/reactions）；投票在全站所有出现处可点，
+  跨页面状态一致；收藏仍为 localStorage
+- 移动端口径：灰度回彩只在 hover:hover 设备生效，触屏直接彩色；
+  提示语语言偏好按具体语言存储（original/zh/en，按界面语言分桶）
 - 审核状态：候选通过 review:candidates 人工决策，再由 publish:cases 发布
 - 部署状态：goodcase.ai 与 test.goodcase.ai 代码/数据完全一致（staging 持续
   合入 main）；详情页构建期全量预渲染 + dynamicParams=false，发布/下架必须
