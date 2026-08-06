@@ -38,7 +38,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="inline-flex min-h-11 items-center border-r border-[var(--hair)] px-3 text-[var(--muted)] transition last:border-r-0 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
+              className="inline-flex min-h-11 shrink-0 grow-0 basis-auto items-center border-r border-[var(--hair)] px-3 text-[var(--muted)] transition last:border-r-0 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
             >
               {item.label}
             </Link>

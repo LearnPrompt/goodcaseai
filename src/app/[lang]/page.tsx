@@ -84,12 +84,12 @@ function MediaTile({
   hoverReveal?: boolean;
 }) {
   const mediaClassName = hoverReveal
-    ? "object-cover grayscale transition duration-300 group-hover:grayscale-0"
+    ? "object-cover [@media(hover:hover)]:grayscale transition duration-300 group-hover:grayscale-0"
     : vivid
       ? "object-cover"
       : "object-cover opacity-90 grayscale";
   const washClassName = hoverReveal
-    ? "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.18),transparent_46%,rgba(10,10,10,0.22))] transition-opacity duration-300 group-hover:opacity-0"
+    ? "absolute inset-0 [@media(hover:hover)]:bg-[linear-gradient(135deg,rgba(194,65,12,0.18),transparent_46%,rgba(10,10,10,0.22))] transition-opacity duration-300 group-hover:opacity-0"
     : vivid
     ? "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.15),transparent_46%,rgba(10,10,10,0.15))]"
     : "absolute inset-0 bg-[linear-gradient(135deg,rgba(194,65,12,0.32),transparent_46%,rgba(10,10,10,0.38))]";
