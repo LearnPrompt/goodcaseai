@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  unescapeDoubleEncodedText,
   buildWebCalibrationReport,
   extractBestMedia,
   extractThreadPrompt,
@@ -303,4 +304,19 @@ test("web v4 keeps 40 unique seeds without reusing prior review posts", () => {
   assert.equal(v4Ids.length, 40);
   assert.equal(new Set(v4Ids).size, 40);
   assert.equal(v4Ids.some((id) => priorIds.has(id)), false);
+});
+
+test("双重编码的多行正文被还原：有字面量换行且零真实换行才动手", () => {
+  assert.equal(
+    unescapeDoubleEncodedText('line one\\nline two\\nsaid \\"hi\\"'),
+    'line one\nline two\nsaid "hi"'
+  );
+});
+
+test("合法包含 \\n 字面量的代码类 prompt 原样放行", () => {
+  // 已有真实换行说明不是双重编码，print('a\\nb') 这类内容不许被改写
+  const code = "写一段 Python:\nprint('a\\nb')\nprint('done')";
+  assert.equal(unescapeDoubleEncodedText(code), code);
+  // 只出现一次字面量也不动（单个 \\n 更可能是内容本身）
+  assert.equal(unescapeDoubleEncodedText("escape is \\n here"), "escape is \\n here");
 });

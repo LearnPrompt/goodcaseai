@@ -27,6 +27,10 @@ import {
   checkPromptProvenance,
   provenanceTags,
 } from "./lib/prompt-provenance.mjs";
+import {
+  detectPromptCapTruncation,
+  truncationTags,
+} from "./lib/prompt-truncation.mjs";
 import { resolveContentLocale } from "../review/lib/content-locale.mjs";
 
 const APP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -90,6 +94,9 @@ function toReportItem(item) {
     sourceUrl: item.sourceUrl,
     anchor: item.provenanceAnchor ?? undefined,
   });
+  // 截断判定和溯源判定一样在报告层重算：跟适配器各算各的，
+  // 哪一层被改坏了另一层还在。radar 来源没有 promptTruncation 字段，这里一并覆盖。
+  const truncation = detectPromptCapTruncation(evidence.safePromptText);
   return {
     canonicalKey: item.canonicalKey,
     canonicalUrl: item.canonicalUrl,
@@ -121,10 +128,12 @@ function toReportItem(item) {
       ...new Set([
         ...(Array.isArray(item.tags) ? item.tags : []),
         ...provenanceTags(provenance),
+        ...truncationTags(truncation),
       ]),
     ],
     provenanceAnchor: provenance.anchor || null,
     provenance,
+    promptTruncation: truncation,
     candidateType: evidence.candidateType,
     evidence: {
       checks: evidence.checks,
@@ -202,6 +211,9 @@ function renderMarkdown(report) {
     `- Case：${report.stats.cases}`,
     `- Topic seed：${report.stats.topicSeeds}`,
     `- 溯源拦截（不进 pending）：${report.stats.provenanceBlocked ?? 0}`,
+    `- 疑似上游截断（进 pending，但打了 prompt-maybe-truncated 标签）：${
+      report.stats.promptMaybeTruncated ?? 0
+    }`,
     `- 来源错误：${report.errors.length}`,
     "",
   ];
@@ -347,6 +359,9 @@ async function main() {
       provenanceBlocked: items.filter((item) =>
         BLOCKED_PROVENANCE_STATUSES.has(item.provenance?.status)
       ).length,
+      promptMaybeTruncated: items.filter(
+        (item) => item.promptTruncation?.suspected
+      ).length,
     },
     errors,
     items,
@@ -398,6 +413,16 @@ async function main() {
           `  - [${candidate.provenance_status}] ${candidate.title} ${candidate.source_url}`
         );
       }
+    }
+  }
+  // 截断只告警不拦截：它是上游数据损坏，不是造假，拦下来反而会把能人工补全的条目丢掉。
+  const truncated = items.filter((item) => item.promptTruncation?.suspected);
+  if (truncated.length > 0) {
+    console.warn(`疑似上游截断 ${truncated.length} 条（已进 pending，需人工对照原帖补全）：`);
+    for (const item of truncated) {
+      console.warn(
+        `  - [${item.promptTruncation.length} 字符] ${item.title} ${item.canonicalUrl}`
+      );
     }
   }
   console.log(

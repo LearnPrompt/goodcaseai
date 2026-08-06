@@ -3,6 +3,7 @@ import {
   isReversedAnchor,
   stripUrlFragment,
 } from "../lib/prompt-provenance.mjs";
+import { detectPromptCapTruncation } from "../lib/prompt-truncation.mjs";
 
 export const YOUMIND_INDEX_URL = "https://youmind.com/zh-CN/prompts";
 
@@ -156,6 +157,8 @@ export function normalizeYouMindPromptPage(html, pageUrl, { sourceCategory } = {
   }
 
   const title = firstString(work.name);
+  // `work.text` 原样带出，这一层永远不许截断：youmind 自己就会在原推第 3000 字符上
+  // 下刀，我们再截一次就再也分不清是谁砍的。检出交给 prompt-truncation.mjs。
   const promptText = firstString(work.text);
   const { sourceUrl, provenanceAnchor, promptReverseEngineered } =
     splitSourceReference(work.isBasedOn);
@@ -199,6 +202,8 @@ export function normalizeYouMindPromptPage(html, pageUrl, { sourceCategory } = {
     mediaUrl: media.mediaUrl,
     posterUrl: media.posterUrl,
     promptText,
+    // youmind 侧的截断嫌疑，见 lib/prompt-truncation.mjs 的文件注释。
+    promptTruncation: detectPromptCapTruncation(promptText),
     promptIsPublic: work.isAccessibleForFree === true,
     stepsSummary: "复制公开 Prompt，在对应模型中生成，并按需要替换主体、风格或细节。",
     relevanceScore: scoreFromInteractions(metrics),
