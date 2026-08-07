@@ -211,3 +211,92 @@ test("空列表不抛错，两个位置都留空", () => {
   assert.equal(digest.review, null);
   assert.equal(digest.dateKey, "2026-08-07");
 });
+
+test("有匹配的复测记录时，第二槽位从「今日复习」换成「今日新复测」，携带 model/verdict", () => {
+  const items = [
+    makeCase("fresh-one", 1, { sourceHeatScore: 50 }),
+    makeCase("retested-case", 30, { stabilityScore: 70 }),
+    makeCase("fallback-old", 40, { stabilityScore: 95 }),
+  ];
+  const retestRecords = [
+    {
+      slug: "retested-case",
+      testedAt: "2026-08-07T04:00:00.000Z",
+      retestVotes: 2,
+      model: "codex-builtin-image-generation",
+      verdict: null,
+    },
+  ];
+
+  const digest = selectDailyDigest(items, "2026-08-07", { retestRecords });
+
+  assert.equal(digest.review.slot, "retest");
+  assert.equal(digest.review.item.slug, "retested-case");
+  assert.equal(digest.review.retest.model, "codex-builtin-image-generation");
+  assert.equal(digest.review.retest.verdict, null);
+  // 复测命中不受 14 天新案例窗口限制，也不影响新案例槽位
+  assert.equal(digest.fresh.item.slug, "fresh-one");
+});
+
+test("没有复测记录、或记录指向的 slug 不在案例列表里时，回退到旧的「今日复习」逻辑", () => {
+  const items = [
+    makeCase("fresh-one", 1, { sourceHeatScore: 50 }),
+    makeCase("fallback-old-a", 40, { stabilityScore: 95 }),
+    makeCase("fallback-old-b", 50, { stabilityScore: 90 }),
+  ];
+
+  const withoutRecords = selectDailyDigest(items, "2026-08-07");
+  assert.equal(withoutRecords.review.slot, "review");
+  assert.equal(withoutRecords.review.item.slug, "fallback-old-a");
+
+  const withEmptyRecords = selectDailyDigest(items, "2026-08-07", {
+    retestRecords: [],
+  });
+  assert.equal(withEmptyRecords.review.slot, "review");
+  assert.equal(withEmptyRecords.review.item.slug, "fallback-old-a");
+
+  // 记录存在，但指向的 slug 不在这一期可见的案例里（比如已下架）：同样回退
+  const withOrphanRecord = selectDailyDigest(items, "2026-08-07", {
+    retestRecords: [
+      {
+        slug: "does-not-exist",
+        testedAt: "2026-08-07T04:00:00.000Z",
+        retestVotes: 9,
+      },
+    ],
+  });
+  assert.equal(withOrphanRecord.review.slot, "review");
+  assert.equal(withOrphanRecord.review.item.slug, "fallback-old-a");
+});
+
+test("复测记录按「测试时刻最新的一天」优先，同一天内再按催复测票数取最高", () => {
+  const items = [
+    makeCase("fresh-one", 1, { sourceHeatScore: 50 }),
+    makeCase("low-vote-today", 30, { stabilityScore: 10 }),
+    makeCase("high-vote-today", 35, { stabilityScore: 10 }),
+    makeCase("high-vote-yesterday", 40, { stabilityScore: 10 }),
+  ];
+
+  const retestRecords = [
+    {
+      slug: "low-vote-today",
+      testedAt: "2026-08-07T04:00:00.000Z",
+      retestVotes: 1,
+    },
+    {
+      slug: "high-vote-today",
+      testedAt: "2026-08-07T05:00:00.000Z",
+      retestVotes: 5,
+    },
+    // 昨天票数最高，但「最新一天」优先于票数，不该被选中
+    {
+      slug: "high-vote-yesterday",
+      testedAt: "2026-08-06T04:00:00.000Z",
+      retestVotes: 99,
+    },
+  ];
+
+  const digest = selectDailyDigest(items, "2026-08-07", { retestRecords });
+  assert.equal(digest.review.slot, "retest");
+  assert.equal(digest.review.item.slug, "high-vote-today");
+});

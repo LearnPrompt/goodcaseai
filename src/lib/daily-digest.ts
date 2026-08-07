@@ -46,7 +46,22 @@ export type DailyDigestCandidate = {
   retestVoteCount?: number | null;
 };
 
-export type DailyDigestSlot = "fresh" | "review";
+/**
+ * 一条复测证据。字段名故意和 scripts/retest/retest-manifest.json 里
+ * records[] 的字段同名（slug / testedAt / retestVotes），读 manifest 时
+ * 不需要额外做字段映射。model / verdict 只用来在早报里说一句
+ * 「复测了什么、结果怎样」，不参与选择排序。
+ */
+export type DailyDigestRetestRecord = {
+  slug: string;
+  testedAt: string | number | Date;
+  retestVotes?: number | null;
+  model?: string | null;
+  /** 人审结论；脚本产出的记录目前一律是 null（还没人看过），据实展示即可。 */
+  verdict?: string | null;
+};
+
+export type DailyDigestSlot = "fresh" | "review" | "retest";
 
 export type DailyDigestPick<T extends DailyDigestCandidate> = {
   item: T;
@@ -57,6 +72,8 @@ export type DailyDigestPick<T extends DailyDigestCandidate> = {
   poolSize: number;
   /** 新案例池为空时退回「全库最新几条」，此时为 true。 */
   fallback: boolean;
+  /** 仅 slot === "retest" 时存在：这一条是靠哪条复测记录选出来的。 */
+  retest?: DailyDigestRetestRecord;
 };
 
 export type DailyDigest<T extends DailyDigestCandidate> = {
@@ -240,14 +257,59 @@ function pickFrom<T extends DailyDigestCandidate>(
 }
 
 /**
+ * 复测记录按「哪一天测的」分组，取最新那一天；同一天有多条时按催复测票数
+ * 高的优先，再按测试时刻新的优先，最后按 slug 兜底，保证结果唯一确定。
+ *
+ * day 参数是这一期早报所在的日序号：测试时刻晚于这一期的记录不参与
+ * （避免用未来数据回放历史期数，虽然目前调用方只在算「今天」这期时才传
+ * retestRecords，这里的过滤是防御性的，不是当前唯一防线）。
+ */
+function pickLatestRetestRecord(
+  records: readonly DailyDigestRetestRecord[],
+  day: number,
+  offsetMinutes: number
+): DailyDigestRetestRecord | null {
+  const withDay = records
+    .map((record) => ({
+      record,
+      day: toDayNumber(record.testedAt, offsetMinutes),
+    }))
+    .filter(
+      (entry): entry is { record: DailyDigestRetestRecord; day: number } =>
+        entry.day !== null && entry.day <= day
+    );
+
+  if (withDay.length === 0) {
+    return null;
+  }
+
+  const latestDay = Math.max(...withDay.map((entry) => entry.day));
+  const sameDay = withDay.filter((entry) => entry.day === latestDay);
+
+  sameDay.sort(
+    (a, b) =>
+      toVotes(b.record.retestVotes) - toVotes(a.record.retestVotes) ||
+      (toTimestamp(b.record.testedAt) ?? -Infinity) -
+        (toTimestamp(a.record.testedAt) ?? -Infinity) ||
+      compareSlug(a.record.slug, b.record.slug)
+  );
+
+  return sameDay[0].record;
+}
+
+/**
  * 选出某一期早报的两条案例。
  *
  * - 今日新案例：发布不满 14 天的案例里，来源热度最高的前几名，按日期轮换取一条。
  *   这一档没有候选时（比如两周没发新案例）退回「全库最新几条」，并标记 fallback。
- * - 今日复习：发布满 14 天的案例里，先看催复测票数，再看稳定分，同样按日期轮换。
+ * - 今日新复测：传了 retestRecords 时，取其中「测试时刻最新的一天」里票数最高
+ *   的一条，映射回对应案例；案例不在这一期可见范围（比如已下架）或
+ *   retestRecords 为空/没有任何一条能匹配到案例时，退回旧的「今日复习」逻辑——
+ *   发布满 14 天的案例里，先看催复测票数，再看稳定分，同样按日期轮换。
  *
- * 两个池子按 14 天严格互斥，所以同一期不会出现同一条案例。
- * 发布日期缺失或不可解析的案例只会进复习池——拿不出发布时间就谈不上「今日新案例」。
+ * 新案例池和「今日复习」兜底池按 14 天严格互斥；复测命中的那条不受 14 天限制
+ * （复测本来就是冲着「发布过一阵子的案例还立不立得住」去的，不该被新案例窗口卡住）。
+ * 两个槽位最终不会展示同一条案例：撞车时复测/复习槽位让位，宁可留空。
  */
 export function selectDailyDigest<T extends DailyDigestCandidate>(
   items: readonly T[],
@@ -257,6 +319,8 @@ export function selectDailyDigest<T extends DailyDigestCandidate>(
     freshShortlist?: number;
     reviewShortlist?: number;
     offsetMinutes?: number;
+    /** 复测证据源：page.tsx 和 build-digest.mjs 都从 retest-manifest.json 读出后传入。 */
+    retestRecords?: readonly DailyDigestRetestRecord[];
   } = {}
 ): DailyDigest<T> {
   const {
@@ -264,6 +328,7 @@ export function selectDailyDigest<T extends DailyDigestCandidate>(
     freshShortlist = DAILY_DIGEST_FRESH_SHORTLIST,
     reviewShortlist = DAILY_DIGEST_REVIEW_SHORTLIST,
     offsetMinutes = DAILY_DIGEST_OFFSET_MINUTES,
+    retestRecords = [],
   } = options;
 
   const day = dateKeyToDayNumber(dateKey);
@@ -304,7 +369,28 @@ export function selectDailyDigest<T extends DailyDigestCandidate>(
           true
         );
 
-  const review = pickFrom(reviewPool, reviewShortlist, day, "review", false);
+  const latestRetest = pickLatestRetestRecord(retestRecords, day, offsetMinutes);
+  const retestMatch = latestRetest
+    ? visible.find(({ item }) => item.slug === latestRetest.slug)
+    : undefined;
+  const retestSameDay = latestRetest
+    ? retestRecords.filter(
+        (record) =>
+          toDayNumber(record.testedAt, offsetMinutes) ===
+          toDayNumber(latestRetest.testedAt, offsetMinutes)
+      ).length
+    : 0;
+
+  const review = retestMatch
+    ? {
+        item: retestMatch.item,
+        slot: "retest" as const,
+        rank: 1,
+        poolSize: retestSameDay,
+        fallback: false,
+        retest: latestRetest ?? undefined,
+      }
+    : pickFrom(reviewPool, reviewShortlist, day, "review", false);
 
   return {
     dateKey,
