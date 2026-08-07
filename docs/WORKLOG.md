@@ -2,6 +2,65 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-07 · 本地运维工具链、Discovery 搜索与内容发布治理
+
+- **`ops:migrate` 补齐迁移安全闭环**：默认只读状态，`--baseline` 只登记文件名与
+  sha256，`--apply` 才执行未登记迁移，已应用文件 checksum 改变直接拒绝。
+  新增 `--rollback --file=<迁移> --yes`：跑 rollback 脚本并**同步删除**
+  `schema_migrations` 记录。此前只能手工跑 rollback 脚本，会留下「记录说已应用、
+  结构其实没有」的状态，`--apply` 从此不再跑它——与 `--baseline` 建库那个坑同类。
+  只允许退最后一个已应用的迁移（退中间的会让后面的悬空），不加 `--yes` 只警告。
+  删记录放在回滚提交之后，与 `applyMigration` 顺序对称：失败时重跑即可。
+- **`dev:seed`**：生产侧只读拉已发布 cases（分页 1000 行），本地侧按 slug upsert；
+  `--dry-run` 不写库，源库与目标库同 host 直接拒绝，生成列与生产外键不复制。
+- **`schema.sql` 回补**：`20260805` 的 `candidate_provenance_anchor` /
+  `case_reactions` 与 `20260807` 的 `api_keys` / `api_usage` / `consume_api_quota` /
+  `case_retests` 此前未同步进 schema.sql。新库跑 schema.sql + `--baseline` 会把
+  这些从未执行过的迁移记成已应用，结构不存在且此后永不重跑。已逐语句回补，
+  恢复「新库跑它一个就够」这条性质；两个缺失的 rollback 脚本一并补上。
+- **搜索统一评分**：标题/作者/摘要权重高于长 Prompt，多词查询要求全词命中；
+  `/cases`、`/creators`、`/skills` 按相关度排序，原排序作为并列时的次级顺序。
+  命中时卡片显示命中字段、短片段与关键词高亮；无查询时不注入搜索字段，
+  保持默认卡片 payload 精简。
+- **`/skills` 分组**：通用 Skill 与作者方法两层内部按 AI 视频、AI 编程(UI)、
+  AI 图像、AI 文案、AI 硬件固定顺序分组并显示每组数量，空组不渲染。
+- **`/cases` 默认浏览加创作者多样性**：同作者最多连续 2 条。这是「尽量」不是
+  「保证」——剩余候选全属同一作者时退回原顺序继续排，否则只能丢条目，
+  所以列表尾部仍可能出现更长的同作者连排。带搜索词时不重排。
+- **Skill 描述改为按真实证据生成**：从已有 `resultBreakdown` /
+  `promptContributionNotes` 提取实际案例句子，**每个 Case 最多贡献一句**
+  （此前一个 Case 的三段就能填满全部方法步骤，「N 个 Case 里反复出现」实际
+  只有一个 Case 撑着）；凑不满两个不同 Case 退回定义模板。描述里的 Case 数与
+  作者数只统计真正贡献证据的对象，证据案例也只列贡献了证据句的那些。
+  `/en` 跳过含中日文的证据句与标题（缺翻译时会回退中文原文），全跳过就省掉
+  整段，不再中英混排。
+- **发布重复治理**：规范化来源 URL 硬拦截（跨分类），同分类完全相同 Prompt 拦截，
+  同作者 bigram Dice ≥ 0.92 拦截；同批候选互相也查。命中重复**跳过该条继续发
+  其余**，末尾列出拦截清单并置 `exitCode=1`——发布是逐条写库的，一 throw 会让
+  后面的候选全部发不出去且每次重跑卡在同一条。闸门仍是 fail-closed，被拦候选
+  绝不入库。已发布内容索引改分页读取（PostgREST 默认 1000 行是**静默**截断的），
+  `prompt_full` 只取本批候选涉及的分类以压 Egress。
+- **resume 路径也触发部署**：判断从 `inserted + updated` 改成
+  `shouldTriggerDeploy(counters)`。此前 insert 成功但候选状态更新失败的那次会
+  抛错退出、走不到部署，重跑走 resume 补齐数据却不触发 Deploy Hook，
+  Case 于是停在「库里 `is_published=true`、详情页因 `dynamicParams=false` 404」。
+- **复测 verdict 人工闭环**：`retest:verdict` 要求显式 verdict、notes、operator
+  与 `--yes` 才写 `case_retests`，再按最近一次有效人审同步 `stability_score`
+  与 `evidence_level=L2`；`inconclusive` 只留记录不冲掉已有稳定分；
+  目标等于 `PROD_SUPABASE_URL` 时直接拒绝。脚本仍不自动判定。
+- **`test:supabase` 只读烟测**：必须显式指定 project ref，只读检查
+  `schema_migrations`、`cases`、`case_reactions`、`case_retests`。
+- **卡片日期钉死 `Asia/Shanghai`**（本次唯一改变既有渲染行为的改动）：构建机是
+  UTC，不钉时区时同一条案例在构建产物与本地会渲染出差一天的日期。
+  `pickLatestAuthorDate` 复用同一 formatter，creator「最近作品」与 skill
+  「最近例证」一并统一到北京时间。若主线希望英文站按读者本地时区显示，
+  这条需要另行讨论。
+- **类型保护**：`creator-diversity` 由 `.mjs` 改 `.ts`。`allowJs` 下无声明，
+  从 `page.tsx` 导入会让 `caseItems` 退化成 `any[]`，整页失去检查而
+  `tsc --noEmit` 照样绿。
+- 验证：`npm run lint`、`npm test`（394/394）、`npx tsc --noEmit`、`npm run build`
+  全部通过。未写生产数据库，未调用花费型供给 API。
+
 ## 2026-08-07 · Agent API 正式化：免 key 保底 + key 配额 + 溯源字段 + /agent-api 文档页
 
 - `/api/public/cases` 与 `/api/public/cases/[slug]` 加准入判定。免 key 请求

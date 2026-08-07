@@ -152,9 +152,9 @@ export const zhCNMessages = {
     placeholder: "搜索关键词、模型或创作者",
     ariaLabel: "搜索案例",
     submit: "搜索",
-    skillsPlaceholder: "搜索 Skill 名称或描述",
+    skillsPlaceholder: "搜索 Skill、作者、方法或 Prompt",
     skillsAriaLabel: "搜索 Skill",
-    creatorsPlaceholder: "搜索创作者名称",
+    creatorsPlaceholder: "搜索创作者、领域或代表案例",
     creatorsAriaLabel: "搜索创作者",
   },
   favorites: {
@@ -384,9 +384,9 @@ export const enMessages = {
     placeholder: "Search keywords, models, or creators",
     ariaLabel: "Search cases",
     submit: "Search",
-    skillsPlaceholder: "Search Skill name or description",
+    skillsPlaceholder: "Search Skills, creators, methods, or prompts",
     skillsAriaLabel: "Search Skills",
-    creatorsPlaceholder: "Search creator name",
+    creatorsPlaceholder: "Search creators, fields, or representative cases",
     creatorsAriaLabel: "Search creators",
   },
   favorites: {

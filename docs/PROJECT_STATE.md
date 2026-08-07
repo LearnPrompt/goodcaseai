@@ -29,6 +29,41 @@
 - 溯源状态：youmind #reversed 锚点三道闸在管线（适配器保留锚点、双层拦截、
   入库窗口命中率比对）；已发布 youmind 案例 223 条全部核对，29 条编造已下架
 
+## 本地运维工具链 · 2026-08-07
+
+- 迁移唯一入口是 `npm run ops:migrate`：不带参数完全只读（报待应用与缺 rollback）；
+  `--baseline` 只登记文件名与 sha256，不执行 SQL；`--apply` 执行未登记迁移；
+  `--rollback --file=<迁移> --yes` 跑 rollback 脚本并同步删除 `schema_migrations`
+  记录。**不要手工跑 rollback 脚本**——只删结构不删记录，会留下「记录说已应用、
+  结构其实没有」且 `--apply` 永不重跑的状态。回滚只允许退最后一个已应用的迁移。
+- 迁移记录表 `public.schema_migrations` 存 sha256，改写已应用过的迁移会被拒绝。
+  历史迁移不要动，要改就新增一个。
+- `npm run dev:seed` 从生产只读拉已发布 cases 到本地库；`--dry-run` 不写库，
+  源库与目标库同 host 直接拒绝，生成列与生产候选外键不复制。
+- `npm run test:supabase -- --expect-project=<project-ref>` 是只读烟测，
+  必须显式指定 project ref 才会连库。
+- `supabase/schema.sql` 保持最新全量状态，「新库跑它一个就够」是必须维持的性质；
+  `supabase/migrations/` 与 `supabase/rollbacks/` 文件名一一对应。
+- `next.config.ts` 钉死 `turbopack.root`，避免开发机主目录的无关 lockfile 把
+  workspace root 推断到仓库之外；CSP 仅在 development 放行 `unsafe-eval`。
+
+## Discovery 搜索与发布治理 · 2026-08-07
+
+- 搜索统一走字段权重：标题、作者、摘要优先于长 Prompt，多词查询要求全词命中；
+  有查询时按相关度排序，用户选择的热度/稳定度/最新作为次级排序。
+- 卡片在命中时显示命中字段、短片段与关键词高亮；无查询时不注入搜索字段。
+- `/skills` 在通用 Skill 与作者方法两层内部按固定分类顺序分组并显示每组数量。
+- `/cases` 默认浏览同作者最多连续 2 条；这是「尽量」不是「保证」，剩余候选全属
+  同一作者时退回原顺序。带搜索词时不做展示层重排。
+- Skill 描述与方法步骤基于真实证据生成，每个 Case 最多贡献一句，凑不满两个
+  不同 Case 退回定义模板；Case 数、作者数与证据案例只统计真正贡献证据的对象。
+- 发布闸门新增 fail-closed 重复治理：规范化来源 URL、同分类相同 Prompt、
+  同作者高相似 Prompt。命中时跳过该条继续发其余、末尾列清单并非零退出，
+  被拦候选绝不入库。已发布内容索引分页读取，避免 PostgREST 1000 行静默截断。
+- 复测 verdict 必须人工输入并显式确认才写库，`inconclusive` 不冲掉已有稳定分，
+  生产目标 fail closed。脚本只产出证据，不自动判定。
+- 卡片与派生日期统一按 `Asia/Shanghai` 渲染，避免构建机 UTC 与本地差一天。
+
 ## 语言判定（content_locale）现状 · 2026-08-04
 
 - 判定逻辑唯一来源：`scripts/review/lib/content-locale.mjs`（中日文字符占比 > 15%

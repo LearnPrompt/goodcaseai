@@ -4,6 +4,7 @@ import { CreatorAvatar } from "@/components/creator-avatar";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { useLocale, useMessages } from "@/i18n/client";
 import { formatStabilityScore } from "@/lib/stability";
+import { splitHighlightedText } from "@/lib/search";
 
 /**
  * 创作者卡片的「窄 props」。
@@ -32,6 +33,9 @@ export type CreatorCardItem = {
    * 只展示作者侧时间，不展示编辑时间。null 时不渲染这一行。
    */
   latestWorkDate: string | null;
+  searchQuery?: string;
+  searchSnippet?: string | null;
+  searchField?: string | null;
 };
 
 export function CreatorCard({
@@ -71,10 +75,39 @@ export function CreatorCard({
           size={64}
         />
         <h2 className="text-3xl font-semibold leading-[0.95] tracking-[-0.04em] sm:text-4xl">
-          {creator.name}
+          {creator.searchQuery
+            ? splitHighlightedText(creator.name, creator.searchQuery).map((part, index) =>
+                part.matched ? (
+                  <mark key={index} className="gc-search-hit">
+                    {part.text}
+                  </mark>
+                ) : (
+                  <span key={index}>{part.text}</span>
+                )
+              )
+            : creator.name}
         </h2>
       </div>
-      <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{creator.bio}</p>
+      {creator.searchQuery && creator.searchSnippet ? (
+        <div className="mt-3 min-h-[84px] text-sm leading-7 text-[var(--muted)]">
+          <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--orange)]">
+            {creator.searchField || (isEnglish ? "Match" : "命中")}
+          </div>
+          <p className="line-clamp-3">
+            {splitHighlightedText(creator.searchSnippet, creator.searchQuery).map((part, index) =>
+              part.matched ? (
+                <mark key={index} className="gc-search-hit">
+                  {part.text}
+                </mark>
+              ) : (
+                <span key={index}>{part.text}</span>
+              )
+            )}
+          </p>
+        </div>
+      ) : (
+        <p className="mt-3 min-h-[84px] text-sm leading-7 text-[var(--muted)]">{creator.bio}</p>
+      )}
 
       <div className="mt-5 grid grid-cols-3 gap-2">
         <div className="gc-stat">

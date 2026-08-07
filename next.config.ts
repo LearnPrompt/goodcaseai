@@ -1,12 +1,14 @@
 import type { NextConfig } from "next";
 
+const isDevelopment = process.env.NODE_ENV === "development";
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
@@ -40,6 +42,14 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   devIndicators: false,
   allowedDevOrigins: ["127.0.0.1"],
+  turbopack: {
+    // Turbopack 靠向上找 lockfile 推断 workspace root。开发机的上级目录（含主目录）
+    // 若存在无关的 package-lock.json，root 会被推断到仓库外：模块解析范围放大，
+    // 报错路径也变成相对那个目录的形式。钉到配置文件所在目录（即仓库根），
+    // 结果不再取决于开发机上仓库之外的文件。
+    // 注意：改完本文件要 rm -rf .next 再验，脏缓存会报出误导性的解析错误。
+    root: import.meta.dirname,
+  },
   experimental: {
     globalNotFound: true,
   },

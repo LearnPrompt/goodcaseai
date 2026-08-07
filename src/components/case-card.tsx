@@ -12,6 +12,7 @@ import {
   getPresentableCaseSummary,
 } from "@/lib/case-presentation";
 import { slugifyCreatorName } from "@/lib/creator-slug";
+import { splitHighlightedText } from "@/lib/search";
 import type { SkillLink } from "@/lib/skills";
 import { formatStabilityScore, hasMeasuredStability } from "@/lib/stability";
 
@@ -39,6 +40,9 @@ export type CaseCardItem = {
   sourceHeatScore: number | null;
   sourcePublishedAt?: string | null;
   skills?: SkillLink[];
+  searchQuery?: string;
+  searchSnippet?: string | null;
+  searchField?: string | null;
 };
 
 export function CaseCard({
@@ -63,6 +67,18 @@ export function CaseCard({
     item.summary,
     item.promptContributionNotes
   );
+  const searchSummary = item.searchSnippet || summary;
+  const searchFieldLabel = item.searchField
+    ? {
+        title: isGallery ? (locale === "en" ? "Title" : "标题") : "",
+        creator: locale === "en" ? "Creator" : "作者",
+        summary: locale === "en" ? "Summary" : "摘要",
+        model: locale === "en" ? "Model" : "模型",
+        source: locale === "en" ? "Source" : "来源",
+        tag: locale === "en" ? "Tag" : "标签",
+        prompt: locale === "en" ? "Prompt" : "Prompt",
+      }[item.searchField] || item.searchField
+    : null;
   const creatorSlug = item.creator ? slugifyCreatorName(item.creator) : "";
   const publishedDate = formatCardPublishedDate(item.sourcePublishedAt, locale);
   // 列表卡片一律优先本地缩略图：外链原图动辄几 MB，一页 24 张会拖垮首屏。
@@ -154,7 +170,17 @@ export function CaseCard({
                   : "min-h-[49px] text-2xl leading-[1.02] sm:min-h-[62px] sm:text-3xl"
               }`}
             >
-              {item.title}
+              {item.searchQuery
+                ? splitHighlightedText(item.title, item.searchQuery).map((part, index) =>
+                    part.matched ? (
+                      <mark key={index} className="gc-search-hit">
+                        {part.text}
+                      </mark>
+                    ) : (
+                      <span key={index}>{part.text}</span>
+                    )
+                  )
+                : item.title}
             </h2>
           </Link>
 
@@ -193,6 +219,24 @@ export function CaseCard({
             gallery 2 行 × 14px×1.5=24px → 48px；默认 3 行 × 14px×1.75=28px → 84px。
             summary 为空时塞空格占位，不再让整块高度塌到 0。
           */}
+          {item.searchQuery && item.searchSnippet ? (
+            <div className="mt-3 min-h-[48px] text-sm leading-6 text-[var(--muted)]">
+              <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--orange)]">
+                {searchFieldLabel}
+              </div>
+              <p className="line-clamp-2">
+                {splitHighlightedText(searchSummary || "", item.searchQuery).map((part, index) =>
+                  part.matched ? (
+                    <mark key={index} className="gc-search-hit">
+                      {part.text}
+                    </mark>
+                  ) : (
+                    <span key={index}>{part.text}</span>
+                  )
+                )}
+              </p>
+            </div>
+          ) : (
           <p
             className={`mt-3 text-sm text-[var(--muted)] ${
               isGallery
@@ -202,6 +246,7 @@ export function CaseCard({
           >
             {summary || " "}
           </p>
+          )}
         </div>
 
         <div className="flex-1">

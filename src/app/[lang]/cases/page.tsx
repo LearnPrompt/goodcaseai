@@ -12,6 +12,7 @@ import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 import {
   filterCasesByQuery,
+  getCaseSearchFields,
   getCaseListData,
   type CaseFilter,
   type DisplayCaseItem,
@@ -20,6 +21,8 @@ import { toCaseCardItem } from "@/lib/case-card-item";
 import { filterCasesByModel, getModelFamily, getModelLabel } from "@/lib/models";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
 import { hasMeasuredStability } from "@/lib/stability";
+import { getSearchSnippet, rankSearchResults, type SearchMatch } from "@/lib/search";
+import { diversifyByCreator } from "@/lib/creator-diversity";
 
 // 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
 export const revalidate = 3_600;
@@ -167,10 +170,31 @@ export default async function CasesPage({
   const activeSort = normalizeSort(queryParams.sort);
   const filteredCases = await getCaseListData(activeFilter, locale);
   const skillCatalog = deriveSkillCatalog(filteredCases, locale);
-  const caseItems = sortCaseItems(
-    filterCasesByModel(filterCasesByQuery(filteredCases, query), activeModel?.slug),
-    activeSort
+  const modelFilteredCases = filterCasesByModel(
+    filterCasesByQuery(filteredCases, query),
+    activeModel?.slug
   );
+  const secondarySortedCases = sortCaseItems(modelFilteredCases, activeSort);
+  const secondaryOrder = new Map(
+    secondarySortedCases.map((item, index) => [item.slug, index])
+  );
+  const rankedSearchResults = query
+    ? rankSearchResults(modelFilteredCases, query, getCaseSearchFields).sort(
+        (a, b) =>
+          b.match!.score - a.match!.score ||
+          (secondaryOrder.get(a.item.slug) ?? 0) -
+            (secondaryOrder.get(b.item.slug) ?? 0)
+      )
+    : secondarySortedCases.map((item) => ({ item, match: null }));
+  const caseItems = query
+    ? rankedSearchResults.map(({ item }) => item)
+    : diversifyByCreator(rankedSearchResults.map(({ item }) => item));
+  const searchMatches = new Map<string, SearchMatch>();
+  for (const result of rankedSearchResults) {
+    if (result.match) {
+      searchMatches.set(result.item.slug, result.match);
+    }
+  }
   const clearModelQuery = [
     activeFilter === "all" ? "" : `filter=${activeFilter}`,
     query ? `q=${encodeURIComponent(query)}` : "",
@@ -359,7 +383,14 @@ export default async function CasesPage({
           <CaseCard
             key={item.slug}
             variant="gallery"
-            item={toCaseCardItem(item, getCaseSkillLinks(skillCatalog, item.slug))}
+            item={{
+              ...toCaseCardItem(item, getCaseSkillLinks(skillCatalog, item.slug)),
+              searchQuery: query,
+              searchSnippet: searchMatches.has(item.slug)
+                ? getSearchSnippet(searchMatches.get(item.slug)!, query)
+                : null,
+              searchField: searchMatches.get(item.slug)?.field ?? null,
+            }}
             actions={
                 <div className="flex flex-wrap items-center gap-2">
                   <LikeButton

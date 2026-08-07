@@ -44,6 +44,16 @@ Open http://localhost:3000.
 
 The data layer runs on Supabase. Copy `.env.example` to `.env.local`, then configure Supabase and the public site origin. The schema lives in `supabase/schema.sql`. Without Supabase, pages fall back to built-in cases.
 
+After creating a fresh database from the full `supabase/schema.sql`, run
+`npm run ops:migrate -- --baseline` to record the existing migrations without executing them.
+`npm run ops:migrate` is read-only status; apply reviewed pending migrations with
+`npm run ops:migrate -- --apply`. To copy published Cases into your own database,
+temporarily set `PROD_SUPABASE_URL` and `PROD_SUPABASE_ANON_KEY`, run
+`npm run dev:seed -- --dry-run`, then `npm run dev:seed`. The seed reads production
+with anon access, writes only to the local target, and rejects identical hosts.
+If your shell previously exported an old `DATABASE_URL`, run `unset DATABASE_URL`
+first so it does not override `.env.local`.
+
 ## Content Pipeline
 
 Automated discovery and human publishing stay separate. The shadow supply run only writes local reports:
