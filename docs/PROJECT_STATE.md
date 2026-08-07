@@ -45,6 +45,43 @@
 - 新增 `npm run test:supabase -- --expect-project=<project-ref>` 只读烟测，验证 migration、cases、reactions、retests 表与关键字段；本次已在项目 `rywuhhixnyxpkbxytipj` 验证通过，未执行任何写操作。
 - 本次只修改本地代码/文档与测试，未改 Supabase schema、未写生产数据；验证为 376/376 tests、lint、TypeScript、production build、Supabase smoke 与本地浏览器验收全部通过。
 
+## 发现治理复审后续修复 · 2026-08-06
+
+- `publish:cases` 命中重复不再 `throw` 中断整批。发布是逐条写库的，一 throw 会让
+  后面的候选全部发不出去，而且每次重跑都卡在同一条。现在改成跳过该条、继续发其余、
+  末尾列出被拦清单，并把 `process.exitCode` 设成 1。闸门仍是 fail-closed：**被拦
+  的候选绝不入库**，只是不再连坐。
+- 重复治理读已发布 Case 改为分页（`fetchAllRows`，页大小 1000）。此前是单次全量
+  查询，PostgREST 默认 1000 行上限会**静默截断**，案例涨过 1000 条后重复检查开始
+  漏检且不报错。同时把 `prompt_full` 从全量拉取收窄到「本批候选涉及的分类」——
+  来源 URL 是跨分类硬重复所以仍取全量，但只带三个短字段。Egress 宽限期内这条要紧。
+  逻辑抽到 `scripts/review/lib/published-content-index.mjs`，带分页与分类过滤测试。
+- Skill 的「反复出现」不再是无依据断言。`deriveEvidenceSteps` 改成**每个 Case 最多
+  贡献一句**：此前一个 Case 的 `resultBreakdown` 三段就能填满全部三个方法步骤，
+  描述里「N 个 Case 里反复出现」实际只有一个 Case 撑着。现在凑不满两个不同 Case
+  就整体退回定义模板。
+- `/en` 目录不再中英混排。`resultBreakdown` 缺英文翻译时会回退中文原文，直接拼进
+  英文描述会得到 `repeatedly show this move: 三步……`。现在 en 下跳过含中日文的证据
+  句，全被跳过就退回英文定义模板；证据案例的引号也按语言切换（`“”` / `「」`）。
+- `src/lib/creator-diversity.mjs` 改成 `.ts`。`allowJs: true` 且没有 `.d.ts`，
+  从 `page.tsx` 导入它会让 `caseItems` 整个退化成 `any[]`，`/cases` 主列表页的
+  类型保护全部失效而 `tsc --noEmit` 照样通过——假绿。测试改为直接导入 `.ts`
+  （与 `skills.test.mjs` 等既有测试一致），中间那个 re-export shim 删掉。
+- **resume 路径现在也触发部署**。判断抽成 `shouldTriggerDeploy(counters)`，`resumed`
+  计入。此前是 `inserted + updated`：insert 成功但候选状态更新失败的那次会抛错退出、
+  走不到部署这步，重跑走 resume 补齐数据却不触发 Deploy Hook，于是 Case 在库里
+  `is_published=true`、详情页因 `dynamicParams=false` 一直 404。下架后重新发布同理。
+- **Skill 的「证据案例」只列真正贡献了证据句的 Case**。`deriveEvidenceSteps` 一并
+  返回 `evidenceCases`；此前描述固定取 `cases.slice(0, 2)`，排在前面但一句证据都没出的
+  Case 会被冒名顶上，句子和案例对不上。en 下再滤掉标题含中日文的（title 缺翻译会
+  回退中文原文），一条都不剩就整段省掉 `Examples:`，描述本身仍然成立。
+- Skill 描述中的「反复出现」计数现在只统计真正贡献证据句的 Case 和作者，不把仅因
+  标题/标签命中定义、但没有证据句的匹配 Case 算进去。
+- 顺带校准口径：创作者多样性是「尽量」不是「保证」。剩余候选全是同一作者时会退回
+  原顺序继续排（否则只能丢条目），所以列表尾部仍可能出现长于 2 条的同作者连排。
+- 本次只改本地代码与测试，未碰数据库、生产数据或生产站点；验证为 384/384 tests、
+  lint、TypeScript 与 production build 全部通过。
+
 ## 语言判定（content_locale）现状 · 2026-08-04
 
 - 判定逻辑唯一来源：`scripts/review/lib/content-locale.mjs`（中日文字符占比 > 15%

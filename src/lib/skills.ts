@@ -368,6 +368,8 @@ function overlapRatio<T extends SkillCaseInput>(a: T[], b: T[]) {
   return union === 0 ? 0 : intersection / union;
 }
 
+const CJK_PATTERN = /[぀-ヿ㐀-䶿一-鿿]/;
+
 function firstEvidenceSentence(value: string) {
   const normalized = value.replace(/\s+/g, " ").trim();
   if (!normalized) return "";
@@ -375,12 +377,24 @@ function firstEvidenceSentence(value: string) {
   return sentence.length > 150 ? `${sentence.slice(0, 149)}…` : sentence;
 }
 
+/**
+ * 每个 Case 最多贡献一句。
+ *
+ * 一个 Case 的 resultBreakdown 本身就是三段，让它连贡三句的话，「这个动作在
+ * N 个 Case 里反复出现」实际上只有一个 Case 撑着——那是无依据的断言。要求
+ * 三步来自三个不同 Case，凑不满两个就整体退回定义模板，宁可少说也不乱说。
+ *
+ * en 下跳过含中日文的证据句：resultBreakdown 缺英文翻译时会回退原文，直接
+ * 拼进英文描述会得到中英混排。全被跳过就退回英文模板，是正确的降级。
+ */
 function deriveEvidenceSteps<T extends SkillCaseInput>(
   cases: T[],
-  fallback: string[]
-) {
+  fallback: string[],
+  locale: Locale
+): { steps: string[]; evidenceCases: T[] } {
   const seen = new Set<string>();
   const steps: string[] = [];
+  const evidenceCases: T[] = [];
   for (const item of cases) {
     const evidence = [
       ...(item.promptContributionNotes ?? []),
@@ -390,39 +404,64 @@ function deriveEvidenceSteps<T extends SkillCaseInput>(
       const step = firstEvidenceSentence(value);
       const identity = step.toLocaleLowerCase();
       if (!step || seen.has(identity)) continue;
+      if (locale === "en" && CJK_PATTERN.test(step)) continue;
       seen.add(identity);
       steps.push(step);
-      if (steps.length === 3) return steps;
+      evidenceCases.push(item);
+      break;
     }
+    if (steps.length === 3) break;
   }
-  return steps.length > 0 ? steps : fallback;
+
+  return steps.length >= 2
+    ? { steps, evidenceCases }
+    : { steps: fallback, evidenceCases: [] };
 }
 
 function deriveEvidenceDescription<T extends SkillCaseInput>(
-  cases: T[],
-  creators: SkillCreatorEvidence[],
-  methodSteps: string[],
+  evidence: { steps: string[]; evidenceCases: T[] },
+  fallbackDescription: string,
   locale: Locale,
   kind: "shared" | "creator_method",
   creatorName?: string
 ) {
-  const evidenceStep = methodSteps[0];
-  const exampleTitles = cases
-    .slice(0, 2)
-    .map((item) => `「${item.title}」`)
-    .join("、");
-
-  if (locale === "en") {
-    const subject = kind === "creator_method" && creatorName
-      ? `${creatorName}'s ${cases.length} published cases`
-      : `${cases.length} published cases across ${creators.length} creators`;
-    return `${subject} repeatedly show this move: ${evidenceStep} Examples: ${exampleTitles}.`;
+  if (evidence.evidenceCases.length < 2) {
+    return fallbackDescription;
   }
 
-  const subject = kind === "creator_method" && creatorName
-    ? `${creatorName} 的 ${cases.length} 个已发布 Case`
-    : `${creators.length} 位作者的 ${cases.length} 个已发布 Case`;
-  return `${subject} 里反复出现：${evidenceStep} 证据案例：${exampleTitles}。`;
+  const evidenceStep = evidence.steps[0];
+  const isEnglish = locale === "en";
+  const evidenceCaseCount = evidence.evidenceCases.length;
+  const evidenceCreatorCount = new Set(
+    evidence.evidenceCases.map((item) => normalizeCreator(item.creator))
+  ).size;
+  // 举例必须是真正贡献了证据句的那几条。按 cases 前两条取的话，排在前面
+  // 但一句证据都没出的 Case 会被冒名顶上，描述里的句子和案例对不上。
+  // en 下还要滤掉标题没英文翻译的（title 缺翻译会回退中文原文），
+  // 一条都不剩就整段省掉举例——描述本身仍然成立。
+  const exampleCases = evidence.evidenceCases.filter(
+    (item) => !isEnglish || !CJK_PATTERN.test(item.title)
+  );
+  const exampleTitles = exampleCases
+    .slice(0, 2)
+    .map((item) => (isEnglish ? `“${item.title}”` : `「${item.title}」`))
+    .join(isEnglish ? ", " : "、");
+
+  if (isEnglish) {
+    const subject =
+      kind === "creator_method" && creatorName
+        ? `${creatorName}'s ${evidenceCaseCount} evidence-backed published cases`
+        : `${evidenceCaseCount} evidence-backed published cases across ${evidenceCreatorCount} creators`;
+    const move = `${subject} repeatedly show this move: ${evidenceStep}`;
+    return exampleTitles ? `${move} Examples: ${exampleTitles}.` : move;
+  }
+
+  const subject =
+    kind === "creator_method" && creatorName
+      ? `${creatorName} 的 ${evidenceCaseCount} 个有证据的已发布 Case`
+      : `${evidenceCreatorCount} 位作者的 ${evidenceCaseCount} 个有证据的已发布 Case`;
+  const move = `${subject} 里反复出现：${evidenceStep}`;
+  return exampleTitles ? `${move}证据案例：${exampleTitles}。` : move;
 }
 
 export function deriveSkillCatalog<T extends SkillCaseInput>(
@@ -442,9 +481,10 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
       return [];
     }
 
-    const methodSteps = deriveEvidenceSteps(
+    const evidence = deriveEvidenceSteps(
       matchingCases,
-      definition.methodSteps[locale]
+      definition.methodSteps[locale],
+      locale
     );
     return [
       {
@@ -453,15 +493,13 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
         kind: "shared" as const,
         title: definition.title[locale],
         description: deriveEvidenceDescription(
-          matchingCases,
-          [...creators.values()]
-            .map((creator) => ({ name: creator.name, caseCount: creator.cases.length })),
-          methodSteps,
+          evidence,
+          definition.description[locale],
           locale,
           "shared"
         ),
         category: definition.category,
-        methodSteps,
+        methodSteps: evidence.steps,
         cases: matchingCases,
         creators: [...creators.values()]
           .map((creator) => ({
@@ -525,9 +563,10 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
 
     for (const { definition, matchingCases } of selected) {
       const baseTitle = definition.title[locale];
-      const methodSteps = deriveEvidenceSteps(
+      const evidence = deriveEvidenceSteps(
         matchingCases,
-        definition.methodSteps[locale]
+        definition.methodSteps[locale],
+        locale
       );
       creatorMethods.push({
         slug: `${definition.slug}-by-${hashIdentity(identity)}`,
@@ -535,15 +574,16 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
         kind: "creator_method",
         title: `${creator.name} · ${baseTitle}`,
         description: deriveEvidenceDescription(
-          matchingCases,
-          [{ name: creator.name, caseCount: matchingCases.length }],
-          methodSteps,
+          evidence,
+          locale === "en"
+            ? `A recurring ${baseTitle.toLowerCase()} method derived from ${matchingCases.length} published cases by ${creator.name}.`
+            : `从 ${creator.name} 的 ${matchingCases.length} 个已发布 Case 中归纳出的「${baseTitle}」方法。`,
           locale,
           "creator_method",
           creator.name
         ),
         category: definition.category,
-        methodSteps,
+        methodSteps: evidence.steps,
         cases: matchingCases,
         creators: [{ name: creator.name, caseCount: matchingCases.length }],
         caseCount: matchingCases.length,

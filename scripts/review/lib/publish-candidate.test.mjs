@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   buildCasePayload,
   decidePublish,
+  shouldTriggerDeploy,
   validatePublishCandidate,
 } from "./publish-candidate.mjs";
 
@@ -119,6 +120,23 @@ test("publish resumes after case insert when candidate status update failed", ()
       caseId: "case-1",
     }
   );
+});
+
+test("a resumed publish still triggers the deploy hook", () => {
+  // insert 成功但候选状态更新失败的那次会抛错退出，压根走不到部署这步；
+  // 重跑走 resume 补齐数据，这里再不算它，详情页就永远停在 404。
+  assert.equal(
+    shouldTriggerDeploy({ inserted: 0, updated: 0, resumed: 1 }),
+    true
+  );
+  assert.equal(shouldTriggerDeploy({ inserted: 1, updated: 0, resumed: 0 }), true);
+  assert.equal(shouldTriggerDeploy({ inserted: 0, updated: 2, resumed: 0 }), true);
+  // 整批都被重复治理拦下时没有任何新内容上线，不该白跑一次部署。
+  assert.equal(
+    shouldTriggerDeploy({ inserted: 0, updated: 0, resumed: 0, duplicateBlocked: 3 }),
+    false
+  );
+  assert.equal(shouldTriggerDeploy({}), false);
 });
 
 test("publish refuses to overwrite an existing slug by default", () => {

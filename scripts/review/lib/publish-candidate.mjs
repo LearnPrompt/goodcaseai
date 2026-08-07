@@ -178,3 +178,19 @@ export function validatePublishCandidate(candidate) {
     errors,
   };
 }
+
+/**
+ * 详情页是构建期全量预渲染的（dynamicParams=false），库里写完不部署就是 404。
+ *
+ * resume 必须算在内：insert 成功但候选状态更新失败时脚本会抛错退出，那一次
+ * 根本走不到部署这步；重跑走 resume 把数据补齐，如果这里不算它，这条 Case
+ * 就再也不会触发 Deploy Hook 了。下架后重新发布同样走 resume。
+ */
+export function shouldTriggerDeploy(counters = {}) {
+  return (
+    (counters.inserted || 0) +
+      (counters.updated || 0) +
+      (counters.resumed || 0) >
+    0
+  );
+}
