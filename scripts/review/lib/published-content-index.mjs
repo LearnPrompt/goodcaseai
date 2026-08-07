@@ -1,4 +1,4 @@
-export const PUBLISHED_PAGE_SIZE = 1000;
+export const PUBLISHED_PAGE_SIZE = 500;
 
 /**
  * PostgREST 默认最多返回 1000 行，超出部分是**静默**截断的。
@@ -7,12 +7,20 @@ export const PUBLISHED_PAGE_SIZE = 1000;
  */
 export async function fetchAllRows(buildQuery, pageSize = PUBLISHED_PAGE_SIZE) {
   const rows = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await buildQuery(from, from + pageSize - 1);
+  for (let from = 0; ; ) {
+    const { data, error, count } = await buildQuery(from, from + pageSize - 1);
     if (error) throw new Error(error.message);
     const page = data || [];
     rows.push(...page);
-    if (page.length < pageSize) return rows;
+    if (typeof count === "number") {
+      if (rows.length >= count) return rows;
+      if (page.length === 0) throw new Error("Pagination ended before the exact row count");
+    } else if (page.length < pageSize) {
+      return rows;
+    }
+    // Advance by what the server actually returned. This avoids skipping rows
+    // when a project's max-rows is lower than the requested page size.
+    from += page.length;
   }
 }
 
@@ -32,7 +40,7 @@ export async function loadPublishedContentIndex(
     (from, to) =>
       supabase
         .from("cases")
-        .select("slug, source_candidate_id, source_url")
+        .select("slug, source_candidate_id, source_url", { count: "exact" })
         .eq("is_published", true)
         .order("slug", { ascending: true })
         .range(from, to),
@@ -47,7 +55,7 @@ export async function loadPublishedContentIndex(
       (from, to) =>
         supabase
           .from("cases")
-          .select("slug, category, creator_name, prompt_full")
+          .select("slug, category, creator_name, prompt_full", { count: "exact" })
           .eq("is_published", true)
           .in("category", categories)
           .order("slug", { ascending: true })

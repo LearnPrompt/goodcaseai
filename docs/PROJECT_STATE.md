@@ -40,6 +40,14 @@
 - `docs/WORKLOG.md` 保持追加式全量历史，不做压缩归档——这份日志含远端条目，压缩在回推 upstream 时等同于删除对方历史。
 - 本次仅同步代码与文档，未改数据库、生产数据或部署配置；验证为 `npm run lint`、`npm test`（394/394）、`npx tsc --noEmit` 与 `npm run build`（1124 static pages）全部通过。
 
+## PR 审查修复 · 2026-08-07
+
+- `pg` 只用于 `scripts/ops/migrate.mjs`，已从生产 `dependencies` 移到 `devDependencies`，`package-lock.json` 的根依赖分类与传递依赖标记同步；`npm audit --omit=dev` 已验证为 0。
+- 根目录本地交接文件的 `.gitignore` 规则已加 `/` 锚点，不会再误伤 `docs/` 下同名正式文档。
+- `ops:migrate` 现在剥离连接串中会覆盖 SSL 配置的参数，默认启用 `rejectUnauthorized: true`；需要自定义信任根时可通过 `DATABASE_SSL_CA` 提供 PEM 内容。
+- `published-content-index` 与 `dev-seed` 分页页大小降为 500，并请求 exact count、按服务端实际返回行数推进 offset；即使 max-rows 小于请求页大小也不会跳过记录，新增回归测试覆盖该边界。
+- Supabase smoke 测试改用 `example-project` 占位 project ref；本次未改数据库、生产数据或部署配置。
+
 ## 发现体验修复 · 2026-08-06
 
 - 搜索统一使用字段权重与多词查询：标题、作者、案例摘要优先于长 Prompt，结果仍可从来源、模型、标签和 Prompt 证据召回；有查询时按相关度排序，用户选择的热度/稳定度/最新作为次级排序。

@@ -33,7 +33,7 @@ export const CASE_COLUMNS = [
 ];
 
 export const SEED_BATCH_SIZE = 100;
-export const SOURCE_PAGE_SIZE = 1000;
+export const SOURCE_PAGE_SIZE = 500;
 
 export function normalizeOrigin(value) {
   const url = new URL(value);
@@ -69,16 +69,23 @@ export function chunkRows(rows, size = SEED_BATCH_SIZE) {
 
 export async function fetchPublishedCases(sourceClient) {
   const rows = [];
-  for (let offset = 0; ; offset += SOURCE_PAGE_SIZE) {
-    const { data, error } = await sourceClient
+  for (let offset = 0; ; ) {
+    const { data, error, count } = await sourceClient
       .from("cases")
-      .select(CASE_COLUMNS.join(","))
+      .select(CASE_COLUMNS.join(","), { count: "exact" })
       .eq("is_published", true)
       .order("created_at", { ascending: true })
       .range(offset, offset + SOURCE_PAGE_SIZE - 1);
     if (error) throw new Error(`Reading production cases failed: ${error.message}`);
-    rows.push(...(data ?? []));
-    if (!data || data.length < SOURCE_PAGE_SIZE) return rows;
+    const page = data ?? [];
+    rows.push(...page);
+    if (typeof count === "number") {
+      if (rows.length >= count) return rows;
+      if (page.length === 0) throw new Error("Production case pagination ended before the exact row count");
+    } else if (page.length < SOURCE_PAGE_SIZE) {
+      return rows;
+    }
+    offset += page.length;
   }
 }
 
@@ -88,4 +95,3 @@ export async function upsertCases(targetClient, rows) {
     if (error) throw new Error(`Writing local cases failed: ${error.message}`);
   }
 }
-

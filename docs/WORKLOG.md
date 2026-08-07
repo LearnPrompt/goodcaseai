@@ -2,6 +2,15 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-07 · 修复 PR 审查指出的依赖、忽略规则、TLS 与分页问题
+
+- 将 `pg` 从生产 `dependencies` 移到 `devDependencies`，并用 `npm install --package-lock-only --ignore-scripts --offline` 同步 lockfile；生产依赖审计不再把迁移 CLI 的驱动算入范围。
+- 将 `.gitignore` 中三个本地交接文件规则锚定到仓库根目录，避免静默忽略 `docs/` 下的正式文档。
+- `ops:migrate` 不再关闭证书验证：会移除连接串中可能覆盖显式 SSL 配置的参数，默认使用 `rejectUnauthorized: true`，并支持可选的 `DATABASE_SSL_CA` PEM 信任根。
+- 两处 Supabase 分页页大小从 1000 降至 500；查询请求 `count: "exact"`，offset 按实际返回行数递进，服务端 max-rows 小于请求页大小时也不会跳过数据；新增两条边界回归测试。
+- 将 smoke 测试中真实格式的 Supabase project ref 换成 `example-project` 占位值，并在 `.env.example` 说明可选 CA 配置。未改数据库、生产数据、部署配置或花费型供给 API。
+- 验证：定向测试 11/11、完整 `npm test` 396/396、`npm run lint`、`npx tsc --noEmit`、`npm run build`（1124 static pages）、`npm audit --omit=dev`（0 vulnerabilities）与 `git diff --check` 全部通过。
+
 ## 2026-08-07 · 同步 upstream 至 236e8d7，合并冲突修复并入合并提交
 
 - **同步范围**：`LearnPrompt/goodcaseai` 的 `upstream/main`（`236e8d7`）合入本仓库

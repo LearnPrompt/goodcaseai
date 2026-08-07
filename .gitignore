@@ -35,9 +35,9 @@ yarn-error.log*
 !.env.example
 
 # 本地环境交接文档，含生产只读配置，不进版本控制
-goodcase-dev-env-readonly.txt
-ONBOARDING-FULLSTACK.md
-goodcase-dev-env-readonly.example.txt
+/goodcase-dev-env-readonly.txt
+/ONBOARDING-FULLSTACK.md
+/goodcase-dev-env-readonly.example.txt
 .fable
 
 # vercel

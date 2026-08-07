@@ -4,6 +4,7 @@ import {
   CASE_COLUMNS,
   assertDifferentHosts,
   chunkRows,
+  fetchPublishedCases,
   normalizeOrigin,
   toLocalCaseRow,
 } from "./dev-seed.mjs";
@@ -42,3 +43,34 @@ test("seed output origins never include credentials", () => {
   assert.equal(normalizeOrigin("https://user:password@local.supabase.co:443/path"), "https://local.supabase.co");
 });
 
+test("seed pagination follows returned rows when max-rows is below the page size", async () => {
+  const all = Array.from({ length: 1200 }, (_, index) => ({ slug: `case-${index}` }));
+  const sourceClient = {
+    from() {
+      const builder = {
+        select(_columns, options) {
+          builder.count = options?.count ?? null;
+          return builder;
+        },
+        eq() {
+          return builder;
+        },
+        order() {
+          return builder;
+        },
+        range(from, to) {
+          return Promise.resolve({
+            data: all.slice(from, to + 1).slice(0, 200),
+            count: builder.count === "exact" ? all.length : null,
+            error: null,
+          });
+        },
+      };
+      return builder;
+    },
+  };
+
+  const rows = await fetchPublishedCases(sourceClient);
+  assert.equal(rows.length, 1200);
+  assert.equal(rows.at(-1).slug, "case-1199");
+});

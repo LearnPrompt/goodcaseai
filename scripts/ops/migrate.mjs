@@ -39,6 +39,16 @@ function requireEnv(name) {
   return value;
 }
 
+function secureConnectionString(connectionString) {
+  const url = new URL(connectionString);
+  // pg lets SSL-related query parameters replace the explicit ssl object.
+  // Remove them so certificate verification cannot be weakened by a copied URI.
+  for (const parameter of ["sslmode", "sslcert", "sslkey", "sslrootcert", "sslca"]) {
+    url.searchParams.delete(parameter);
+  }
+  return url.toString();
+}
+
 async function ensureTrackingTable(client) {
   await client.query(SCHEMA_MIGRATIONS_SQL);
 }
@@ -52,11 +62,12 @@ async function readApplied(client) {
 
 async function connect() {
   const connectionString = requireEnv("DATABASE_URL");
+  const ca = process.env.DATABASE_SSL_CA?.trim();
   const client = new Client({
-    connectionString,
-    // Supabase requires an encrypted database connection. The dashboard URI
-    // supplies the host/password; this keeps the CLI usable with its copied URI.
-    ssl: { rejectUnauthorized: false },
+    connectionString: secureConnectionString(connectionString),
+    // Supabase requires an encrypted connection. Keep certificate verification
+    // enabled; DATABASE_SSL_CA may provide PEM contents for a custom trust root.
+    ssl: ca ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: true },
   });
   await client.connect();
   return client;

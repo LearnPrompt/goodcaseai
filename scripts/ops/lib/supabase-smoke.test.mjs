@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 import { assertTestTarget, projectRefFromUrl } from "./supabase-smoke.mjs";
 
 test("projectRefFromUrl only accepts Supabase project URLs", () => {
-  assert.equal(projectRefFromUrl("https://rywuhhixnyxpkbxytipj.supabase.co"), "rywuhhixnyxpkbxytipj");
+  assert.equal(projectRefFromUrl("https://example-project.supabase.co"), "example-project");
   assert.equal(projectRefFromUrl("https://example.com"), null);
 });
 test("assertTestTarget rejects a wrong or production project", () => {
   assert.throws(
     () => assertTestTarget({
       url: "https://other.supabase.co",
-      expectedProject: "rywuhhixnyxpkbxytipj",
+      expectedProject: "example-project",
       productionUrl: "https://prod.supabase.co",
     }),
     /期望测试项目/

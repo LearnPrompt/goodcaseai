@@ -1,15 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadPublishedContentIndex } from "./published-content-index.mjs";
+import { loadPublishedContentIndex, PUBLISHED_PAGE_SIZE } from "./published-content-index.mjs";
 
 /** 只实现被用到的链式方法，range 负责按页切数据。 */
-function fakeSupabase(rowsBySelect, { onQuery } = {}) {
+function fakeSupabase(rowsBySelect, { onQuery, maxRows = Infinity } = {}) {
   return {
     from() {
-      const state = { select: "", categories: null };
+      const state = { select: "", categories: null, count: null };
       const builder = {
-        select(columns) {
+        select(columns, options) {
           state.select = columns;
+          state.count = options?.count ?? null;
           return builder;
         },
         eq() {
@@ -26,7 +27,8 @@ function fakeSupabase(rowsBySelect, { onQuery } = {}) {
           onQuery?.({ ...state, from, to });
           const source = rowsBySelect(state);
           return Promise.resolve({
-            data: source.slice(from, to + 1),
+            data: source.slice(from, to + 1).slice(0, maxRows),
+            count: state.count === "exact" ? source.length : null,
             error: null,
           });
         },
@@ -45,9 +47,24 @@ test("published content index pages past the PostgREST row cap", async () => {
   const rows = await loadPublishedContentIndex(
     fakeSupabase(() => all),
     [],
-    1000
+    PUBLISHED_PAGE_SIZE
   );
   assert.equal(rows.length, 2500);
+});
+
+test("published content index follows returned rows when max-rows is below the page size", async () => {
+  const all = Array.from({ length: 1200 }, (_, index) => ({
+    slug: `case-${index}`,
+    source_candidate_id: index,
+    source_url: `https://example.com/${index}`,
+  }));
+  const rows = await loadPublishedContentIndex(
+    fakeSupabase(() => all, { maxRows: 200 }),
+    [],
+    PUBLISHED_PAGE_SIZE,
+  );
+  assert.equal(rows.length, 1200);
+  assert.equal(rows.at(-1).slug, "case-1199");
 });
 
 test("published content index only pulls prompt_full for the batch categories", async () => {
