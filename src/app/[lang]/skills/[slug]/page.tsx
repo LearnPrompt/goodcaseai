@@ -164,6 +164,17 @@ export default async function SkillDetailPage({
             {isEnglish ? "No separate submissions" : "无独立投稿"}
           </div>
         </div>
+        {skill.latestExampleDate ? (
+          <div className="col-span-2">
+            <div className="gc-stat-label">{messages.common.latestExample}</div>
+            <div className="gc-stat-value font-mono">{skill.latestExampleDate}</div>
+            <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
+              {isEnglish
+                ? "Newest sourcePublishedAt across supporting cases"
+                : "支撑证据里最新的来源发布时间"}
+            </div>
+          </div>
+        ) : null}
       </PageHero>
 
       {installablePackage ? (

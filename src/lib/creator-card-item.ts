@@ -40,5 +40,8 @@ export function toCreatorCardItem(creator: CreatorItem): CreatorCardItem {
       creator.heroCase.summary,
       creator.heroCase.promptContributionNotes
     ),
+    // 已经是服务端算好、按 locale 格式化的 YYYY/MM/DD 字符串（或 null），
+    // 不是对象，符合「只传一个格式化好的日期字符串」的 payload 纪律。
+    latestWorkDate: creator.latestWorkDate,
   };
 }

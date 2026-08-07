@@ -8,6 +8,16 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-08-07",
+    title: "创作者与 Skill 显示作者侧最新时间",
+    items: [
+      "创作者卡片与主页显示「最近作品」时间，取其已发布案例里最新的来源发布时间。",
+      "Skill 目录与详情页显示「最近例证」时间，取支撑案例里最新的来源发布时间。",
+      "只展示作者侧时间：日期反映创作生态的活跃度，站方编辑动作不生成任何公开时间戳。",
+    ],
+    tags: ["体验", "透明度"],
+  },
+  {
+    date: "2026-08-07",
     title: "每日早报与 Agent API 上线，复测实验室开跑",
     items: [
       "新增每日早报（/daily）：每天固定推两条——一条最近 14 天的新爆款、一条值得复习的旧案例，选择按日期确定，所有人同一天看到同一对；提供早报专属 RSS 订阅。",
@@ -166,6 +176,16 @@ export const CHANGELOG: ChangelogEntry[] = [
 ];
 
 export const CHANGELOG_EN: ChangelogEntry[] = [
+  {
+    date: "2026-08-07",
+    title: "Author-side dates for creators and Skills",
+    items: [
+      "Creator cards and pages show a Latest work date — the newest source publish time among their published cases.",
+      "The Skill catalog and detail pages show a Latest example date from their supporting cases.",
+      "Only author-side dates are shown: they reflect ecosystem activity; editorial actions on our side never produce public timestamps.",
+    ],
+    tags: ["Experience", "Transparency"],
+  },
   {
     date: "2026-08-07",
     title: "Daily digest and Agent API launch; retest lab starts running",

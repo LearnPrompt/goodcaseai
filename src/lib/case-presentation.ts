@@ -1,3 +1,4 @@
+import type { Locale } from "@/i18n/config";
 import type { CaseCategory } from "@/lib/mock-data";
 
 export const MISSING_PROMPT_PREVIEW = "该案例暂未提供 Prompt 预览。";
@@ -23,6 +24,67 @@ export function formatPublishedDate(value?: string) {
   }
 
   return date.toISOString().slice(0, 10);
+}
+
+/**
+ * 案例时效性：AI 模型更新很快，卡片/详情页需要来源发布日期。为空时不显示占位符。
+ * 日期格式跟随 locale；不复用 formatPublishedDate（那个固定输出 ISO 日期，
+ * 不区分语言）。原来只在 case-card.tsx 里定义，creator / skill 的「作者侧时间」
+ * 展示也要用同一套格式，所以挪到这个中立模块，两边都能 import。
+ */
+export function formatCardPublishedDate(
+  value: string | null | undefined,
+  locale: Locale
+) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/**
+ * creator / skill 的「作者侧时间」——只展示作者的时间，绝不展示我们的编辑时间。
+ * 作者时间是关于生态的事实（这个创作者还活跃吗、这套方法还流行吗）；
+ * 编辑时间（createdAt 在库里代表的其实是「我们收录时间」）不参与判断，
+ * 只在 sourcePublishedAt 缺失时才退它当占位，保证仍能排出一个先后顺序。
+ *
+ * 输入一批案例，取 sourcePublishedAt ?? createdAt 里最新的一条，格式化成
+ * 站内既有的 YYYY/MM/DD 绝对日期 chip 风格；一条可用日期都没有时返回 null，
+ * 调用方应该整行不渲染，不留占位空行。
+ */
+export function pickLatestAuthorDate(
+  items: Array<{ sourcePublishedAt?: string; createdAt?: string }>,
+  locale: Locale
+): string | null {
+  let latestRaw: string | null = null;
+  let latestTime = -Infinity;
+
+  for (const item of items) {
+    const raw = item.sourcePublishedAt || item.createdAt;
+    if (!raw) {
+      continue;
+    }
+
+    const time = new Date(raw).getTime();
+    if (Number.isNaN(time) || time <= latestTime) {
+      continue;
+    }
+
+    latestRaw = raw;
+    latestTime = time;
+  }
+
+  return latestRaw ? formatCardPublishedDate(latestRaw, locale) : null;
 }
 
 export function getCaseCardSummary(value: string) {
