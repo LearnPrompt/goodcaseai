@@ -29,4 +29,3 @@ export function diversifyByCreator(items, { maxConsecutive = 2 } = {}) {
 
   return result;
 }
-

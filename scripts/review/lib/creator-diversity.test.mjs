@@ -15,9 +15,7 @@ test("creator diversity keeps all cases and breaks long creator runs", () => {
   assert.deepEqual(result.map((item) => item.slug), ["a1", "a2", "b1", "a3", "c1"]);
   assert.deepEqual(new Set(result.map((item) => item.slug)), new Set(items.map((item) => item.slug)));
 });
-
 test("creator diversity falls back without dropping items when one creator dominates", () => {
   const items = [{ slug: "a1", creator: "Alice" }, { slug: "a2", creator: "Alice" }];
   assert.deepEqual(diversifyByCreator(items).map((item) => item.slug), ["a1", "a2"]);
 });
-

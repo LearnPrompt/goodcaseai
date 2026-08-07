@@ -14,7 +14,6 @@ test("verdict update requires a human note and operator", () => {
   assert.throws(() => buildVerdictUpdate({ verdict: "reproduced", notes: "", operator: "YC" }), /notes/);
   assert.throws(() => buildVerdictUpdate({ verdict: "unknown", notes: "有记录", operator: "YC" }), /verdict/);
 });
-
 test("stability patch uses the newest conclusive verdict", () => {
   const rows = [
     { id: 1, tested_at: "2026-08-01T00:00:00Z", verdict: "reproduced" },
@@ -28,4 +27,3 @@ test("stability patch uses the newest conclusive verdict", () => {
 test("inconclusive-only retests do not erase an existing score", () => {
   assert.equal(buildCaseStabilityPatch([{ verdict: "inconclusive" }]), null);
 });
-

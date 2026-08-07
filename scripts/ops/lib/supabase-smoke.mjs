@@ -7,7 +7,6 @@ export function projectRefFromUrl(value) {
     return null;
   }
 }
-
 export function assertTestTarget({ url, expectedProject, productionUrl }) {
   const actualProject = projectRefFromUrl(url);
   if (!actualProject) throw new Error("Supabase URL 不是可识别的 *.supabase.co 项目地址。");
@@ -20,4 +19,3 @@ export function assertTestTarget({ url, expectedProject, productionUrl }) {
   }
   return actualProject;
 }
-

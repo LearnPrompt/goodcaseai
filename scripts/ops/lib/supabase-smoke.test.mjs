@@ -6,7 +6,6 @@ test("projectRefFromUrl only accepts Supabase project URLs", () => {
   assert.equal(projectRefFromUrl("https://rywuhhixnyxpkbxytipj.supabase.co"), "rywuhhixnyxpkbxytipj");
   assert.equal(projectRefFromUrl("https://example.com"), null);
 });
-
 test("assertTestTarget rejects a wrong or production project", () => {
   assert.throws(
     () => assertTestTarget({
@@ -25,4 +24,3 @@ test("assertTestTarget rejects a wrong or production project", () => {
     /生产/
   );
 });
-

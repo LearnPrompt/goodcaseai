@@ -15,7 +15,6 @@ function sortNewestFirst(left, right) {
   const timeDiff = new Date(right.tested_at || 0).getTime() - new Date(left.tested_at || 0).getTime();
   return timeDiff || Number(right.id || 0) - Number(left.id || 0);
 }
-
 export function buildVerdictUpdate({ verdict, notes, operator }) {
   if (!VALID_VERDICTS.includes(verdict)) {
     throw new Error(`verdict 必须是 ${VALID_VERDICTS.join(" / ")} 之一。`);
@@ -48,4 +47,3 @@ export function buildCaseStabilityPatch(rows = []) {
     ? { stability_score: VERDICT_SCORES[latest.verdict], evidence_level: "L2" }
     : null;
 }
-

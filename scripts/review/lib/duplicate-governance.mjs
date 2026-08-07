@@ -7,7 +7,6 @@ function normalizeText(value) {
     ? value.normalize("NFKC").toLowerCase().replace(/[\p{P}\p{S}\s]+/gu, "")
     : "";
 }
-
 function bigramDice(left, right) {
   if (!left || !right) return 0;
   if (left === right) return 1;
@@ -94,4 +93,3 @@ export function findDuplicateContent({
 
   return null;
 }
-
