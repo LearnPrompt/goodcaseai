@@ -9,6 +9,7 @@ export const zhCNMessages = {
   nav: {
     ariaLabel: "主导航",
     cases: "案例",
+    daily: "早报",
     skills: "Skills",
     creators: "创作者",
     favorites: "收藏",
@@ -40,6 +41,8 @@ export const zhCNMessages = {
     retry: "重试",
     backHome: "返回首页",
     notAvailable: "—",
+    latestWork: "最近作品",
+    latestExample: "最近例证",
   },
   category: {
     all: "全部",
@@ -84,10 +87,12 @@ export const zhCNMessages = {
     issue: "第 {issue} 期",
     title: "今天只看两条。",
     description:
-      "一条最近发布、来源热度靠前的新案例，一条已经发布满两周、复测证据还站得住的旧案例。选择按日期确定，同一天谁打开都是同一对。",
+      "一条最近发布、来源热度靠前的新案例，一条最新完成复测的旧案例（还没有复测记录时，换成发布满两周、稳定分靠前的旧案例）。选择按日期确定，同一天谁打开都是同一对。",
     freshLabel: "今日新案例",
     freshNote: "最近两周发布的案例里，原帖互动热度靠前的一条。",
     freshFallbackNote: "最近两周没有新发布，这里先放全库最新的一条。",
+    retestLabel: "今日新复测",
+    retestNote: "最近一条完成复测的案例，看实测下来还立不立得住。",
     reviewLabel: "今日复习",
     reviewNote: "发布满两周、稳定分或催复测票数靠前的一条，回头看看现在还能不能用。",
     empty: "今天这一档还没凑齐案例，先去案例库逛逛。",
@@ -98,7 +103,7 @@ export const zhCNMessages = {
     footerNote: "早报按日期确定性选出，不随刷新变化，也可以用 RSS 回看最近两周。",
     feedTitle: "GoodCase.ai 每日早报",
     feedDescription:
-      "每天两条：一条最近发布的新案例，一条发布满两周、复测证据还站得住的旧案例。",
+      "每天两条：一条最近发布的新案例，一条最新完成复测的旧案例（没有复测记录时换成发布满两周、复测证据还站得住的旧案例）。",
   },
   model: {
     browseTitle: "按模型浏览",
@@ -231,6 +236,7 @@ export const enMessages = {
   nav: {
     ariaLabel: "Primary navigation",
     cases: "Cases",
+    daily: "Daily",
     skills: "Skills",
     creators: "Creators",
     favorites: "Favorites",
@@ -262,6 +268,8 @@ export const enMessages = {
     retry: "Try again",
     backHome: "Back to home",
     notAvailable: "—",
+    latestWork: "Latest work",
+    latestExample: "Latest example",
   },
   category: {
     all: "All",
@@ -304,12 +312,15 @@ export const enMessages = {
     issue: "Issue {issue}",
     title: "Two cases a day.",
     description:
-      "One recent case with strong source heat, and one older case that still holds up after two weeks of retest evidence. The pair is derived from the date, so everyone opening the page today sees the same two.",
+      "One recent case with strong source heat, and one older case that was just retested (or, with no retest evidence yet, one that ranks high on stability after two weeks). The pair is derived from the date, so everyone opening the page today sees the same two.",
     freshLabel: "New today",
     freshNote:
       "Published in the last two weeks, ranked by interaction on the original post.",
     freshFallbackNote:
       "Nothing was published in the last two weeks, so the newest case in the library stands in.",
+    retestLabel: "New retest",
+    retestNote:
+      "The most recently retested case — see whether it still holds up in practice.",
     reviewLabel: "Revisit today",
     reviewNote:
       "Published more than two weeks ago and ranked high on stability or retest votes. Worth checking whether it still works.",
@@ -323,7 +334,7 @@ export const enMessages = {
       "The digest is derived from the date, so it does not change on refresh. The RSS feed replays the last two weeks.",
     feedTitle: "GoodCase.ai Daily Digest",
     feedDescription:
-      "Two cases a day: one recently published, one published more than two weeks ago whose retest evidence still holds up.",
+      "Two cases a day: one recently published, one just retested (or, with no retest evidence yet, one published more than two weeks ago whose retest evidence still holds up).",
   },
   model: {
     browseTitle: "Browse by model",

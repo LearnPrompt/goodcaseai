@@ -1,5 +1,6 @@
 import type { CaseItem } from "@/lib/mock-data";
 import { averageMeasuredStability } from "@/lib/stability";
+import { pickLatestAuthorDate } from "@/lib/case-presentation";
 import type { Locale } from "@/i18n/config";
 import {
   normalizeCreatorIdentity,
@@ -33,6 +34,12 @@ export type CreatorItem = {
   highlightedLabel: string;
   heroCase: CreatorCaseItem;
   representativeCases: CreatorCaseItem[];
+  /**
+   * 「最近作品」——该创作者名下已发布案例里最新的 sourcePublishedAt（缺失时退
+   * createdAt），格式化成 YYYY/MM/DD。只展示作者侧时间，不展示编辑/收录时间。
+   * 一条可用日期都没有时是 null，调用方不渲染这一行。
+   */
+  latestWorkDate: string | null;
 };
 
 const CATEGORY_LABELS: Record<CaseItem["category"], string> = {
@@ -225,6 +232,7 @@ export function deriveCreatorsFromCases(
             ? "Worth learning"
             : "值得学习";
       const avatarUrl = heroCase.creatorAvatarUrl || items.find((item) => item.creatorAvatarUrl)?.creatorAvatarUrl;
+      const latestWorkDate = pickLatestAuthorDate(items, locale);
 
       return {
         slug: slugifyCreatorName(name),
@@ -249,6 +257,7 @@ export function deriveCreatorsFromCases(
         highlightedLabel,
         heroCase,
         representativeCases,
+        latestWorkDate,
       } satisfies CreatorItem;
     })
     .sort((a, b) => {

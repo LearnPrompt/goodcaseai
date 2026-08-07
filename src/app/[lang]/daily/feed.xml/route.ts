@@ -15,6 +15,7 @@ import {
   selectDailyDigest,
   type DailyDigestPick,
 } from "@/lib/daily-digest";
+import { getRetestRecords } from "@/lib/retest-source";
 import { SITE_ORIGIN } from "@/lib/site";
 
 // 和 /daily 页面同一套理由：内容是天级的，但回源节流按小时给，
@@ -82,11 +83,21 @@ export async function GET(
   const locale = normalizeLocale((await params).lang);
   const messages = getMessages(locale);
   const cases = await getCaseListData("all", locale);
+  const retestRecords = await getRetestRecords();
 
   const today = getDigestDateKey(new Date()) ?? "";
   // 选择完全由日期决定，所以历史期数可以直接重算出来，不需要另存一张期刊表。
+  //
+  // 复测数据没有历史快照——manifest / case_retests 只留着「现在」这一份复测证据，
+  // 拿它去回放两周前那期，等于假装那条案例在两周前就测过，是编的。所以只有
+  // 今天这一期传 retestRecords，历史期一律不传，自动落回旧的「今日复习」逻辑。
   const issues = listRecentIssueDates(today, DAILY_DIGEST_FEED_ISSUES).map(
-    (dateKey) => selectDailyDigest(cases, dateKey)
+    (dateKey) =>
+      selectDailyDigest(
+        cases,
+        dateKey,
+        dateKey === today ? { retestRecords } : undefined
+      )
   );
 
   const itemsXml = issues
@@ -105,13 +116,15 @@ export async function GET(
         locale,
         "/daily"
       )}#${digest.dateKey}`;
+      const reviewLabel =
+        digest.review?.slot === "retest"
+          ? messages.daily.retestLabel
+          : messages.daily.reviewLabel;
       const blocks = [
         digest.fresh
           ? describePick(digest.fresh, messages.daily.freshLabel, locale)
           : null,
-        digest.review
-          ? describePick(digest.review, messages.daily.reviewLabel, locale)
-          : null,
+        digest.review ? describePick(digest.review, reviewLabel, locale) : null,
       ].filter((block): block is string => Boolean(block));
 
       if (blocks.length === 0) {

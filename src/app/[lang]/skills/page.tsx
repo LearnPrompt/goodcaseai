@@ -215,6 +215,7 @@ export default async function SkillsPage({
             isEnglish={isEnglish}
             categoryLabels={messages.category}
             query={query}
+            latestExampleLabel={messages.common.latestExample}
           />
 
           {visibleCreatorMethods.length ? (
@@ -229,6 +230,7 @@ export default async function SkillsPage({
               isEnglish={isEnglish}
               categoryLabels={messages.category}
               query={query}
+              latestExampleLabel={messages.common.latestExample}
             />
           ) : null}
         </>
@@ -257,6 +259,7 @@ function SkillSection({
   isEnglish,
   categoryLabels,
   query,
+  latestExampleLabel,
 }: {
   title: string;
   description: string;
@@ -264,6 +267,7 @@ function SkillSection({
   isEnglish: boolean;
   categoryLabels: ReturnType<typeof getMessages>["category"];
   query: string;
+  latestExampleLabel: string;
 }) {
   const groupedSkills = SKILL_CATEGORY_ORDER.map((category) => ({
     category,
@@ -350,6 +354,9 @@ function SkillSection({
                       <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
                         {skill.caseCount} Cases · {skill.creatorCount}{" "}
                         {isEnglish ? "Creators" : "位作者"}
+                        {skill.latestExampleDate
+                          ? ` · ${latestExampleLabel} ${skill.latestExampleDate}`
+                          : ""}
                       </span>
                       <div className="flex gap-2">
                         <a className="gc-action" href={getSkillDownloadPath(skill.slug)} download>

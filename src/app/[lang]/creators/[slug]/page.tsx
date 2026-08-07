@@ -156,6 +156,17 @@ export default async function CreatorDetailPage({
             L1 / L2 Cases
           </div>
         </div>
+        {creator.latestWorkDate ? (
+          <div className="col-span-2">
+            <div className="gc-stat-label">{messages.common.latestWork}</div>
+            <div className="gc-stat-value font-mono">{creator.latestWorkDate}</div>
+            <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
+              {isEnglish
+                ? "Newest sourcePublishedAt across published cases"
+                : "已发布 Case 里最新的来源发布时间"}
+            </div>
+          </div>
+        ) : null}
       </PageHero>
 
       {methods.length > 0 ? (

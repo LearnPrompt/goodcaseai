@@ -28,6 +28,11 @@ export type CreatorCardItem = {
   heroCaseTitle: string;
   /** 过滤套话 + 复用方法兜底之后的结果；两者都没有时是 null，不渲染摘要段。 */
   heroCaseSummary: string | null;
+  /**
+   * 最近作品——已经在服务端按 locale 格式化成 YYYY/MM/DD 字符串；
+   * 只展示作者侧时间，不展示编辑时间。null 时不渲染这一行。
+   */
+  latestWorkDate: string | null;
   searchQuery?: string;
   searchSnippet?: string | null;
   searchField?: string | null;
@@ -120,6 +125,12 @@ export function CreatorCard({
           </div>
         </div>
       </div>
+
+      {creator.latestWorkDate ? (
+        <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
+          {messages.common.latestWork} {creator.latestWorkDate}
+        </p>
+      ) : null}
 
       <div className="mt-5 border border-[var(--hair)] bg-[var(--paper-2)] p-4">
         <p className="gc-eyebrow">

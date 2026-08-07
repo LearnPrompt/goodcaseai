@@ -1,4 +1,11 @@
 import type { Locale } from "@/i18n/config";
+// 相对路径 + 显式 .ts 后缀：这个文件会被 scripts/ops/lib/skills.test.mjs 和
+// scripts/skills/generate-installable-skills.mjs 用相对路径直接 import
+// （node --test 原生跑 TS，不认 tsconfig 的 "@/*" 路径别名）。之前这里只有
+// import type（编译期整句被抹掉，不受影响），这是第一个值导入，
+// 用 "@/lib/case-presentation" 会在测试里报 ERR_MODULE_NOT_FOUND，
+// 参见 src/lib/creator-card-item.ts 顶部同类注释。
+import { pickLatestAuthorDate } from "./case-presentation.ts";
 import type { CaseCategory } from "@/lib/mock-data";
 import { rankSearchResults, type SearchField } from "./search.ts";
 
@@ -19,6 +26,9 @@ export type SkillCaseInput = {
   mediaType?: "image" | "video";
   mediaUrl?: string;
   posterUrl?: string;
+  /** 「最近例证」取数用：作者侧发布时间，缺失时退收录时间。两者都没有就不参与排序。 */
+  sourcePublishedAt?: string;
+  createdAt?: string;
 };
 
 export type SkillCreatorEvidence = {
@@ -45,6 +55,12 @@ export type DerivedSkill<T extends SkillCaseInput = SkillCaseInput> = {
   caseCount: number;
   creatorCount: number;
   generalSkillSlug: string | null;
+  /**
+   * 「最近例证」——支撑这个 Skill 的案例里最新的 sourcePublishedAt（缺失时退
+   * createdAt），格式化成 YYYY/MM/DD。只展示作者侧时间，不展示编辑/收录时间。
+   * 一条可用日期都没有时是 null。
+   */
+  latestExampleDate: string | null;
 };
 
 export type SkillCatalog<T extends SkillCaseInput = SkillCaseInput> = {
@@ -513,6 +529,7 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
         caseCount: matchingCases.length,
         creatorCount: creators.size,
         generalSkillSlug: null,
+        latestExampleDate: pickLatestAuthorDate(matchingCases, locale),
       },
     ];
   }).sort(
@@ -589,6 +606,7 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
         caseCount: matchingCases.length,
         creatorCount: 1,
         generalSkillSlug: definition.slug,
+        latestExampleDate: pickLatestAuthorDate(matchingCases, locale),
       });
     }
   }

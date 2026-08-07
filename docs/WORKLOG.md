@@ -157,72 +157,16 @@
   401 分支（这四条只有迁移跑完才可能在线上走到，只能靠单测保证）
 - 测试 334 → 335（新增三个测试文件共 22 个用例）
 
-## 2026-08-06 · 修复开发环境 React CSP eval 提示
+## 2026-08-07 · 作者侧时间上线（creator 最近作品 / skill 最近例证）
 
-- `next.config.ts` 的 `script-src` 仅在开发环境加入 `unsafe-eval`，满足 React 开发模式
-  调试调用栈需求；生产环境继续保持严格 CSP，不开放 `unsafe-eval`。
-- 验证：开发服务器 `/en` 返回的 CSP 含 `unsafe-eval`；lint、310/310 测试和
-  production build 全部通过。
-
-## 2026-08-06 · GitHub 入库安全审计与公开 onboarding 模板
-
-- 核对 `LearnPrompt/goodcaseai`：本地 `HEAD` 与 GitHub `main` 同为
-  `684f5950a4cf4ed3dfcae00d301bace75874f8d1`；该提交 Vercel status 为 success，
-  GitHub Actions runs 为空，当前没有仓库级 CI。
-- `ONBOARDING-FULLSTACK.md` 保留为公开全栈建库/seed/审核发布指南，并修正了原先指向
-  不存在 `ONBOARDING.md` 的链接；README 中英文都补了入口。
-- 新增 `goodcase-dev-env-readonly.example.txt`，只放 placeholder 和环境边界；真实的
-  `goodcase-dev-env-readonly.txt` 含生产项目的 `NEXT_PUBLIC_*` 值，继续被 `.gitignore`
-  排除，避免把真实环境交接文件当作版本化配置。
-- 安全扫描未发现已追踪的 service-role key、数据库密码、运营密码、私钥或 GitHub token；
-  `.env.local` 仍仅保留本机，未调用供给 API，也未对生产数据库执行写操作。
-- 验证：lint、`npx tsc --noEmit`、310/310 tests、production build 全部通过。build 仅提示
-  上层目录存在额外 lockfile，Next.js 自动推断 workspace root。
-
-## 2026-08-06 · 本地全栈环境接通 + schema.sql 补漏 + 管道命令修复
-
-- 本地环境接通：`.env.local` 补上 `PROD_SUPABASE_URL` / `PROD_SUPABASE_ANON_KEY`
-  两个只读值后 `dev:seed` 跑通，生产 298 条已发布 cases 导入本机库
-  （文档写的 314 是 08-04 的数，现生产实际 298，非导漏）。首页/`/cases`/`/en`
-  不再吃 `mock-data.ts` 的 12 条；`sitemap.xml` 出 1084 个 `<loc>`，
-  说明 service role key 配对。
-- 灌了 12 条本地候选测试数据（`tmp/case-candidates.json`，全部带 `local-test` tag，
-  `import_batch_id=2026-08-06T14-29-55-721Z`，按这个批次号可一键筛出清理）
-  并跑通完整管道：溯源闸门按预期拦下 1 条 `#reversed-3` 锚点候选；
-  3 条边界用例在 approve 时分别被「占位图媒体」「缺 creator_name」「摘要不足」
-  三道校验精准拦下并 reject；8 条正常候选 approve → publish，
-  `source_candidate_id` 回挂正确，本机 cases 达 306 条。
-- 修 `package.json`：`import:candidates`、`review:candidates`、`publish:cases`
-  三条命令缺 `--env-file=.env.local`，直接 `npm run` 必报「缺少环境变量」。
-  同批的 `ops:*` 和 `dev:seed` 都带了，属遗漏。现已补齐，三条命令可直接运行。
-- 修 `supabase/schema.sql`：补齐 `20260805100000_candidate_provenance_anchor`
-  与 `20260805200000_case_reactions` 两个 migration 的全部 DDL。此前 schema.sql
-  只同步到 `20260805000000`，而 `--baseline` 只写记录不执行，导致按文档新建的库
-  记录显示 pending=0 但结构缺失，`ops:migrate` 此后永不会补。详见 PROJECT_STATE
-  同名章节。**本机库尚未重跑 schema.sql，`case_reactions` 仍缺，
-  `/api/reactions` 返回 `available:false`。**
-- `AGENTS.md` 新增三节硬规则（改数据库、内容管道、提 PR 前），把
-  ONBOARDING-FULLSTACK 第 7–9 节固化为所有 agent 每次会话必读的约束。
-- `.gitignore` 增加 `goodcase-dev-env-readonly.txt`：该文件不被 `.env*` 规则覆盖，
-  有被 `git add .` 带进版本控制的风险。
-- 验证：`npm run lint` 通过、`npm test` 310/310、`npm run build` 成功；
-  8 条新发布案例详情页重启 dev server 后全部 200（`dynamicParams = false`，
-  新 slug 必须重新枚举 `generateStaticParams` 才可访问，与 publish 脚本的警告一致）。
-
-## 2026-08-06 · 补齐本地 migration runner 与生产只读 cases seed
-
-- 新增 `ops:migrate`：默认 status 只读、`--baseline` 登记全量 schema 后的现有
-  migration、`--apply` 按时间顺序执行 pending SQL；记录 migration checksum，
-  修改已应用 migration 会 fail closed；`pg` 作为 `DATABASE_URL` 原生 Postgres 依赖。
-- 新增 `dev:seed`：生产 anon 只读 published `cases`，本地 service role 分批 upsert，
-  先 `--dry-run`；同 host 拒绝，排除 `id`、`source_candidate_id` 与 generated columns，
-  不把生产候选外键带进本地库。
-- 补齐 `20260805100000_candidate_provenance_anchor` 与
-  `20260805200000_case_reactions` 的 rollback 文件；更新 `.env.example`、README 中英说明。
-- 验证：`npm test` 310/310、`npm run lint`、`tsc --noEmit`、`npm run build` 全部通过；
-  `dev:seed --dry-run` 在缺少 `PROD_*` 时安全报错。Direct host 曾因 DNS 无法解析，
-  后切换到 Session pooler；发现终端旧 `DATABASE_URL` 覆盖 env-file，清除后 baseline
-  成功登记 7 个 migration，status pending=0。
+- 只加作者的时间不加编辑时间（编辑时间=给自己上公开时钟，批量运营会满屏
+  「刚刚更新」、供给间歇满屏变旧；同理不做全站最后更新聚合）。绝对日期不用相对
+- 纯派生零新查询：deriveCreatorsFromCases / deriveSkillCatalog 内取支撑案例
+  最新 sourcePublishedAt（退 createdAt）。四处展示、中英、null 不渲染
+- 事故记录：并行会话的 aa162fe 整批 add 时把本任务未提交的 messages.ts 卷进
+  它的 commit——**共享工作区提交必须点名文件**这条铁律的又一实证；本轮提交
+  已严格点名 11 个文件，另一会话的 scripts/retest/* 未触碰
+- 测试 348 → 359（+11）
 
 ## 2026-08-06 · 截断补全收尾：管线双修 + 14 条方法论重写 + 站上更新日志追平
 

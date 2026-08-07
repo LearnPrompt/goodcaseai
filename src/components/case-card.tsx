@@ -7,12 +7,14 @@ import { CaseCardStabilityVote } from "@/components/case-card-stability";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { useLocale, useMessages } from "@/i18n/client";
 import type { CardMediaFit } from "@/lib/card-media-fit";
-import { getPresentableCaseSummary } from "@/lib/case-presentation";
+import {
+  formatCardPublishedDate,
+  getPresentableCaseSummary,
+} from "@/lib/case-presentation";
 import { slugifyCreatorName } from "@/lib/creator-slug";
+import { splitHighlightedText } from "@/lib/search";
 import type { SkillLink } from "@/lib/skills";
 import { formatStabilityScore, hasMeasuredStability } from "@/lib/stability";
-import type { Locale } from "@/i18n/config";
-import { splitHighlightedText } from "@/lib/search";
 
 export type CaseCardItem = {
   slug: string;
@@ -42,31 +44,6 @@ export type CaseCardItem = {
   searchSnippet?: string | null;
   searchField?: string | null;
 };
-
-/**
- * 案例时效性：AI 模型更新很快，卡片需要来源发布日期。为空时不显示占位符。
- * 日期格式跟随 locale；这里不复用详情页 formatPublishedDate（那个固定输出 ISO
- * 日期，不区分语言），避免影响已经在用的详情页格式。
- */
-function formatCardPublishedDate(
-  value: string | null | undefined,
-  locale: Locale
-) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
 
 export function CaseCard({
   item,
