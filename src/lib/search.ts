@@ -36,15 +36,26 @@ function countOccurrences(value: string, token: string) {
   return count;
 }
 
-function scoreField(value: string, query: string, tokens: string[], weight: number) {
+type FieldScore = {
+  field: string;
+  text: string;
+  score: number;
+  tokenMatches: string[];
+  fullCoverage: boolean;
+};
+
+/**
+ * 单字段打分，不做「必须全部 token 命中」的门槛判断——门槛判断挪到结果级
+ * （见 getSearchMatch），这里只负责：这个字段命中了多少、分数多高、是否
+ * 自己就覆盖了全部 token（fullCoverage，用来判断能不能单独作为展示字段）。
+ */
+function scoreField(value: string, normalizedQuery: string, tokens: string[], weight: number): FieldScore {
   const normalizedValue = normalizeText(value);
-  const normalizedQuery = normalizeText(query);
   const phraseMatch = normalizedValue.includes(normalizedQuery);
   const tokenMatches = tokens.filter((token) => normalizedValue.includes(token));
 
-  // 多词查询要求全部词命中；单词查询保持普通 substring 搜索习惯。
-  if (!phraseMatch && tokenMatches.length !== tokens.length) {
-    return 0;
+  if (!phraseMatch && tokenMatches.length === 0) {
+    return { field: "", text: value, score: 0, tokenMatches, fullCoverage: false };
   }
 
   const exactPhraseBonus = phraseMatch ? 70 : 0;
@@ -53,13 +64,22 @@ function scoreField(value: string, query: string, tokens: string[], weight: numb
     (total, token) => total + Math.min(countOccurrences(normalizedValue, token), 3) * 4,
     0
   );
+  const score = weight + exactPhraseBonus + startsWithBonus + tokenMatches.length * 16 + frequencyBonus;
+  const fullCoverage = phraseMatch || tokenMatches.length === tokens.length;
 
-  return weight + exactPhraseBonus + startsWithBonus + tokenMatches.length * 16 + frequencyBonus;
+  return { field: "", text: value, score, tokenMatches, fullCoverage };
 }
 
 /**
  * 返回一个结果最有价值的命中字段。字段权重让标题/作者优先于长 Prompt，
  * 但 Prompt 仍然可以把真实证据搜出来。
+ *
+ * 命中判定是结果级的：多词查询里，每个 token 只要在任意一个可搜字段命中即可
+ * （例如「模型」在 model 字段命中、「主题」在 title 字段命中），只要全部 token
+ * 都在某个字段里找到了归属，这条记录就算命中——不再要求所有 token 挤进同一个
+ * 字段。字段自身的打分和「是否自己就覆盖了全部 token」仍然分开算，用来挑
+ * 展示字段：优先选单字段就命中全部 token 的（更精确、更适合做高亮片段），
+ * 都没有这种字段时，退化为按分数最高的部分命中字段展示。
  */
 export function getSearchMatch(
   fields: SearchField[],
@@ -69,15 +89,26 @@ export function getSearchMatch(
   const tokens = queryTokens(query);
   if (!normalizedQuery || tokens.length === 0) return null;
 
-  return fields
+  const fieldScores = fields
     .filter((field): field is SearchField & { value: string } => Boolean(field.value?.trim()))
     .map((field) => ({
+      ...scoreField(field.value, normalizedQuery, tokens, field.weight),
       field: field.key,
-      text: field.value,
-      score: scoreField(field.value, normalizedQuery, tokens, field.weight),
-    }))
-    .filter((match) => match.score > 0)
-    .sort((a, b) => b.score - a.score || a.field.localeCompare(b.field))[0] || null;
+    }));
+
+  // 结果级判定：全部 token 是否都在某个字段里找到了归属（跨字段并集）。
+  const coveredTokens = new Set<string>();
+  for (const entry of fieldScores) {
+    for (const token of entry.tokenMatches) coveredTokens.add(token);
+  }
+  if (coveredTokens.size !== tokens.length) return null;
+
+  const hits = fieldScores.filter((entry) => entry.score > 0);
+  const fullCoverageHits = hits.filter((entry) => entry.fullCoverage);
+  const pool = fullCoverageHits.length > 0 ? fullCoverageHits : hits;
+
+  const best = pool.sort((a, b) => b.score - a.score || a.field.localeCompare(b.field))[0];
+  return best ? { field: best.field, text: best.text, score: best.score } : null;
 }
 
 export function rankSearchResults<T>(

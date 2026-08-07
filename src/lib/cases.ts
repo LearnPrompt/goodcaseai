@@ -63,10 +63,24 @@ type StoredCaseTranslation = {
   resultBreakdown?: [string, string, string];
 };
 
+/**
+ * promptContributionNotes 的来源。
+ *
+ * - authored：这条 Case 自己写过的三段式复盘（translations[locale].resultBreakdown）。
+ * - template：库里没有复盘，按 category 拼出来的通用句子。同一个 category 下
+ *   所有 Case 拿到的是**同一段文字**，只能当阅读提示，不能当这条 Case 的证据。
+ *
+ * 打标放在生成端而不是让消费端去猜字符串：模板句会随文案调整而变，
+ * 任何基于「看起来像套话」的字符串判断都会在下一次改文案时静默失效。
+ * src/lib/skills.ts 只接受 authored 的句子当 Skill 证据。
+ */
+export type PromptContributionNotesSource = "authored" | "template";
+
 type BaseDerivedCaseFields = {
   promptPublicNote: string;
   promptLoginNotes: string[];
   promptContributionNotes: string[];
+  promptContributionNotesSource: PromptContributionNotesSource;
   editorNote: string;
   labNote: string[];
   /** 本地 400px 缩略图，只用于列表；没有时回退到原始媒体。详情页始终用原图。 */
@@ -388,28 +402,37 @@ function buildPromptLoginNotes(item: CaseItem, locale: Locale) {
   ];
 }
 
-function buildPromptContributionNotes(item: CaseItem, locale: Locale) {
+function buildPromptContributionNotes(
+  item: CaseItem,
+  locale: Locale
+): { notes: string[]; source: PromptContributionNotesSource } {
   if (locale === "en") {
     const translated = getEnglishCaseTranslation(item.slug);
     if (translated?.resultBreakdown) {
-      return translated.resultBreakdown;
+      return { notes: translated.resultBreakdown, source: "authored" };
     }
-    return [
-      `Check whether ${getPromptFocus(item.category, locale)} all hold in the final result.`,
-      `Extract “target result → ${getEditableVariables(item.category, locale)} → constraints” as a reusable template for similar work.`,
-      `Run single-variable comparisons around ${getLabFocus(item.category, locale)}. Record the model, cost, and failures; turn it into a Skill only after it repeats reliably.`,
-    ];
+    return {
+      notes: [
+        `Check whether ${getPromptFocus(item.category, locale)} all hold in the final result.`,
+        `Extract “target result → ${getEditableVariables(item.category, locale)} → constraints” as a reusable template for similar work.`,
+        `Run single-variable comparisons around ${getLabFocus(item.category, locale)}. Record the model, cost, and failures; turn it into a Skill only after it repeats reliably.`,
+      ],
+      source: "template",
+    };
   }
 
   if (item.resultBreakdown) {
-    return item.resultBreakdown;
+    return { notes: item.resultBreakdown, source: "authored" };
   }
 
-  return [
-    `观察最终结果里，${getPromptFocus(item.category, locale)} 是否同时成立。`,
-    `把“目标结果 → ${getEditableVariables(item.category, locale)} → 约束条件”抽成模板，后续可复用到同类任务。`,
-    `围绕 ${getLabFocus(item.category, locale)} 做单变量对照，并记录模型、成本和失败结果；重复成立后再沉淀为 Skill。`,
-  ];
+  return {
+    notes: [
+      `观察最终结果里，${getPromptFocus(item.category, locale)} 是否同时成立。`,
+      `把“目标结果 → ${getEditableVariables(item.category, locale)} → 约束条件”抽成模板，后续可复用到同类任务。`,
+      `围绕 ${getLabFocus(item.category, locale)} 做单变量对照，并记录模型、成本和失败结果；重复成立后再沉淀为 Skill。`,
+    ],
+    source: "template",
+  };
 }
 
 function buildEditorNote(item: CaseItem, locale: Locale) {
@@ -463,6 +486,7 @@ function enrichCaseItemBase(
   const localizedItem =
     locale === "en" && translation ? { ...item, ...translation } : { ...item };
   const thumbnail = getThumbnail(item.slug);
+  const promptContribution = buildPromptContributionNotes(localizedItem, locale);
 
   return {
     ...localizedItem,
@@ -473,7 +497,8 @@ function enrichCaseItemBase(
     likedCount: 0,
     promptPublicNote: buildPromptPublicNote(localizedItem, locale),
     promptLoginNotes: buildPromptLoginNotes(localizedItem, locale),
-    promptContributionNotes: buildPromptContributionNotes(localizedItem, locale),
+    promptContributionNotes: promptContribution.notes,
+    promptContributionNotesSource: promptContribution.source,
     editorNote: buildEditorNote(localizedItem, locale),
     labNote: buildLabNote(localizedItem, locale),
     thumbnailUrl: thumbnail?.url,

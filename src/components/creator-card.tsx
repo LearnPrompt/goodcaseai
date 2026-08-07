@@ -3,7 +3,7 @@
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { useLocale, useMessages } from "@/i18n/client";
-import { formatStabilityScore } from "@/lib/stability";
+import { formatAggregateStability } from "@/lib/stability";
 import { splitHighlightedText } from "@/lib/search";
 
 /**
@@ -49,6 +49,10 @@ export function CreatorCard({
   const locale = useLocale();
   const messages = useMessages();
   const isEnglish = locale === "en";
+  const searchFieldLabel = creator.searchField
+    ? messages.searchField[creator.searchField as keyof typeof messages.searchField] ??
+      messages.searchField.fallback
+    : messages.searchField.fallback;
 
   return (
     <article className="gc-card flex h-full flex-col border-l-0 border-t-0 p-5 sm:p-6">
@@ -91,7 +95,7 @@ export function CreatorCard({
       {creator.searchQuery && creator.searchSnippet ? (
         <div className="mt-3 min-h-[84px] text-sm leading-7 text-[var(--muted)]">
           <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--orange)]">
-            {creator.searchField || (isEnglish ? "Match" : "命中")}
+            {searchFieldLabel}
           </div>
           <p className="line-clamp-3">
             {splitHighlightedText(creator.searchSnippet, creator.searchQuery).map((part, index) =>
@@ -121,7 +125,7 @@ export function CreatorCard({
         <div className="gc-stat">
           <div className="gc-stat-label">{messages.common.stability}</div>
           <div className="gc-stat-value">
-            {formatStabilityScore(creator.averageStabilityScore, locale)}
+            {formatAggregateStability(creator.averageStabilityScore, locale)}
           </div>
         </div>
       </div>

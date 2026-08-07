@@ -14,7 +14,7 @@ import {
 import { slugifyCreatorName } from "@/lib/creator-slug";
 import { splitHighlightedText } from "@/lib/search";
 import type { SkillLink } from "@/lib/skills";
-import { formatStabilityScore, hasMeasuredStability } from "@/lib/stability";
+import { formatStabilityScore, resolveStabilityState } from "@/lib/stability";
 
 export type CaseCardItem = {
   slug: string;
@@ -37,6 +37,12 @@ export type CaseCardItem = {
   /** 缩略图在 16:9 框里的填充方式，由缩略图宽高算出；缺省按 cover。 */
   thumbnailFit?: CardMediaFit;
   stabilityScore: number;
+  /**
+   * 稳定度那一格要区分「没测过」和「测过没通过」，光看分数区分不出来
+   * （库里 stability_score not null default 0），判别位是证据等级，
+   * 见 src/lib/stability.ts。两个字符，卡片 payload 可以忽略不计。
+   */
+  evidenceLevel?: string | null;
   sourceHeatScore: number | null;
   sourcePublishedAt?: string | null;
   skills?: SkillLink[];
@@ -57,6 +63,10 @@ export function CaseCard({
   const messages = useMessages();
   const locale = useLocale();
   const isGallery = variant === "gallery";
+  const stabilityState = resolveStabilityState(
+    item.stabilityScore,
+    item.evidenceLevel
+  );
   const label =
     messages.category[item.category as keyof typeof messages.category] ||
     item.category;
@@ -319,9 +329,18 @@ export function CaseCard({
                   isGallery ? "mt-1 text-sm font-semibold" : "gc-stat-value"
                 }
               >
-                {hasMeasuredStability(item.stabilityScore)
-                  ? formatStabilityScore(item.stabilityScore)
-                  : <CaseCardStabilityVote caseSlug={item.slug} />}
+                {stabilityState === "measured" ? (
+                  formatStabilityScore(item.stabilityScore)
+                ) : stabilityState === "failed" ? (
+                  // 复测跑过没通过：不再假装「还没测」去催投票。
+                  // 只用单强调色标出来，不加边框/圆角/徽章，
+                  // 免得撑破统计格刚锁定的高度对齐（同 case-card-stability.tsx 的理由）。
+                  <span className="text-[var(--orange)]">
+                    {messages.stability.failed}
+                  </span>
+                ) : (
+                  <CaseCardStabilityVote caseSlug={item.slug} />
+                )}
               </div>
             </div>
           </div>

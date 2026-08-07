@@ -10,8 +10,9 @@ import { getLocaleFromParams } from "@/i18n/server";
 import { getHomeData, type DisplayCaseItem } from "@/lib/cases";
 import { getPresentableCaseSummary } from "@/lib/case-presentation";
 import {
+  formatAggregateStability,
   formatStabilityScore,
-  hasMeasuredStability,
+  resolveStabilityState,
 } from "@/lib/stability";
 
 // 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
@@ -265,8 +266,11 @@ function renderStabilityRow(
       </div>
       <div className="text-right font-mono text-xs">
         <b className="text-[var(--orange)]">
-          {formatStabilityScore(item.stabilityScore, locale)}
-          {hasMeasuredStability(item.stabilityScore) ? "%" : ""}
+          {formatStabilityScore(item.stabilityScore, locale, item.evidenceLevel)}
+          {resolveStabilityState(item.stabilityScore, item.evidenceLevel) ===
+          "measured"
+            ? "%"
+            : ""}
         </b>
       </div>
     </div>
@@ -535,6 +539,7 @@ export default async function Home({
             creator: item.creator,
             categoryLabel: categoryLabels[locale][item.category],
             stabilityScore: item.stabilityScore,
+            evidenceLevel: item.evidenceLevel,
             mediaType: item.mediaType,
             mediaUrl: item.mediaUrl,
             posterUrl: item.posterUrl,
@@ -587,7 +592,7 @@ export default async function Home({
                 />
                 <MiniMetric
                   label="Stab."
-                  value={formatStabilityScore(
+                  value={formatAggregateStability(
                     creator.averageStabilityScore,
                     locale
                   )}
@@ -694,7 +699,8 @@ export default async function Home({
                   label={isEnglish ? "Stable" : "稳定"}
                   value={formatStabilityScore(
                     featuredCase.stabilityScore,
-                    locale
+                    locale,
+                    featuredCase.evidenceLevel
                   )}
                 />
                 <MiniMetric label={isEnglish ? "Cost" : "成本"} value={costLabels[featuredCase.costBand]} />

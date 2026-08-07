@@ -58,11 +58,12 @@ export const zhCNMessages = {
     medium: "中",
     high: "高",
   },
-  // 与 src/lib/stability.ts 的 STABILITY_PENDING_LABEL 保持一致。
-  // 那个模块被纯 node 测试直接加载，无法从这里引入，所以文案在两处各存一份。
+  // 与 src/lib/stability.ts 的 STABILITY_PENDING_LABEL / STABILITY_FAILED_LABEL
+  // 保持一致。那个模块被纯 node 测试直接加载，无法从这里引入，所以文案两处各存一份。
   stability: {
     pending: "投票催复测",
     voted: "已催复测",
+    failed: "复测未通过",
   },
   card: {
     prompt: "提示语",
@@ -156,6 +157,24 @@ export const zhCNMessages = {
     skillsAriaLabel: "搜索 Skill",
     creatorsPlaceholder: "搜索创作者、领域或代表案例",
     creatorsAriaLabel: "搜索创作者",
+  },
+  // 命中字段标签：skills 页命中标签、创作者卡片命中标签用它把 search.ts
+  // 里的字段 key（title/description/creator/... 见 getSkillSearchFields /
+  // getCreatorSearchFields）翻成人话，不直接渲染英文裸 key。
+  searchField: {
+    title: "标题",
+    description: "描述",
+    method: "方法",
+    creator: "作者",
+    category: "分类",
+    case: "案例",
+    tag: "标签",
+    prompt: "Prompt",
+    name: "名称",
+    bio: "简介",
+    source: "来源",
+    summary: "摘要",
+    fallback: "命中",
   },
   favorites: {
     localNotice: "收藏保存在本机浏览器，清除浏览器数据或换设备不会同步。",
@@ -288,6 +307,7 @@ export const enMessages = {
   stability: {
     pending: "Vote to retest",
     voted: "Retest requested",
+    failed: "Failed retest",
   },
   card: {
     prompt: "Prompt",
@@ -388,6 +408,21 @@ export const enMessages = {
     skillsAriaLabel: "Search Skills",
     creatorsPlaceholder: "Search creators, fields, or representative cases",
     creatorsAriaLabel: "Search creators",
+  },
+  searchField: {
+    title: "Title",
+    description: "Description",
+    method: "Method",
+    creator: "Creator",
+    category: "Category",
+    case: "Case",
+    tag: "Tag",
+    prompt: "Prompt",
+    name: "Name",
+    bio: "Bio",
+    source: "Source",
+    summary: "Summary",
+    fallback: "Match",
   },
   favorites: {
     localNotice: "Favorites stay in this browser and do not sync across devices or after browser data is cleared.",

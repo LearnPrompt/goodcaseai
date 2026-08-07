@@ -5,7 +5,7 @@ import { RetestVoteButton } from "@/components/retest-vote-button";
 import { useMessages } from "@/i18n/client";
 import {
   formatStabilityScore,
-  hasMeasuredStability,
+  resolveStabilityState,
 } from "@/lib/stability";
 
 export function PromptPanel({
@@ -18,6 +18,7 @@ export function PromptPanel({
   promptContributionNotes,
   recommendedModels,
   stabilityScore,
+  evidenceLevel,
   costBand,
 }: {
   caseSlug: string;
@@ -29,10 +30,13 @@ export function PromptPanel({
   promptContributionNotes: string[];
   recommendedModels: string[];
   stabilityScore: number;
+  /** 区分「没测过」和「复测未通过」的判别位，见 src/lib/stability.ts。 */
+  evidenceLevel?: string | null;
   costBand: string;
 }) {
   const messages = useMessages();
   const prompt = promptFull.trim() || promptPreview.trim();
+  const stabilityState = resolveStabilityState(stabilityScore, evidenceLevel);
 
   return (
     <article id="prompt" className="gc-panel overflow-hidden">
@@ -81,10 +85,15 @@ export function PromptPanel({
                   {messages.common.stability}
                 </dt>
                 {/* 缺测时这一格从一句死文案换成真能投的按钮，
-                    有实测分时维持原样，不塞多余交互。 */}
+                    有实测分时维持原样，不塞多余交互。
+                    复测跑过没通过是第三种状态：结论已经有了，催复测按钮不该再出现。 */}
                 <dd className="font-semibold">
-                  {hasMeasuredStability(stabilityScore) ? (
+                  {stabilityState === "measured" ? (
                     `${formatStabilityScore(stabilityScore)} / 100`
+                  ) : stabilityState === "failed" ? (
+                    <span className="text-[var(--orange)]">
+                      {messages.stability.failed}
+                    </span>
                   ) : (
                     <RetestVoteButton caseSlug={caseSlug} />
                   )}

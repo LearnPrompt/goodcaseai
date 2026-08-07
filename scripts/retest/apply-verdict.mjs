@@ -77,7 +77,18 @@ async function main() {
     .order("id", { ascending: false });
   if (rowsError) throw new Error(`读取案例复测时间线失败：${rowsError.message}`);
 
-  const patch = buildCaseStabilityPatch(rows || []);
+  // 证据等级只升不降，所以要先读到当前值再算 patch。
+  // 读不到（案例已下架 / 查询失败）就按未知处理，交给 resolveEvidenceLevel 决定。
+  const { data: currentCase } = await supabase
+    .from("cases")
+    .select("evidence_level")
+    .eq("slug", updatedRetest.case_slug)
+    .maybeSingle();
+
+  const patch = buildCaseStabilityPatch(
+    rows || [],
+    currentCase?.evidence_level ?? undefined
+  );
   if (!patch) {
     console.log(`verdict 已记录：${updatedRetest.case_slug}，当前仍没有可计算的稳定性分。`);
     return;

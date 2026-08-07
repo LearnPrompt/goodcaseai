@@ -1,5 +1,8 @@
 import type { CaseItem } from "@/lib/mock-data";
-import { averageMeasuredStability } from "@/lib/stability";
+import {
+  averageMeasuredStability,
+  measuredStabilityValue,
+} from "@/lib/stability";
 import { pickLatestAuthorDate } from "@/lib/case-presentation";
 import type { Locale } from "@/i18n/config";
 import {
@@ -211,8 +214,12 @@ export function deriveCreatorsFromCases(
         (sum, item) => sum + (item.sourceInteractionCount ?? 0),
         0
       );
+      // 复测未通过的案例按 0 分计入均分：作者页的稳定分要吃到真实惩罚，
+      // 而不是把失败的复测和「还没测过」一起排除掉。
       const averageStabilityScore = averageMeasuredStability(
-        items.map((item) => item.stabilityScore)
+        items.map((item) =>
+          measuredStabilityValue(item.stabilityScore, item.evidenceLevel)
+        )
       );
       const averageSourceHeatScore =
         sourceHeatScores.length > 0

@@ -38,6 +38,8 @@ export function toCaseCardItem(
     thumbnailUrl: item.thumbnailUrl,
     thumbnailFit: item.thumbnailFit,
     stabilityScore: item.stabilityScore,
+    // 稳定度格子要靠它区分「没测过」和「复测未通过」，见 src/lib/stability.ts。
+    evidenceLevel: item.evidenceLevel,
     sourceHeatScore: item.sourceHeatScore,
     sourcePublishedAt: item.sourcePublishedAt,
     skills,

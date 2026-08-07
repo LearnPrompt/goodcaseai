@@ -18,6 +18,7 @@ import {
 } from "@/lib/daily-digest";
 import { getRetestRecords } from "@/lib/retest-source";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
+import { formatStabilityScore, resolveStabilityState } from "@/lib/stability";
 
 /**
  * 早报内容按天变，但 ISR 的 revalidate 是「从生成那一刻起算多久过期」，
@@ -141,9 +142,18 @@ function DigestSlot({
           <div className="bg-white px-5 py-3">
             <div className="gc-stat-label">{messages.common.stability}</div>
             <div className="mt-1 font-mono text-sm text-[var(--ink)]">
-              {pick.item.stabilityScore > 0
-                ? pick.item.stabilityScore
-                : messages.common.notAvailable}
+              {/* 0 分要分两种：evidence_level 已经是 L2 的是「复测未通过」，
+                  其余才是「还没测过」，见 src/lib/stability.ts。 */}
+              {resolveStabilityState(
+                pick.item.stabilityScore,
+                pick.item.evidenceLevel
+              ) === "pending"
+                ? messages.common.notAvailable
+                : formatStabilityScore(
+                    pick.item.stabilityScore,
+                    locale,
+                    pick.item.evidenceLevel
+                  )}
             </div>
           </div>
           <div className="bg-white px-5 py-3">

@@ -13,7 +13,7 @@ import {
   getCreatorDetailPageData,
   getCreatorListData,
 } from "@/lib/cases";
-import { formatStabilityScore } from "@/lib/stability";
+import { formatAggregateStability } from "@/lib/stability";
 
 // 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
 export const revalidate = 3_600;
@@ -128,7 +128,7 @@ export default async function CreatorDetailPage({
         <div>
           <div className="gc-stat-label">{isEnglish ? "Average" : "平均值"}</div>
           <div className="gc-stat-value">
-            {formatStabilityScore(creator.averageStabilityScore, locale)}
+            {formatAggregateStability(creator.averageStabilityScore, locale)}
           </div>
           <div className="mt-1 font-mono text-[10px] uppercase text-[var(--muted)]">
             Stability

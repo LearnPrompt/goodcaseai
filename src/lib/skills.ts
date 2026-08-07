@@ -22,6 +22,12 @@ export type SkillCaseInput = {
   promptPreview?: string;
   promptFull?: string;
   promptContributionNotes?: string[];
+  /**
+   * promptContributionNotes 是这条 Case 自己写的复盘，还是按 category 拼的套话。
+   * 生成端（src/lib/cases.ts 的 buildPromptContributionNotes）负责打标；
+   * 缺省按 template 处理，即「没被证明是真内容的一律不当证据」。
+   */
+  promptContributionNotesSource?: "authored" | "template";
   resultBreakdown?: [string, string, string];
   mediaType?: "image" | "video";
   mediaUrl?: string;
@@ -394,11 +400,34 @@ function firstEvidenceSentence(value: string) {
 }
 
 /**
+ * 一条 Case 里可以当证据用的句子。
+ *
+ * 只认这条 Case 自己写过的三段式复盘：resultBreakdown，以及生成端标成
+ * authored 的 promptContributionNotes（它就是 resultBreakdown 的本地化副本）。
+ *
+ * 明确排除按 category 拼出来的模板句。那种句子同一个 category 下每条 Case
+ * 拿到的都一样，去重后只剩一句，看上去像「一条 Case 提供了一句证据」，
+ * 实际上它跟这条 Case 没有任何关系——拼进 Skill 描述、盖掉人工 methodSteps、
+ * 再渲染进用户下载的 SKILL.md，等于拿套话冒充证据。
+ * card 档取数不带 resultBreakdown（见 src/lib/case-columns.ts），列表页上
+ * 几乎每条 Case 都会落到模板句，所以这不是边角情况而是常态。
+ */
+function collectAuthoredEvidence(item: SkillCaseInput): string[] {
+  return [
+    ...(item.promptContributionNotesSource === "authored"
+      ? item.promptContributionNotes ?? []
+      : []),
+    ...(item.resultBreakdown ?? []),
+  ];
+}
+
+/**
  * 每个 Case 最多贡献一句。
  *
  * 一个 Case 的 resultBreakdown 本身就是三段，让它连贡三句的话，「这个动作在
  * N 个 Case 里反复出现」实际上只有一个 Case 撑着——那是无依据的断言。要求
- * 三步来自三个不同 Case，凑不满两个就整体退回定义模板，宁可少说也不乱说。
+ * 三步来自三个不同 Case，凑不满两个就整体退回定义模板（SKILL_DEFINITIONS 里
+ * 人工写的 methodSteps），宁可少说也不乱说。
  *
  * en 下跳过含中日文的证据句：resultBreakdown 缺英文翻译时会回退原文，直接
  * 拼进英文描述会得到中英混排。全被跳过就退回英文模板，是正确的降级。
@@ -412,10 +441,7 @@ function deriveEvidenceSteps<T extends SkillCaseInput>(
   const steps: string[] = [];
   const evidenceCases: T[] = [];
   for (const item of cases) {
-    const evidence = [
-      ...(item.promptContributionNotes ?? []),
-      ...(item.resultBreakdown ?? []),
-    ];
+    const evidence = collectAuthoredEvidence(item);
     for (const value of evidence) {
       const step = firstEvidenceSentence(value);
       const identity = step.toLocaleLowerCase();
@@ -463,20 +489,23 @@ function deriveEvidenceDescription<T extends SkillCaseInput>(
     .map((item) => (isEnglish ? `“${item.title}”` : `「${item.title}」`))
     .join(isEnglish ? ", " : "、");
 
+  // 措辞刻意不写「反复出现 / repeatedly」。evidenceStep 是**某一条** Case 写下的
+  // 句子，我们只验证了「有 N 条 Case 各自留下了可核对的复盘」，没有验证这句话
+  // 描述的动作在这 N 条里都出现过。把前者说成后者就是拿证据数量冒充证据内容。
   if (isEnglish) {
     const subject =
       kind === "creator_method" && creatorName
-        ? `${creatorName}'s ${evidenceCaseCount} evidence-backed published cases`
-        : `${evidenceCaseCount} evidence-backed published cases across ${evidenceCreatorCount} creators`;
-    const move = `${subject} repeatedly show this move: ${evidenceStep}`;
+        ? `${creatorName}'s ${evidenceCaseCount} published cases`
+        : `${evidenceCaseCount} published cases from ${evidenceCreatorCount} creators`;
+    const move = `${subject} document how they built this, for example: ${evidenceStep}`;
     return exampleTitles ? `${move} Examples: ${exampleTitles}.` : move;
   }
 
   const subject =
     kind === "creator_method" && creatorName
-      ? `${creatorName} 的 ${evidenceCaseCount} 个有证据的已发布 Case`
-      : `${evidenceCreatorCount} 位作者的 ${evidenceCaseCount} 个有证据的已发布 Case`;
-  const move = `${subject} 里反复出现：${evidenceStep}`;
+      ? `${creatorName} 的 ${evidenceCaseCount} 个已发布 Case`
+      : `${evidenceCreatorCount} 位作者的 ${evidenceCaseCount} 个已发布 Case`;
+  const move = `${subject} 各自写下了可核对的做法，例如：${evidenceStep}`;
   return exampleTitles ? `${move}证据案例：${exampleTitles}。` : move;
 }
 
@@ -515,6 +544,8 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
           "shared"
         ),
         category: definition.category,
+        // 真实证据不足两条时 deriveEvidenceSteps 直接返回 definition.methodSteps，
+        // 这里赋的就是人工原文，不会被套话盖掉（这份文本最终会进用户下载的 SKILL.md）。
         methodSteps: evidence.steps,
         cases: matchingCases,
         creators: [...creators.values()]
@@ -600,6 +631,8 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
           creator.name
         ),
         category: definition.category,
+        // 真实证据不足两条时 deriveEvidenceSteps 直接返回 definition.methodSteps，
+        // 这里赋的就是人工原文，不会被套话盖掉（这份文本最终会进用户下载的 SKILL.md）。
         methodSteps: evidence.steps,
         cases: matchingCases,
         creators: [{ name: creator.name, caseCount: matchingCases.length }],

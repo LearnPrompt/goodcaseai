@@ -20,7 +20,7 @@ import {
 import { toCaseCardItem } from "@/lib/case-card-item";
 import { filterCasesByModel, getModelFamily, getModelLabel } from "@/lib/models";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
-import { hasMeasuredStability } from "@/lib/stability";
+import { measuredStabilityValue } from "@/lib/stability";
 import { getSearchSnippet, rankSearchResults, type SearchMatch } from "@/lib/search";
 import { diversifyByCreator } from "@/lib/creator-diversity";
 
@@ -79,8 +79,10 @@ function normalizeSort(value?: string): SortOption {
 }
 
 /**
- * 稳定度排序时，没有实测分（占位分，hasMeasuredStability 判定为 false）的案例
- * 统一排到最后，避免这些占位分挤占靠前的位置。
+ * 稳定度排序时，没有实测分（占位分）的案例统一排到最后，避免占位分挤占靠前的位置。
+ *
+ * 复测未通过的案例算「有实测分」，值取 0：它是真跑过复测得出的结论，
+ * 该排在实测桶的末尾接受惩罚，而不是混进「没测过」那桶躲开排序。
  */
 function sortCaseItems(
   list: DisplayCaseItem[],
@@ -90,15 +92,15 @@ function sortCaseItems(
 
   if (sort === "stability") {
     sorted.sort((a, b) => {
-      const aMeasured = hasMeasuredStability(a.stabilityScore);
-      const bMeasured = hasMeasuredStability(b.stabilityScore);
-      if (aMeasured !== bMeasured) {
-        return aMeasured ? -1 : 1;
+      const aScore = measuredStabilityValue(a.stabilityScore, a.evidenceLevel);
+      const bScore = measuredStabilityValue(b.stabilityScore, b.evidenceLevel);
+      if ((aScore === null) !== (bScore === null)) {
+        return aScore === null ? 1 : -1;
       }
-      if (!aMeasured) {
+      if (aScore === null || bScore === null) {
         return 0;
       }
-      return b.stabilityScore - a.stabilityScore;
+      return bScore - aScore;
     });
     return sorted;
   }
