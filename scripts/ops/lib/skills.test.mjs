@@ -4,6 +4,7 @@ import {
   deriveSkillCatalog,
   getCaseSkillLinks,
   getCreatorMethods,
+  filterSkillsByQuery,
 } from "../../../src/lib/skills.ts";
 
 function caseItem(slug, title, category, creator, tags = []) {
@@ -97,4 +98,61 @@ test("Chinese and English catalogs keep stable slugs", () => {
     en.allSkills.map((item) => item.slug)
   );
   assert.notEqual(zh.sharedSkills[0].title, en.sharedSkills[0].title);
+});
+
+test("Skill search reaches method steps, creators, and evidence prompts", () => {
+  const catalog = deriveSkillCatalog([
+    {
+      ...caseItem("a-1", "角色身份参考图", "image", "Alice", ["identity"]),
+      promptPreview: "Lock the same character across every angle.",
+    },
+    {
+      ...caseItem("b-1", "角色表情矩阵", "image", "Bob", ["identity"]),
+      promptPreview: "Keep the character identity fixed.",
+    },
+    {
+      ...caseItem("c-1", "角色锚点清单", "image", "Carol", ["identity"]),
+      promptPreview: "Build a stable character reference sheet.",
+    },
+  ]);
+  const skill = catalog.sharedSkills.find(
+    (item) => item.slug === "character-style-consistency"
+  );
+  assert.ok(skill);
+  assert.equal(filterSkillsByQuery([skill], "Alice").length, 1);
+  assert.equal(filterSkillsByQuery([skill], "固定角色").length, 1);
+  assert.equal(filterSkillsByQuery([skill], "reference sheet").length, 1);
+});
+
+test("Skill descriptions and steps keep real case evidence attached", () => {
+  const catalog = deriveSkillCatalog([
+    {
+      ...caseItem("a-1", "箭矢微观战场", "video", "Alice", ["battle"]),
+      promptContributionNotes: ["镜头持续追随同一支箭完成宏观到微观的尺度转换。"],
+    },
+    {
+      ...caseItem("a-2", "飞船尺度转换", "video", "Alice", ["battle"]),
+      promptContributionNotes: ["镜头持续追随同一艘飞船完成宏观到微观的尺度转换。"],
+    },
+    {
+      ...caseItem("a-3", "骑士追逐镜头", "video", "Alice", ["battle"]),
+      promptContributionNotes: ["先锁定运动主体，再用连续推进保持方向一致。"],
+    },
+    {
+      ...caseItem("b-1", "微观战争", "video", "Bob", ["battle"]),
+      promptContributionNotes: ["先锁定运动主体，再用连续推进完成尺度变化。"],
+    },
+  ]);
+  const shared = catalog.sharedSkills.find(
+    (item) => item.slug === "action-continuity-choreography"
+  );
+  assert.ok(shared);
+  assert.match(shared.description, /箭矢微观战场/);
+  assert.equal(shared.methodSteps[0], "镜头持续追随同一支箭完成宏观到微观的尺度转换。");
+
+  const creatorMethod = getCreatorMethods(catalog, "Alice").find(
+    (item) => item.baseSlug === "action-continuity-choreography"
+  );
+  assert.ok(creatorMethod);
+  assert.match(creatorMethod.description, /飞船尺度转换|箭矢微观战场/);
 });

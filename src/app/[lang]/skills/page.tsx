@@ -7,8 +7,9 @@ import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 import { getSkillCatalogData } from "@/lib/cases";
-import { filterSkillsByQuery } from "@/lib/skills";
+import { filterSkillsByQuery, getSkillSearchFields } from "@/lib/skills";
 import type { CaseCategory } from "@/lib/mock-data";
+import { getSearchMatch, getSearchSnippet, splitHighlightedText } from "@/lib/search";
 import {
   getInstallableSkillPackages,
   getSkillDownloadPath,
@@ -16,6 +17,13 @@ import {
 
 /** 与 /cases 的 CaseFilter 同构，多一个 "all"，用于分类筛选按钮。 */
 type SkillCategoryFilter = CaseCategory | "all";
+const SKILL_CATEGORY_ORDER: CaseCategory[] = [
+  "video",
+  "web",
+  "image",
+  "copy",
+  "hardware",
+];
 
 function normalizeCategory(value?: string): SkillCategoryFilter {
   return value === "video" ||
@@ -206,6 +214,7 @@ export default async function SkillsPage({
             skills={visibleSharedSkills}
             isEnglish={isEnglish}
             categoryLabels={messages.category}
+            query={query}
           />
 
           {visibleCreatorMethods.length ? (
@@ -219,6 +228,7 @@ export default async function SkillsPage({
               skills={visibleCreatorMethods}
               isEnglish={isEnglish}
               categoryLabels={messages.category}
+              query={query}
             />
           ) : null}
         </>
@@ -246,13 +256,20 @@ function SkillSection({
   skills,
   isEnglish,
   categoryLabels,
+  query,
 }: {
   title: string;
   description: string;
   skills: Awaited<ReturnType<typeof getSkillCatalogData>>["allSkills"];
   isEnglish: boolean;
   categoryLabels: ReturnType<typeof getMessages>["category"];
+  query: string;
 }) {
+  const groupedSkills = SKILL_CATEGORY_ORDER.map((category) => ({
+    category,
+    skills: skills.filter((skill) => skill.category === category),
+  })).filter((group) => group.skills.length > 0);
+
   return (
     <section className="gc-section">
       <div className="gc-section-head">
@@ -264,41 +281,90 @@ function SkillSection({
           </p>
         </div>
       </div>
-      <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
-        {skills.map((skill) => (
-          <article
-            key={skill.slug}
-            className="flex min-h-80 flex-col border-b border-r border-[var(--hair)] bg-white p-5 sm:p-6"
-          >
-            <div className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
-              <span>{categoryLabels[skill.category]}</span>
-              <span className="text-[var(--orange)]">
-                {isEnglish ? "Verified package" : "已验证包"}
+      <div className="grid gap-12">
+        {groupedSkills.map((group) => (
+          <div key={group.category}>
+            <div className="mb-4 flex items-end justify-between gap-3 border-b border-[var(--hair)] pb-3">
+              <h3 className="text-xl font-semibold tracking-[-0.03em]">
+                {categoryLabels[group.category]}
+              </h3>
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
+                {group.skills.length} {isEnglish ? "Skills" : "个 Skill"}
               </span>
             </div>
-            <h3 className="mt-7 text-2xl font-medium leading-tight tracking-[-0.03em]">
-              <Link href={`/skills/${skill.slug}`} className="hover:text-[var(--orange)]">
-                {skill.title}
-              </Link>
-            </h3>
-            <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-              {skill.description}
-            </p>
-            <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-8">
-              <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
-                {skill.caseCount} Cases · {skill.creatorCount}{" "}
-                {isEnglish ? "Creators" : "位作者"}
-              </span>
-              <div className="flex gap-2">
-                <a className="gc-action" href={getSkillDownloadPath(skill.slug)} download>
-                  .skill ↓
-                </a>
-                <Link className="gc-action gc-action-primary" href={`/skills/${skill.slug}`}>
-                  {isEnglish ? "Open" : "查看"} →
-                </Link>
-              </div>
+            <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
+              {group.skills.map((skill) => {
+                const match = query
+                  ? getSearchMatch(getSkillSearchFields(skill), query)
+                  : null;
+                const snippet = match ? getSearchSnippet(match, query) : null;
+                return (
+                  <article
+                    key={skill.slug}
+                    className="flex min-h-80 flex-col border-b border-r border-[var(--hair)] bg-white p-5 sm:p-6"
+                  >
+                    <div className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
+                      <span>{categoryLabels[skill.category]}</span>
+                      <span className="text-[var(--orange)]">
+                        {isEnglish ? "Verified package" : "已验证包"}
+                      </span>
+                    </div>
+                    <h3 className="mt-7 text-2xl font-medium leading-tight tracking-[-0.03em]">
+                      <Link href={`/skills/${skill.slug}`} className="hover:text-[var(--orange)]">
+                        {query
+                          ? splitHighlightedText(skill.title, query).map((part, index) =>
+                              part.matched ? (
+                                <mark key={index} className="gc-search-hit">
+                                  {part.text}
+                                </mark>
+                              ) : (
+                                <span key={index}>{part.text}</span>
+                              )
+                            )
+                          : skill.title}
+                      </Link>
+                    </h3>
+                    {snippet ? (
+                      <div className="mt-3 text-sm leading-7 text-[var(--muted)]">
+                        <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--orange)]">
+                          {match?.field}
+                        </div>
+                        <p className="line-clamp-3">
+                          {splitHighlightedText(snippet, query).map((part, index) =>
+                            part.matched ? (
+                              <mark key={index} className="gc-search-hit">
+                                {part.text}
+                              </mark>
+                            ) : (
+                              <span key={index}>{part.text}</span>
+                            )
+                          )}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+                        {skill.description}
+                      </p>
+                    )}
+                    <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-8">
+                      <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
+                        {skill.caseCount} Cases · {skill.creatorCount}{" "}
+                        {isEnglish ? "Creators" : "位作者"}
+                      </span>
+                      <div className="flex gap-2">
+                        <a className="gc-action" href={getSkillDownloadPath(skill.slug)} download>
+                          .skill ↓
+                        </a>
+                        <Link className="gc-action gc-action-primary" href={`/skills/${skill.slug}`}>
+                          {isEnglish ? "Open" : "查看"} →
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-          </article>
+          </div>
         ))}
       </div>
     </section>

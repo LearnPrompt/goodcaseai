@@ -1,5 +1,6 @@
 import type { Locale } from "@/i18n/config";
 import type { CaseCategory } from "@/lib/mock-data";
+import { rankSearchResults, type SearchField } from "./search.ts";
 
 type LocalizedText = Record<Locale, string>;
 
@@ -13,6 +14,8 @@ export type SkillCaseInput = {
   summary?: string;
   promptPreview?: string;
   promptFull?: string;
+  promptContributionNotes?: string[];
+  resultBreakdown?: [string, string, string];
   mediaType?: "image" | "video";
   mediaUrl?: string;
   posterUrl?: string;
@@ -365,6 +368,63 @@ function overlapRatio<T extends SkillCaseInput>(a: T[], b: T[]) {
   return union === 0 ? 0 : intersection / union;
 }
 
+function firstEvidenceSentence(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return "";
+  const sentence = normalized.split(/(?<=[。！？.!?])/)[0]?.trim() || normalized;
+  return sentence.length > 150 ? `${sentence.slice(0, 149)}…` : sentence;
+}
+
+function deriveEvidenceSteps<T extends SkillCaseInput>(
+  cases: T[],
+  fallback: string[]
+) {
+  const seen = new Set<string>();
+  const steps: string[] = [];
+  for (const item of cases) {
+    const evidence = [
+      ...(item.promptContributionNotes ?? []),
+      ...(item.resultBreakdown ?? []),
+    ];
+    for (const value of evidence) {
+      const step = firstEvidenceSentence(value);
+      const identity = step.toLocaleLowerCase();
+      if (!step || seen.has(identity)) continue;
+      seen.add(identity);
+      steps.push(step);
+      if (steps.length === 3) return steps;
+    }
+  }
+  return steps.length > 0 ? steps : fallback;
+}
+
+function deriveEvidenceDescription<T extends SkillCaseInput>(
+  cases: T[],
+  creators: SkillCreatorEvidence[],
+  methodSteps: string[],
+  locale: Locale,
+  kind: "shared" | "creator_method",
+  creatorName?: string
+) {
+  const evidenceStep = methodSteps[0];
+  const exampleTitles = cases
+    .slice(0, 2)
+    .map((item) => `「${item.title}」`)
+    .join("、");
+
+  if (locale === "en") {
+    const subject = kind === "creator_method" && creatorName
+      ? `${creatorName}'s ${cases.length} published cases`
+      : `${cases.length} published cases across ${creators.length} creators`;
+    return `${subject} repeatedly show this move: ${evidenceStep} Examples: ${exampleTitles}.`;
+  }
+
+  const subject = kind === "creator_method" && creatorName
+    ? `${creatorName} 的 ${cases.length} 个已发布 Case`
+    : `${creators.length} 位作者的 ${cases.length} 个已发布 Case`;
+  return `${subject} 里反复出现：${evidenceStep} 证据案例：${exampleTitles}。`;
+}
+
 export function deriveSkillCatalog<T extends SkillCaseInput>(
   cases: T[],
   locale: Locale = "zh-CN"
@@ -382,15 +442,26 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
       return [];
     }
 
+    const methodSteps = deriveEvidenceSteps(
+      matchingCases,
+      definition.methodSteps[locale]
+    );
     return [
       {
         slug: definition.slug,
         baseSlug: definition.slug,
         kind: "shared" as const,
         title: definition.title[locale],
-        description: definition.description[locale],
+        description: deriveEvidenceDescription(
+          matchingCases,
+          [...creators.values()]
+            .map((creator) => ({ name: creator.name, caseCount: creator.cases.length })),
+          methodSteps,
+          locale,
+          "shared"
+        ),
         category: definition.category,
-        methodSteps: definition.methodSteps[locale],
+        methodSteps,
         cases: matchingCases,
         creators: [...creators.values()]
           .map((creator) => ({
@@ -454,17 +525,25 @@ export function deriveSkillCatalog<T extends SkillCaseInput>(
 
     for (const { definition, matchingCases } of selected) {
       const baseTitle = definition.title[locale];
+      const methodSteps = deriveEvidenceSteps(
+        matchingCases,
+        definition.methodSteps[locale]
+      );
       creatorMethods.push({
         slug: `${definition.slug}-by-${hashIdentity(identity)}`,
         baseSlug: definition.slug,
         kind: "creator_method",
         title: `${creator.name} · ${baseTitle}`,
-        description:
-          locale === "en"
-            ? `A recurring ${baseTitle.toLowerCase()} method derived from ${matchingCases.length} published cases by ${creator.name}.`
-            : `从 ${creator.name} 的 ${matchingCases.length} 个已发布 Case 中归纳出的「${baseTitle}」方法。`,
+        description: deriveEvidenceDescription(
+          matchingCases,
+          [{ name: creator.name, caseCount: matchingCases.length }],
+          methodSteps,
+          locale,
+          "creator_method",
+          creator.name
+        ),
         category: definition.category,
-        methodSteps: definition.methodSteps[locale],
+        methodSteps,
         cases: matchingCases,
         creators: [{ name: creator.name, caseCount: matchingCases.length }],
         caseCount: matchingCases.length,
@@ -534,20 +613,30 @@ export function findSkillBySlug<T extends SkillCaseInput>(
   return catalog.allSkills.find((skill) => skill.slug === slug) || null;
 }
 
+export function getSkillSearchFields<T extends SkillCaseInput>(
+  skill: DerivedSkill<T>
+): SearchField[] {
+  return [
+    { key: "title", value: skill.title, weight: 140 },
+    { key: "description", value: skill.description, weight: 115 },
+    { key: "creator", value: skill.creators.map((item) => item.name).join(" "), weight: 105 },
+    { key: "method", value: skill.methodSteps.join(" "), weight: 100 },
+    { key: "category", value: skill.category, weight: 70 },
+    { key: "case", value: skill.cases.map((item) => item.title).join(" "), weight: 88 },
+    { key: "tag", value: skill.cases.flatMap((item) => item.tags ?? []).join(" "), weight: 72 },
+    { key: "prompt", value: skill.cases.map((item) => item.promptPreview ?? "").join(" "), weight: 52 },
+    { key: "prompt", value: skill.cases.map((item) => item.promptFull ?? "").join(" "), weight: 30 },
+  ];
+}
+
 /**
- * /skills 页面搜索：只匹配名称和描述，不牵扯 case/creator 字段，
- * 避免用户搜到名字里没有关键词的 Skill 而困惑。
+ * /skills 页面搜索：Skill 自身的标题/描述之外，也搜方法步骤、作者和证据 Case。
+ * 用户通常记得的是「角色一致性」「Vlog」或某个作者/Prompt 里的词，不一定记得
+ * 我们给 Skill 起的标题；只搜 Skill 名称会让这些真实证据无法被发现。
  */
 export function filterSkillsByQuery<T extends SkillCaseInput>(
   list: DerivedSkill<T>[],
   q: string
 ): DerivedSkill<T>[] {
-  const normalized = q.trim().toLowerCase();
-  if (!normalized) {
-    return list;
-  }
-
-  return list.filter((skill) =>
-    [skill.title, skill.description].join(" ").toLowerCase().includes(normalized)
-  );
+  return rankSearchResults(list, q, getSkillSearchFields).map(({ item }) => item);
 }

@@ -45,6 +45,7 @@ import {
   hasMeasuredStability,
 } from "@/lib/stability";
 import { isNearDuplicateText } from "@/lib/text-similarity";
+import { rankSearchResults, type SearchField } from "@/lib/search";
 import {
   deriveSkillCatalog,
   findSkillBySlug,
@@ -85,6 +86,18 @@ type DerivedCaseFields = BaseDerivedCaseFields &
 
 export type DisplayCaseItem = CaseItem & DerivedCaseFields;
 
+export type CaseSearchableItem = Pick<
+  CaseItem,
+  | "title"
+  | "summary"
+  | "creator"
+  | "source"
+  | "promptPreview"
+  | "promptFull"
+  | "recommendedModels"
+  | "tags"
+>;
+
 const MEDIA_PLACEHOLDER = "/media/placeholder.png";
 const MISSING_PROMPT_FULL = "该案例暂未提供完整 Prompt。";
 
@@ -110,26 +123,24 @@ function applyCaseFilter<T extends CaseItem>(list: T[], filter: CaseFilter): T[]
   return list.filter((item) => item.category === filter);
 }
 
-export function filterCasesByQuery<
-  T extends Pick<
-    CaseItem,
-    "title" | "summary" | "creator" | "recommendedModels" | "tags"
-  >
->(list: T[], q: string): T[] {
-  const normalized = q.trim().toLowerCase();
-  if (!normalized) {
-    return list;
-  }
+export function getCaseSearchFields(item: CaseSearchableItem): SearchField[] {
+  return [
+    { key: "title", value: item.title, weight: 140 },
+    { key: "creator", value: item.creator, weight: 115 },
+    { key: "summary", value: item.summary, weight: 95 },
+    { key: "model", value: item.recommendedModels.join(" "), weight: 88 },
+    { key: "source", value: item.source, weight: 70 },
+    { key: "tag", value: item.tags?.join(" "), weight: 68 },
+    { key: "prompt", value: item.promptPreview, weight: 55 },
+    { key: "prompt", value: item.promptFull, weight: 35 },
+  ];
+}
 
-  return list.filter((item) =>
-    [
-      item.title,
-      item.summary,
-      item.creator,
-      ...item.recommendedModels,
-      ...(item.tags ?? []),
-    ].some((field) => field.toLowerCase().includes(normalized))
-  );
+export function filterCasesByQuery<T extends CaseSearchableItem>(
+  list: T[],
+  q: string
+): T[] {
+  return rankSearchResults(list, q, getCaseSearchFields).map(({ item }) => item);
 }
 
 function normalizeCategory(value: string): CaseItem["category"] {
