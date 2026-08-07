@@ -22,6 +22,7 @@ import { filterCasesByModel, getModelFamily, getModelLabel } from "@/lib/models"
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
 import { hasMeasuredStability } from "@/lib/stability";
 import { getSearchSnippet, rankSearchResults, type SearchMatch } from "@/lib/search";
+import { diversifyByCreator } from "@/lib/creator-diversity.mjs";
 
 // 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
 export const revalidate = 3_600;
@@ -185,7 +186,9 @@ export default async function CasesPage({
             (secondaryOrder.get(b.item.slug) ?? 0)
       )
     : secondarySortedCases.map((item) => ({ item, match: null }));
-  const caseItems = rankedSearchResults.map(({ item }) => item);
+  const caseItems = query
+    ? rankedSearchResults.map(({ item }) => item)
+    : diversifyByCreator(rankedSearchResults.map(({ item }) => item));
   const searchMatches = new Map<string, SearchMatch>();
   for (const result of rankedSearchResults) {
     if (result.match) {

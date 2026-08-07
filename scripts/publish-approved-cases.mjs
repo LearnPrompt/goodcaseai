@@ -6,6 +6,7 @@ import {
   decidePublish,
 } from "./review/lib/publish-candidate.mjs";
 import { describeLocaleMismatch } from "./review/lib/content-locale.mjs";
+import { findDuplicateContent } from "./review/lib/duplicate-governance.mjs";
 
 function getArg(name) {
   const match = process.argv.find((arg) => arg.startsWith(`${name}=`));
@@ -54,6 +55,15 @@ async function main() {
     return;
   }
 
+  const { data: existingCases, error: existingCasesError } = await supabase
+    .from("cases")
+    .select("slug, source_candidate_id, category, source_url, creator_name, prompt_full")
+    .eq("is_published", true);
+  if (existingCasesError) {
+    throw new Error(`读取已发布 Case 以做重复治理失败：${existingCasesError.message}`);
+  }
+  const knownContent = [...(existingCases || [])];
+
   const counters = {
     inserted: 0,
     updated: 0,
@@ -66,6 +76,17 @@ async function main() {
     const mismatch = describeLocaleMismatch(item);
     if (mismatch) {
       localeMismatches.push({ slug: item.slug, ...mismatch });
+    }
+    const duplicate = findDuplicateContent({
+      candidate: item,
+      existingCases: knownContent,
+      ignoreCandidateId: item.id,
+      ignoreSlug: item.slug,
+    });
+    if (duplicate) {
+      throw new Error(
+        `发布拦截（${item.slug}）：${duplicate.message}，命中 ${duplicate.existingSlug || "未知 Case"}。`
+      );
     }
     const [{ data: existingByCandidate, error: candidateLookupError }, {
       data: existingBySlug,
@@ -160,6 +181,15 @@ async function main() {
         `候选状态已变化（${item.slug}）；Case 已绑定 source_candidate_id，可重新运行安全收尾。`
       );
     }
+
+    knownContent.push({
+      slug: item.slug,
+      source_candidate_id: item.id,
+      category: item.category,
+      source_url: item.source_url,
+      creator_name: item.creator_name,
+      prompt_full: item.prompt_full,
+    });
   }
 
   console.log(
