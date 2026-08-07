@@ -213,6 +213,12 @@ body::before {
     color: white;
   }
 
+  .gc-search-hit {
+    background: color-mix(in srgb, var(--orange) 22%, transparent);
+    color: var(--ink);
+    padding: 0 0.08em;
+  }
+
   .gc-action {
     display: inline-flex;
     min-height: 2.75rem;

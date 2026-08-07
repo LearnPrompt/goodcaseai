@@ -29,6 +29,14 @@
 - 溯源状态：youmind #reversed 锚点三道闸在管线（适配器保留锚点、双层拦截、
   入库窗口命中率比对）；已发布 youmind 案例 223 条全部核对，29 条编造已下架
 
+## 发现体验修复 · 2026-08-06
+
+- 搜索统一使用字段权重与多词查询：标题、作者、案例摘要优先于长 Prompt，结果仍可从来源、模型、标签和 Prompt 证据召回；有查询时按相关度排序，用户选择的热度/稳定度/最新作为次级排序。
+- 案例、Skill、Creator 卡片在搜索命中时显示命中字段、短片段与关键词高亮；无查询时不注入搜索字段，保持默认卡片 payload 精简。
+- Skill 与 Creator 的搜索覆盖方法、作者、代表案例和 Prompt 证据；Skill 描述与方法步骤优先从已有 `resultBreakdown` / `promptContributionNotes` 提取，缺证据时才回退到定义模板。
+- `/skills` 保留通用 Skill / 作者方法两层，并在每层内按 AI 视频、AI 编程(UI)、AI 图像、AI 文案、AI 硬件的固定顺序分组；没有可安装 Skill 的分类不渲染空组，但筛选入口保留。
+- 本次仅修改本地代码与测试，未改数据库、生产数据或生产站点；本地验证为 364/364 tests、lint、TypeScript 和 production build 全部通过。
+
 ## 语言判定（content_locale）现状 · 2026-08-04
 
 - 判定逻辑唯一来源：`scripts/review/lib/content-locale.mjs`（中日文字符占比 > 15%

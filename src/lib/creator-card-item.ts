@@ -5,6 +5,7 @@ import type { CreatorItem } from "@/lib/creators";
 // 之前这里全是 import type（编译期整句被抹掉，不受影响），这是第一个值导入，
 // 用 "@/lib/case-presentation" 会在测试里报 ERR_MODULE_NOT_FOUND。
 import { getPresentableCaseSummary } from "./case-presentation.ts";
+import { getSearchSnippet, type SearchMatch } from "./search.ts";
 
 /**
  * 从完整 CreatorItem 里挑出卡片真正要渲染的字段。
@@ -19,7 +20,10 @@ import { getPresentableCaseSummary } from "./case-presentation.ts";
  * 客户端组件的 props 会被原样序列化进 RSC payload，整个传进去等于把几十 KB
  * 卡片根本不渲染的 Prompt 正文塞进 HTML。
  */
-export function toCreatorCardItem(creator: CreatorItem): CreatorCardItem {
+export function toCreatorCardItem(
+  creator: CreatorItem,
+  search?: { query: string; match: SearchMatch | null }
+): CreatorCardItem {
   return {
     slug: creator.slug,
     name: creator.name,
@@ -40,5 +44,14 @@ export function toCreatorCardItem(creator: CreatorItem): CreatorCardItem {
       creator.heroCase.summary,
       creator.heroCase.promptContributionNotes
     ),
+    ...(search
+      ? {
+          searchQuery: search.query,
+          searchSnippet: search.match
+            ? getSearchSnippet(search.match, search.query)
+            : null,
+          searchField: search.match?.field ?? null,
+        }
+      : {}),
   };
 }

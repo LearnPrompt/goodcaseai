@@ -2,6 +2,14 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-06 · 搜索相关度、证据方法描述与 Skills 分类分组
+
+- 搜索新增统一评分器：标题/作者/案例字段权重高于长 Prompt，多词查询要求完整命中；案例、Skill、Creator 列表按相关度排序，并以原有排序作为并列结果的次级顺序。
+- 搜索结果卡片新增命中字段、短片段与关键词高亮；无查询时不传搜索字段，避免默认页面增加 RSC payload。
+- Skill/Creator 搜索扩展到方法步骤、作者、代表案例、标签与 Prompt 证据；Skill 的描述和方法步骤从已存在的 `resultBreakdown` / `promptContributionNotes` 提取实际案例句子，保留定义模板作为无证据回退。
+- `/skills` 在通用 Skill 与作者方法两层内部按 AI 视频、AI 编程(UI)、AI 图像、AI 文案、AI 硬件分组，固定顺序与现有筛选入口一致。
+- 新增搜索与证据派生测试；本地验证：`npm test` 364/364、`npm run lint`、`npx tsc --noEmit`、`npm run build` 全部通过，build 生成 1124 个静态页面；ego-browser 本地验证 `/cases?q=character`、`/skills?q=character`、`/creators?q=AI`。
+
 ## 2026-08-06 · 补上 ops:migrate 的回滚闭环，回滚脚本首次被真正执行验证
 
 - **发现**：规则要求每个 migration 配一份 rollback，`ops:migrate` 也校验 rollback
