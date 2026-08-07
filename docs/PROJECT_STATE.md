@@ -29,6 +29,17 @@
 - 溯源状态：youmind #reversed 锚点三道闸在管线（适配器保留锚点、双层拦截、
   入库窗口命中率比对）；已发布 youmind 案例 223 条全部核对，29 条编造已下架
 
+## upstream 同步 · 2026-08-07
+
+- 已将 `LearnPrompt/goodcaseai` 的 `upstream/main`（`236e8d7`）合入本仓库 `main`；合并冲突逐处取双方并集，未改数据库、生产数据或部署配置。
+- 新增早报/复测联动：顶部导航接入 `/daily`，新增「今日新复测」槽位；早报构建与页面可读取复测 manifest，缺少可见案例时仍回退原复习逻辑。
+- Creator 与 Skill 派生卡片/详情页新增支撑案例的最近来源日期；案例卡片统一复用日期格式化逻辑，缺日期时不渲染占位。
+- `formatCardPublishedDate` 钉死 `timeZone: "Asia/Shanghai"`，构建机 UTC 与本地不再渲染出差一天的日期；`pickLatestAuthorDate` 复用同一 formatter。这是本仓库对远端代码的主动偏离，待单独提回 upstream。
+- 新增复测来源与案例展示纯逻辑测试，并同步作者日期相关页面、双语文案、RSS/feed 与 changelog。
+- 合并提交自身可编译：冲突解决的兼容修复已并入合并提交，不再出现「合并点 tsc 报错、靠下一个提交补」的红点历史。
+- `docs/WORKLOG.md` 保持追加式全量历史，不做压缩归档——这份日志含远端条目，压缩在回推 upstream 时等同于删除对方历史。
+- 本次仅同步代码与文档，未改数据库、生产数据或部署配置；验证为 `npm run lint`、`npm test`（394/394）、`npx tsc --noEmit` 与 `npm run build`（1124 static pages）全部通过。
+
 ## 发现体验修复 · 2026-08-06
 
 - 搜索统一使用字段权重与多词查询：标题、作者、案例摘要优先于长 Prompt，结果仍可从来源、模型、标签和 Prompt 证据召回；有查询时按相关度排序，用户选择的热度/稳定度/最新作为次级排序。

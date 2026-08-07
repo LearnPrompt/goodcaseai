@@ -2,6 +2,30 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-07 · 同步 upstream 至 236e8d7，合并冲突修复并入合并提交
+
+- **同步范围**：`LearnPrompt/goodcaseai` 的 `upstream/main`（`236e8d7`）合入本仓库
+  `main`，带入早报进顶部导航与「今日新复测」第二栏、Agent API key 签发脚本、
+  retest manifest / source 读取、creator「最近作品」与 skill「最近例证」的作者侧
+  时间、对应双语文案、feed 与 changelog，以及新增的纯逻辑测试。未改数据库、
+  生产数据或部署配置。
+- **冲突解决**：`skills/page.tsx` 保留本地的「按分类分组 + 搜索命中高亮」，同时接上
+  远端新增的 `latestExampleDate`；`case-card` / `creator-card` 保留搜索字段与
+  `splitHighlightedText`；卡片日期格式化统一到 `case-presentation`。
+- **`formatCardPublishedDate` 钉死 `timeZone: "Asia/Shanghai"`**。构建机是 UTC，
+  不钉时区时同一条案例在本地和线上会渲染出差一天的日期。`pickLatestAuthorDate`
+  复用同一个 formatter，所以 creator / skill 的作者侧时间一并统一到北京时间。
+  这是本仓库对远端代码的一处主动偏离，值得单独提回 upstream。
+- **合并提交本身现在可编译**。第一版冲突解决丢了 `group.skills.map` 整层、函数体
+  却仍引用 `skill`，`case-card` 的 import 也被吃掉，合并点 `tsc` 报 10 个
+  `Cannot find name`，靠下一个提交才补回来——`git bisect` 与按提交构建都会在这里
+  踩空。已把这批修复并入合并提交，合并点自身通过 lint / tsc / test / build。
+- **WORKLOG 不再做历史压缩**。上一版把本文件从 428 行重写成 33 行摘要，连远端
+  自己写的条目一起删掉了；这份日志是追加式的，且未来若向 upstream 提 PR，压缩会
+  表现为删除对方的日志历史。已恢复完整历史，本条按规矩追加在顶部。
+- **验证**：`npm run lint`、`npm test`（394/394）、`npx tsc --noEmit`、`npm run build`
+  全部通过。未调用花费型供给 API，未碰数据库与生产数据。
+
 ## 2026-08-06 · 复审 PR #1/#2 后的五项修复
 
 对已合入 main 的两个发现体验 PR 做了一次复审，修掉五个问题：
