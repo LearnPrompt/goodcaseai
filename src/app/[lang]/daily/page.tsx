@@ -16,6 +16,7 @@ import {
   selectDailyDigest,
   type DailyDigestPick,
 } from "@/lib/daily-digest";
+import { getRetestRecords } from "@/lib/retest-source";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
 
 /**
@@ -168,11 +169,13 @@ export default async function DailyDigestPage({
   const messages = getMessages(locale);
   const cases = await getCaseListData("all", locale);
   const skillCatalog = deriveSkillCatalog(cases, locale);
+  const retestRecords = await getRetestRecords();
 
   // 取「现在」是这个页面唯一的非确定性输入；拿到 dateKey 之后一切都由日期决定。
   const dateKey = getDigestDateKey(new Date()) ?? "";
-  const digest = selectDailyDigest(cases, dateKey);
+  const digest = selectDailyDigest(cases, dateKey, { retestRecords });
   const issueLabel = formatIssue(messages, digest.issueNumber);
+  const isRetestPick = digest.review?.slot === "retest";
 
   return (
     <SiteShell footerNote={messages.daily.footerNote}>
@@ -228,8 +231,8 @@ export default async function DailyDigestPage({
         />
         <DigestSlot
           index="02"
-          label={messages.daily.reviewLabel}
-          note={messages.daily.reviewNote}
+          label={isRetestPick ? messages.daily.retestLabel : messages.daily.reviewLabel}
+          note={isRetestPick ? messages.daily.retestNote : messages.daily.reviewNote}
           pick={digest.review}
           locale={locale}
           messages={messages}

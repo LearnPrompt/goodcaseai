@@ -25,6 +25,20 @@ import {
   isApiKeyShaped,
 } from "../../src/lib/api-keys.ts";
 
+// 配额工具的旗标打错字必须大声失败：--limit 被静默忽略过一次，
+// 差点让一把本该日限 5 次的 key 带着默认 2000 上线。
+const KNOWN_FLAGS = new Set(["name", "daily-limit", "note", "id", "key", "json"]);
+
+export function assertKnownFlags(argv) {
+  for (const item of argv) {
+    if (!item.startsWith("--")) continue;
+    const flag = item.slice(2).split("=")[0];
+    if (!KNOWN_FLAGS.has(flag)) {
+      fail(`未知旗标 --${flag}。可用：${[...KNOWN_FLAGS].map((f) => `--${f}`).join(" ")}`);
+    }
+  }
+}
+
 function getFlag(name, fallback = "") {
   const prefix = `--${name}=`;
   const value = process.argv.find((item) => item.startsWith(prefix));
@@ -211,6 +225,7 @@ async function list(supabase) {
 }
 
 async function main() {
+  assertKnownFlags(process.argv.slice(2));
   const command = process.argv[2] && !process.argv[2].startsWith("--")
     ? process.argv[2]
     : "issue";
