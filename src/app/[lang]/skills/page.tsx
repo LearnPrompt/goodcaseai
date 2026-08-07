@@ -7,8 +7,9 @@ import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 import { getSkillCatalogData } from "@/lib/cases";
-import { filterSkillsByQuery } from "@/lib/skills";
+import { filterSkillsByQuery, getSkillSearchFields } from "@/lib/skills";
 import type { CaseCategory } from "@/lib/mock-data";
+import { getSearchMatch, getSearchSnippet, splitHighlightedText } from "@/lib/search";
 import {
   getInstallableSkillPackages,
   getSkillDownloadPath,
@@ -16,6 +17,13 @@ import {
 
 /** 与 /cases 的 CaseFilter 同构，多一个 "all"，用于分类筛选按钮。 */
 type SkillCategoryFilter = CaseCategory | "all";
+const SKILL_CATEGORY_ORDER: CaseCategory[] = [
+  "video",
+  "web",
+  "image",
+  "copy",
+  "hardware",
+];
 
 function normalizeCategory(value?: string): SkillCategoryFilter {
   return value === "video" ||
@@ -206,6 +214,8 @@ export default async function SkillsPage({
             skills={visibleSharedSkills}
             isEnglish={isEnglish}
             categoryLabels={messages.category}
+            searchFieldLabels={messages.searchField}
+            query={query}
             latestExampleLabel={messages.common.latestExample}
           />
 
@@ -220,6 +230,8 @@ export default async function SkillsPage({
               skills={visibleCreatorMethods}
               isEnglish={isEnglish}
               categoryLabels={messages.category}
+              searchFieldLabels={messages.searchField}
+              query={query}
               latestExampleLabel={messages.common.latestExample}
             />
           ) : null}
@@ -242,21 +254,134 @@ export default async function SkillsPage({
   );
 }
 
+type SkillSummary = Awaited<ReturnType<typeof getSkillCatalogData>>["allSkills"][number];
+
+/**
+ * 已知分类按固定顺序展示；不在 SKILL_CATEGORY_ORDER 里的分类（理论上不该出现，
+ * 但防御性地）追加到末尾而不是被 filter 悄悄吞掉。
+ */
+function groupSkillsByCategory(skills: SkillSummary[]) {
+  const orderedCategories = new Set<string>(SKILL_CATEGORY_ORDER);
+  const knownGroups = SKILL_CATEGORY_ORDER.map((category) => ({
+    category: category as string,
+    skills: skills.filter((skill) => skill.category === category),
+  })).filter((group) => group.skills.length > 0);
+
+  const extraCategories = Array.from(
+    new Set(
+      skills
+        .map((skill) => skill.category as string)
+        .filter((category) => !orderedCategories.has(category))
+    )
+  );
+  const extraGroups = extraCategories.map((category) => ({
+    category,
+    skills: skills.filter((skill) => (skill.category as string) === category),
+  }));
+
+  return [...knownGroups, ...extraGroups];
+}
+
 function SkillSection({
   title,
   description,
   skills,
   isEnglish,
   categoryLabels,
+  searchFieldLabels,
+  query,
   latestExampleLabel,
 }: {
   title: string;
   description: string;
-  skills: Awaited<ReturnType<typeof getSkillCatalogData>>["allSkills"];
+  skills: SkillSummary[];
   isEnglish: boolean;
   categoryLabels: ReturnType<typeof getMessages>["category"];
+  searchFieldLabels: ReturnType<typeof getMessages>["searchField"];
+  query: string;
   latestExampleLabel: string;
 }) {
+  // 有搜索词时，skills 已经是 filterSkillsByQuery 按相关度排好的顺序——
+  // 再按分类分组会把这个顺序打乱回固定分类顺序，所以搜索态下直接平铺渲染，
+  // 只有无搜索词的默认浏览态才按分类分组。
+  const groupedSkills = query ? null : groupSkillsByCategory(skills);
+
+  const renderSkillCard = (skill: SkillSummary) => {
+    const match = query ? getSearchMatch(getSkillSearchFields(skill), query) : null;
+    const snippet = match ? getSearchSnippet(match, query) : null;
+    const matchFieldLabel = match
+      ? searchFieldLabels[match.field as keyof typeof searchFieldLabels] ??
+        searchFieldLabels.fallback
+      : null;
+    return (
+      <article
+        key={skill.slug}
+        className="flex min-h-80 flex-col border-b border-r border-[var(--hair)] bg-white p-5 sm:p-6"
+      >
+        <div className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
+          <span>{categoryLabels[skill.category]}</span>
+          <span className="text-[var(--orange)]">
+            {isEnglish ? "Verified package" : "已验证包"}
+          </span>
+        </div>
+        <h3 className="mt-7 text-2xl font-medium leading-tight tracking-[-0.03em]">
+          <Link href={`/skills/${skill.slug}`} className="hover:text-[var(--orange)]">
+            {query
+              ? splitHighlightedText(skill.title, query).map((part, index) =>
+                  part.matched ? (
+                    <mark key={index} className="gc-search-hit">
+                      {part.text}
+                    </mark>
+                  ) : (
+                    <span key={index}>{part.text}</span>
+                  )
+                )
+              : skill.title}
+          </Link>
+        </h3>
+        {snippet ? (
+          <div className="mt-3 text-sm leading-7 text-[var(--muted)]">
+            <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--orange)]">
+              {matchFieldLabel}
+            </div>
+            <p className="line-clamp-3">
+              {splitHighlightedText(snippet, query).map((part, index) =>
+                part.matched ? (
+                  <mark key={index} className="gc-search-hit">
+                    {part.text}
+                  </mark>
+                ) : (
+                  <span key={index}>{part.text}</span>
+                )
+              )}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+            {skill.description}
+          </p>
+        )}
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-8">
+          <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
+            {skill.caseCount} Cases · {skill.creatorCount}{" "}
+            {isEnglish ? "Creators" : "位作者"}
+            {skill.latestExampleDate
+              ? ` · ${latestExampleLabel} ${skill.latestExampleDate}`
+              : ""}
+          </span>
+          <div className="flex gap-2">
+            <a className="gc-action" href={getSkillDownloadPath(skill.slug)} download>
+              .skill ↓
+            </a>
+            <Link className="gc-action gc-action-primary" href={`/skills/${skill.slug}`}>
+              {isEnglish ? "Open" : "查看"} →
+            </Link>
+          </div>
+        </div>
+      </article>
+    );
+  };
+
   return (
     <section className="gc-section">
       <div className="gc-section-head">
@@ -268,46 +393,30 @@ function SkillSection({
           </p>
         </div>
       </div>
-      <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
-        {skills.map((skill) => (
-          <article
-            key={skill.slug}
-            className="flex min-h-80 flex-col border-b border-r border-[var(--hair)] bg-white p-5 sm:p-6"
-          >
-            <div className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
-              <span>{categoryLabels[skill.category]}</span>
-              <span className="text-[var(--orange)]">
-                {isEnglish ? "Verified package" : "已验证包"}
-              </span>
-            </div>
-            <h3 className="mt-7 text-2xl font-medium leading-tight tracking-[-0.03em]">
-              <Link href={`/skills/${skill.slug}`} className="hover:text-[var(--orange)]">
-                {skill.title}
-              </Link>
-            </h3>
-            <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-              {skill.description}
-            </p>
-            <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-8">
-              <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
-                {skill.caseCount} Cases · {skill.creatorCount}{" "}
-                {isEnglish ? "Creators" : "位作者"}
-                {skill.latestExampleDate
-                  ? ` · ${latestExampleLabel} ${skill.latestExampleDate}`
-                  : ""}
-              </span>
-              <div className="flex gap-2">
-                <a className="gc-action" href={getSkillDownloadPath(skill.slug)} download>
-                  .skill ↓
-                </a>
-                <Link className="gc-action gc-action-primary" href={`/skills/${skill.slug}`}>
-                  {isEnglish ? "Open" : "查看"} →
-                </Link>
+      {groupedSkills ? (
+        <div className="grid gap-12">
+          {groupedSkills.map((group) => (
+            <div key={group.category}>
+              <div className="mb-4 flex items-end justify-between gap-3 border-b border-[var(--hair)] pb-3">
+                <h3 className="text-xl font-semibold tracking-[-0.03em]">
+                  {categoryLabels[group.category as keyof typeof categoryLabels] ??
+                    group.category}
+                </h3>
+                <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">
+                  {group.skills.length} {isEnglish ? "Skills" : "个 Skill"}
+                </span>
+              </div>
+              <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
+                {group.skills.map((skill) => renderSkillCard(skill))}
               </div>
             </div>
-          </article>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid border-l border-t border-[var(--hair)] md:grid-cols-2 xl:grid-cols-3">
+          {skills.map((skill) => renderSkillCard(skill))}
+        </div>
+      )}
     </section>
   );
 }

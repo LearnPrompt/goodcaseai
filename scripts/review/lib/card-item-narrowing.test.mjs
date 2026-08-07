@@ -78,6 +78,9 @@ const CASE_CARD_RENDERED_FIELDS = [
   "thumbnailUrl",
   "thumbnailFit",
   "stabilityScore",
+  // 稳定度格子要靠它区分「没测过」和「复测未通过」（src/lib/stability.ts）。
+  // 两个字符的 payload，换掉「给失败的复测显示投票催复测」这个假状态。
+  "evidenceLevel",
   "sourceHeatScore",
   "sourcePublishedAt",
   "skills",
@@ -99,7 +102,6 @@ const CASE_CARD_FORBIDDEN_FIELDS = [
   "favoriteScore",
   "recommendedModels",
   "costBand",
-  "evidenceLevel",
   "tags",
   "createdAt",
   "promptPublicNote",

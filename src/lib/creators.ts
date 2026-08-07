@@ -1,11 +1,15 @@
 import type { CaseItem } from "@/lib/mock-data";
-import { averageMeasuredStability } from "@/lib/stability";
+import {
+  averageMeasuredStability,
+  measuredStabilityValue,
+} from "@/lib/stability";
 import { pickLatestAuthorDate } from "@/lib/case-presentation";
 import type { Locale } from "@/i18n/config";
 import {
   normalizeCreatorIdentity,
   slugifyCreatorName,
 } from "@/lib/creator-slug";
+import { rankSearchResults, type SearchField } from "./search.ts";
 
 export type CreatorCaseItem = CaseItem & {
   sourceHeatScore: number | null;
@@ -210,8 +214,12 @@ export function deriveCreatorsFromCases(
         (sum, item) => sum + (item.sourceInteractionCount ?? 0),
         0
       );
+      // 复测未通过的案例按 0 分计入均分：作者页的稳定分要吃到真实惩罚，
+      // 而不是把失败的复测和「还没测过」一起排除掉。
       const averageStabilityScore = averageMeasuredStability(
-        items.map((item) => item.stabilityScore)
+        items.map((item) =>
+          measuredStabilityValue(item.stabilityScore, item.evidenceLevel)
+        )
       );
       const averageSourceHeatScore =
         sourceHeatScores.length > 0
@@ -285,20 +293,26 @@ export function findCreatorByName(creators: CreatorItem[], name: string) {
   );
 }
 
+export function getCreatorSearchFields(creator: CreatorItem): SearchField[] {
+  return [
+    { key: "name", value: creator.name, weight: 145 },
+    { key: "bio", value: creator.bio, weight: 105 },
+    { key: "category", value: creator.tags.join(" "), weight: 85 },
+    { key: "source", value: creator.sourceFootprint.join(" "), weight: 70 },
+    { key: "case", value: creator.heroCase.title, weight: 100 },
+    { key: "summary", value: creator.heroCase.summary, weight: 70 },
+  ];
+}
+
 /**
- * /creators 页面搜索：只覆盖作者名，不牵扯 bio/tags，
- * 保证 placeholder 文案「搜索创作者名称」和实际行为一致。
+ * /creators 页面搜索：覆盖作者名、领域/来源、标签和代表案例。
+ * 创作者页是 Case 的派生视图，用户可能记住的是作品名或「AI 视频」而不是作者名。
  */
 export function filterCreatorsByQuery(
   creators: CreatorItem[],
   q: string
 ): CreatorItem[] {
-  const normalized = q.trim().toLowerCase();
-  if (!normalized) {
-    return creators;
-  }
-
-  return creators.filter((creator) =>
-    creator.name.toLowerCase().includes(normalized)
+  return rankSearchResults(creators, q, getCreatorSearchFields).map(
+    ({ item }) => item
   );
 }

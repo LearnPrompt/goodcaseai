@@ -6,7 +6,8 @@ import { SiteShell } from "@/components/site-shell";
 import { SearchBox } from "@/components/search-box";
 import { CASES_PAGE_SIZE, Pagination } from "@/components/pagination";
 import { getCreatorListData } from "@/lib/cases";
-import { filterCreatorsByQuery } from "@/lib/creators";
+import { filterCreatorsByQuery, getCreatorSearchFields } from "@/lib/creators";
+import { getSearchMatch } from "@/lib/search";
 import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
@@ -152,7 +153,15 @@ export default async function CreatorsPage({
         {pagedCreators.map((creator, index) => (
           <CreatorCard
             key={creator.slug}
-            creator={toCreatorCardItem(creator)}
+            creator={toCreatorCardItem(
+              creator,
+              query
+                ? {
+                    query,
+                    match: getSearchMatch(getCreatorSearchFields(creator), query),
+                  }
+                : undefined
+            )}
             rank={(currentPage - 1) * CASES_PAGE_SIZE + index + 1}
           />
         ))}

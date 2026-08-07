@@ -12,6 +12,7 @@ import { getMessages } from "@/i18n/messages";
 import { getLocaleFromParams } from "@/i18n/server";
 import {
   filterCasesByQuery,
+  getCaseSearchFields,
   getCaseListData,
   type CaseFilter,
   type DisplayCaseItem,
@@ -19,7 +20,9 @@ import {
 import { toCaseCardItem } from "@/lib/case-card-item";
 import { filterCasesByModel, getModelFamily, getModelLabel } from "@/lib/models";
 import { deriveSkillCatalog, getCaseSkillLinks } from "@/lib/skills";
-import { hasMeasuredStability } from "@/lib/stability";
+import { measuredStabilityValue } from "@/lib/stability";
+import { getSearchSnippet, rankSearchResults, type SearchMatch } from "@/lib/search";
+import { diversifyByCreator } from "@/lib/creator-diversity";
 
 // 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
 export const revalidate = 3_600;
@@ -76,8 +79,10 @@ function normalizeSort(value?: string): SortOption {
 }
 
 /**
- * 稳定度排序时，没有实测分（占位分，hasMeasuredStability 判定为 false）的案例
- * 统一排到最后，避免这些占位分挤占靠前的位置。
+ * 稳定度排序时，没有实测分（占位分）的案例统一排到最后，避免占位分挤占靠前的位置。
+ *
+ * 复测未通过的案例算「有实测分」，值取 0：它是真跑过复测得出的结论，
+ * 该排在实测桶的末尾接受惩罚，而不是混进「没测过」那桶躲开排序。
  */
 function sortCaseItems(
   list: DisplayCaseItem[],
@@ -87,15 +92,15 @@ function sortCaseItems(
 
   if (sort === "stability") {
     sorted.sort((a, b) => {
-      const aMeasured = hasMeasuredStability(a.stabilityScore);
-      const bMeasured = hasMeasuredStability(b.stabilityScore);
-      if (aMeasured !== bMeasured) {
-        return aMeasured ? -1 : 1;
+      const aScore = measuredStabilityValue(a.stabilityScore, a.evidenceLevel);
+      const bScore = measuredStabilityValue(b.stabilityScore, b.evidenceLevel);
+      if ((aScore === null) !== (bScore === null)) {
+        return aScore === null ? 1 : -1;
       }
-      if (!aMeasured) {
+      if (aScore === null || bScore === null) {
         return 0;
       }
-      return b.stabilityScore - a.stabilityScore;
+      return bScore - aScore;
     });
     return sorted;
   }
@@ -167,10 +172,31 @@ export default async function CasesPage({
   const activeSort = normalizeSort(queryParams.sort);
   const filteredCases = await getCaseListData(activeFilter, locale);
   const skillCatalog = deriveSkillCatalog(filteredCases, locale);
-  const caseItems = sortCaseItems(
-    filterCasesByModel(filterCasesByQuery(filteredCases, query), activeModel?.slug),
-    activeSort
+  const modelFilteredCases = filterCasesByModel(
+    filterCasesByQuery(filteredCases, query),
+    activeModel?.slug
   );
+  const secondarySortedCases = sortCaseItems(modelFilteredCases, activeSort);
+  const secondaryOrder = new Map(
+    secondarySortedCases.map((item, index) => [item.slug, index])
+  );
+  const rankedSearchResults = query
+    ? rankSearchResults(modelFilteredCases, query, getCaseSearchFields).sort(
+        (a, b) =>
+          b.match!.score - a.match!.score ||
+          (secondaryOrder.get(a.item.slug) ?? 0) -
+            (secondaryOrder.get(b.item.slug) ?? 0)
+      )
+    : secondarySortedCases.map((item) => ({ item, match: null }));
+  const caseItems = query
+    ? rankedSearchResults.map(({ item }) => item)
+    : diversifyByCreator(rankedSearchResults.map(({ item }) => item));
+  const searchMatches = new Map<string, SearchMatch>();
+  for (const result of rankedSearchResults) {
+    if (result.match) {
+      searchMatches.set(result.item.slug, result.match);
+    }
+  }
   const clearModelQuery = [
     activeFilter === "all" ? "" : `filter=${activeFilter}`,
     query ? `q=${encodeURIComponent(query)}` : "",
@@ -359,7 +385,14 @@ export default async function CasesPage({
           <CaseCard
             key={item.slug}
             variant="gallery"
-            item={toCaseCardItem(item, getCaseSkillLinks(skillCatalog, item.slug))}
+            item={{
+              ...toCaseCardItem(item, getCaseSkillLinks(skillCatalog, item.slug)),
+              searchQuery: query,
+              searchSnippet: searchMatches.has(item.slug)
+                ? getSearchSnippet(searchMatches.get(item.slug)!, query)
+                : null,
+              searchField: searchMatches.get(item.slug)?.field ?? null,
+            }}
             actions={
                 <div className="flex flex-wrap items-center gap-2">
                   <LikeButton

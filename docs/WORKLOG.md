@@ -2,6 +2,161 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-07 · 修复 PR 审查指出的依赖、忽略规则、TLS 与分页问题
+
+- 将 `pg` 从生产 `dependencies` 移到 `devDependencies`，并用 `npm install --package-lock-only --ignore-scripts --offline` 同步 lockfile；生产依赖审计不再把迁移 CLI 的驱动算入范围。
+- 将 `.gitignore` 中三个本地交接文件规则锚定到仓库根目录，避免静默忽略 `docs/` 下的正式文档。
+- `ops:migrate` 不再关闭证书验证：会移除连接串中可能覆盖显式 SSL 配置的参数，默认使用 `rejectUnauthorized: true`，并支持可选的 `DATABASE_SSL_CA` PEM 信任根。
+- 两处 Supabase 分页页大小从 1000 降至 500；查询请求 `count: "exact"`，offset 按实际返回行数递进，服务端 max-rows 小于请求页大小时也不会跳过数据；新增两条边界回归测试。
+- 将 smoke 测试中真实格式的 Supabase project ref 换成 `example-project` 占位值，并在 `.env.example` 说明可选 CA 配置。未改数据库、生产数据、部署配置或花费型供给 API。
+- 验证：定向测试 11/11、完整 `npm test` 396/396、`npm run lint`、`npx tsc --noEmit`、`npm run build`（1124 static pages）、`npm audit --omit=dev`（0 vulnerabilities）与 `git diff --check` 全部通过。
+
+## 2026-08-07 · 同步 upstream 至 236e8d7，合并冲突修复并入合并提交
+
+- **同步范围**：`LearnPrompt/goodcaseai` 的 `upstream/main`（`236e8d7`）合入本仓库
+  `main`，带入早报进顶部导航与「今日新复测」第二栏、Agent API key 签发脚本、
+  retest manifest / source 读取、creator「最近作品」与 skill「最近例证」的作者侧
+  时间、对应双语文案、feed 与 changelog，以及新增的纯逻辑测试。未改数据库、
+  生产数据或部署配置。
+- **冲突解决**：`skills/page.tsx` 保留本地的「按分类分组 + 搜索命中高亮」，同时接上
+  远端新增的 `latestExampleDate`；`case-card` / `creator-card` 保留搜索字段与
+  `splitHighlightedText`；卡片日期格式化统一到 `case-presentation`。
+- **`formatCardPublishedDate` 钉死 `timeZone: "Asia/Shanghai"`**。构建机是 UTC，
+  不钉时区时同一条案例在本地和线上会渲染出差一天的日期。`pickLatestAuthorDate`
+  复用同一个 formatter，所以 creator / skill 的作者侧时间一并统一到北京时间。
+  这是本仓库对远端代码的一处主动偏离，值得单独提回 upstream。
+- **合并提交本身现在可编译**。第一版冲突解决丢了 `group.skills.map` 整层、函数体
+  却仍引用 `skill`，`case-card` 的 import 也被吃掉，合并点 `tsc` 报 10 个
+  `Cannot find name`，靠下一个提交才补回来——`git bisect` 与按提交构建都会在这里
+  踩空。已把这批修复并入合并提交，合并点自身通过 lint / tsc / test / build。
+- **WORKLOG 不再做历史压缩**。上一版把本文件从 428 行重写成 33 行摘要，连远端
+  自己写的条目一起删掉了；这份日志是追加式的，且未来若向 upstream 提 PR，压缩会
+  表现为删除对方的日志历史。已恢复完整历史，本条按规矩追加在顶部。
+- **验证**：`npm run lint`、`npm test`（394/394）、`npx tsc --noEmit`、`npm run build`
+  全部通过。未调用花费型供给 API，未碰数据库与生产数据。
+
+## 2026-08-06 · 复审 PR #1/#2 后的五项修复
+
+对已合入 main 的两个发现体验 PR 做了一次复审，修掉五个问题：
+
+- **发布批次不再连坐**：`publish:cases` 命中重复由 `throw` 改为跳过。原写法在
+  逐条写库的循环里抛错，前面的已发布、后面的一条不发，且每次重跑都卡在同一条。
+  现在跳过、继续、末尾列清单并置 `exitCode=1`；被拦候选依然绝不入库。
+- **重复检查不再会静默漏检**：读已发布 Case 改成 `range` 分页（页大小 1000）。
+  PostgREST 默认 1000 行上限是静默截断的，案例过千后漏检且不报错。同时把
+  `prompt_full` 收窄到本批候选涉及的分类（来源 URL 跨分类，仍取全量但只三个短
+  字段），压 Egress。逻辑抽到 `published-content-index.mjs` 并补 3 个测试。
+- **Skill 描述不再做无依据断言**：`deriveEvidenceSteps` 改成每个 Case 最多贡献
+  一句。此前一个 Case 的 `resultBreakdown` 三段就填满全部方法步骤，「N 个 Case
+  里反复出现」实际只有一个 Case 撑着。不足两个 Case 出证据就退回定义模板。
+- **`/en` 不再中英混排**：en 下跳过含中日文的证据句（`resultBreakdown` 缺翻译时
+  会回退中文原文），全跳过则退回英文模板；证据案例引号按语言切换。
+- **`/cases` 恢复类型保护**：`src/lib/creator-diversity.mjs` → `.ts`。原 `.mjs`
+  在 `allowJs` 下无声明，导入后 `caseItems` 退化成 `any[]`，整页失去检查而
+  `tsc` 照样绿。测试改为直接导入 `.ts`，删掉中间的 re-export shim。
+复审的复审又抓到两条，一并修掉：
+
+- **resume 也要触发部署**：判断从 `inserted + updated` 改成
+  `shouldTriggerDeploy(counters)`（含 `resumed`）。insert 成功但候选状态更新失败的
+  那次会抛错退出、走不到部署这步；重跑走 resume 补齐数据却不触发 Deploy Hook，
+  Case 于是停在「库里已发布、详情页 404」。补了恢复路径与全拦截两种情形的测试。
+- **证据案例不再张冠李戴**：`deriveEvidenceSteps` 一并返回贡献证据的 Case，描述
+  改用它们的标题。此前固定取 `cases.slice(0, 2)`，探针可复现「描述引 First/Second
+  move、案例却列 No evidence / Evidence one」。en 下再滤掉标题没英文翻译的，
+  滤空就省掉 `Examples:` 整段——只滤证据句挡不住标题那条混排路径。
+- **Skill 反复出现的计数改按证据计**：匹配定义但没有证据句的 Case 不再被计入描述，
+  中英文都明确写出有证据的 Case / 作者数量，避免「4 个 Case 反复出现」实际只有
+  2 个 Case 出证据的过度断言。
+
+- 验证：`npm test` 384/384、`npm run lint`、`npx tsc --noEmit`、`npm run build`
+  全部通过；另用类型探针实测确认 `any[]` 退化已消除、证据案例与证据句已对齐。
+  未碰数据库与生产数据。
+
+## 2026-08-06 · 重复内容治理、复测 verdict 闭环与 Supabase smoke
+
+- 发布链路新增可解释的重复拦截：规范化来源 URL 硬拦截，同分类同 Prompt 拦截，同一作者高相似 Prompt 拦截；同批候选也会互相检查。已有数据不做删除或自动合并。
+- `/cases` 默认浏览加入创作者多样性，连续同作者最多 2 条；搜索结果不重排，保留已有相关度、命中片段和高亮。
+- 新增 `scripts/retest/apply-verdict.mjs` 与稳定性纯逻辑模块。复测产物仍不自动判定，只有人工输入 verdict、notes、operator 并显式 `--yes` 后才会写测试库，并按最近一次有效人审结果同步稳定分；生产 URL fail closed。
+- 新增 `scripts/ops/supabase-smoke.mjs`：必须显式指定 project ref，只读检查 `schema_migrations`、`cases`、`case_reactions`、`case_retests`。对用户测试项目 `rywuhhixnyxpkbxytipj.supabase.co` 实测通过：最新 migration `20260807010000_case_retests.sql`、306 cases、0 reactions、0 retests。
+- 验证：`npm test` 376/376、`npm run lint`、`npx tsc --noEmit`、`npm run build`（1124 static pages）、Supabase smoke；ego-browser 本地验证默认案例浏览和 `q=香水` 搜索高亮/片段。
+
+## 2026-08-06 · 搜索相关度、证据方法描述与 Skills 分类分组
+
+- 搜索新增统一评分器：标题/作者/案例字段权重高于长 Prompt，多词查询要求完整命中；案例、Skill、Creator 列表按相关度排序，并以原有排序作为并列结果的次级顺序。
+- 搜索结果卡片新增命中字段、短片段与关键词高亮；无查询时不传搜索字段，避免默认页面增加 RSC payload。
+- Skill/Creator 搜索扩展到方法步骤、作者、代表案例、标签与 Prompt 证据；Skill 的描述和方法步骤从已存在的 `resultBreakdown` / `promptContributionNotes` 提取实际案例句子，保留定义模板作为无证据回退。
+- `/skills` 在通用 Skill 与作者方法两层内部按 AI 视频、AI 编程(UI)、AI 图像、AI 文案、AI 硬件分组，固定顺序与现有筛选入口一致。
+- 新增搜索与证据派生测试；本地验证：`npm test` 364/364、`npm run lint`、`npx tsc --noEmit`、`npm run build` 全部通过，build 生成 1124 个静态页面；ego-browser 本地验证 `/cases?q=character`、`/skills?q=character`、`/creators?q=AI`。
+
+## 2026-08-06 · 补上 ops:migrate 的回滚闭环，回滚脚本首次被真正执行验证
+
+- **发现**：规则要求每个 migration 配一份 rollback，`ops:migrate` 也校验 rollback
+  文件存在——但工具只有 `--baseline` / `--apply` / 只读三种模式，**没有执行 rollback
+  的命令**，所以那些 rollback 脚本从建仓起就没被跑过一次。没跑过的回滚是假的安全网
+- **实测坐实了一个更严重的缺口**：在本机库手工跑两份 20260807 rollback（三张表当时
+  都是 0 行），结构确实被删干净（三表 + `consume_api_quota` 全没），但
+  `schema_migrations` **仍记着这两个已应用**。随后 `ops:migrate` 报 `pending: []`——
+  记录说应用了、结构其实不存在，且 `--apply` 从此永远不会再跑它们。这与
+  `--baseline` 建库那个坑是同一类，只是入口换成了回滚
+- **修法**：`ops:migrate` 新增 `--rollback --file=<迁移文件名> --yes`，执行 rollback
+  脚本后在同一条命令里删掉 `schema_migrations` 记录。约束三条：
+  - 只允许退**最后一个已应用的迁移**（退中间那个会让后面的悬空，而记录仍说它们已应用）
+  - 必须显式给 `--file=`，不提供「退最后一个」这种省事写法
+  - 不加 `--yes` 只打印警告和对应 rollback 文件路径，不执行
+- 删记录放在回滚提交**之后**，与 `applyMigration` 的顺序对称：这一步失败时结构已没、
+  记录还在，重跑一次即可（rollback 是 `drop ... if exists` 幂等写法）；反过来先删记录，
+  中途失败会留下「结构还在但记录没了」，下次 `--apply` 会重跑迁移
+- 回滚目标选择抽成纯函数 `selectRollbackTarget`，node:test 覆盖 LIFO 约束与
+  未指定 / 未知文件 / 未应用 / 缺 rollback 四条拒绝分支
+- **真库端到端验证**：三条拒绝分支各拒一次；成功路径退掉 `20260807010000_case_retests`
+  后表消失且状态重新变回 pending；`--apply` 恢复后 11 张表、`consume_api_quota`、
+  RLS 全在，cases 306 行与回滚前逐条一致
+- 测试 358 → 360
+
+## 2026-08-06 · 撤掉 GitHub Pages 静态部署 + 对齐 upstream + 钉死 turbopack root
+
+- 撤销本地 `Add GitHub Pages static snapshot deployment`，删 `.github/workflows/`、
+  `scripts/build-github-pages.mjs`、`out/` 及三处文档提及。fork（ycl-2004）侧一并清理：
+  main 强推回退、Pages 站点关闭、2 条 Actions 记录与 `github-pages` 环境删除、
+  两个仓库 secrets 删除。全程无一次成功部署，Pages URL 从未上线
+- 本地 main 快进到 upstream `6304b51`（6 个 commit，早报 / Agent API / 复测实验室）。
+  重叠三文件手工合：`package.json` 保留双方全部命令（upstream 的 `daily:digest`、
+  `api-keys`、新 test glob + 本地的 `ops:migrate`、`dev:seed`、`pg`、三条 `--env-file`），
+  两份文档双方章节全留
+- `next.config.ts` 补 `turbopack.root = import.meta.dirname`，解决主目录无关
+  lockfile 导致 workspace root 被推断成 `~` 的问题
+- **排查记录**：首次加该配置后 dev 报 `Can't resolve 'tailwindcss'` 与一串 React
+  Client Manifest 错误，一度以为是配置写错。对照实验证明配置无辜——真因是 `.next`
+  在「Ctrl-C 打断编译 + 随后混入 build 产物」后处于脏状态。`rm -rf .next` 后
+  `import.meta.dirname` 与 `process.cwd()` 均正确解析到仓库根。**改 next.config
+  后要清 `.next` 再验**
+- 验证：lint 通过、测试 358/358、build exit 0（extra-lockfile 警告消失）、
+  dev 下 `/`、`/agent-api`、`/daily` 均 200 且日志无报错
+
+## 2026-08-06 · schema.sql 回补 20260807 两个 migration + 本机库补齐 case_reactions
+
+- **发现**：upstream 加了 `20260807000000_agent_api_keys` 与 `20260807010000_case_retests`
+  两个 migration 及对应 rollback，但没同步回补 `schema.sql`——`api_keys` / `api_usage` /
+  `consume_api_quota` / `case_retests` 四个对象在 schema.sql 里一个都没有。这与
+  2026-08-06 那次 08-05 漏补是同一个 bug：新库跑 schema.sql + `--baseline` 会把没执行过的
+  migration 记成已应用，结构不存在且此后 `ops:migrate` 永不重跑
+- **修法**：只回补 `schema.sql`，不新建 migration（迁移与 rollback 已齐备，且历史迁移
+  不能动）。三张表连同全部 comment、check 约束、索引、RLS 与 revoke，以及
+  `consume_api_quota` 函数（`security definer` + 三条 revoke）一并移植，保持幂等写法。
+  依赖顺序 `api_keys` → `api_usage` → `consume_api_quota`
+- **一致性验证**：把 schema.sql 新增段落与两个 migration 逐语句归一化比对（去注释、
+  压空白、按 `$$` 感知切分），**32/32 条逐字对应**，零差异
+- 本机库按 ONBOARDING 第 7 节流程：只读 `ops:migrate` 报 pending 2 且
+  `missingRollbackFiles` 为空 → 核对 `DATABASE_URL` 的 project ref 与
+  `NEXT_PUBLIC_SUPABASE_URL` 一致（确认不是生产）→ `--apply` 两个 migration 成功
+- **顺带闭掉旧待办**：本机库缺 `case_reactions`（早先 baseline 记录与实际结构不符）。
+  按 PROJECT_STATE 推荐做法重跑补全后的 schema.sql 全文，执行前先记录逐表行数做对照：
+  cases 306 → 306、analytics_events 38 → 38、case_candidates 11 → 11，全表无一减少；
+  `case_reactions` 建出、RLS 开、policy 数 0。`/api/reactions` 从 `available:false`
+  转为 `available:true`，本地点赞与催复测投票恢复
+- **生产未动**：两个 migration 尚未在生产执行，交付前须先备份
+- 验证：lint 通过、测试 358/358、build exit 0
+
 ## 2026-08-07 · Agent API 正式化：免 key 保底 + key 配额 + 溯源字段 + /agent-api 文档页
 
 - `/api/public/cases` 与 `/api/public/cases/[slug]` 加准入判定。免 key 请求

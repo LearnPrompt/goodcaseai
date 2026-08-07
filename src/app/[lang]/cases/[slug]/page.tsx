@@ -302,6 +302,7 @@ export default async function CaseDetailPage({
           promptContributionNotes={item.promptContributionNotes}
           recommendedModels={item.recommendedModels}
           stabilityScore={item.stabilityScore}
+          evidenceLevel={item.evidenceLevel}
           costBand={costBandLabel(item.costBand, locale)}
         />
 

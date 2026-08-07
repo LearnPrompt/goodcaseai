@@ -85,6 +85,8 @@ async function loadCandidates(reader) {
     "source_metrics_captured_at",
     "recommended_models",
     "stability_score",
+    // 报告里要区分「没测过」和「复测未通过」，光看分数区分不出来，判别位是它。
+    "evidence_level",
     "prompt_full",
   ].join(",");
 
@@ -119,6 +121,7 @@ async function loadCandidates(reader) {
     sourceUrl: row.source_url,
     recommendedModels: row.recommended_models,
     stabilityScore: row.stability_score,
+    evidenceLevel: row.evidence_level,
     promptFull: row.prompt_full,
     sourceHeatScore: row.sourceHeatScore,
   }));
@@ -488,13 +491,21 @@ function buildReport(records, meta) {
     lines.push("");
     lines.push(`- slug：\`${record.slug}\``);
     lines.push(`- 类型：${record.category}`);
-    // 站上把 0 / null / 超出 1–100 的分都当「未测」显示（src/lib/stability.ts 的
-    // hasMeasuredStability），报告要跟站上口径一致，否则人会以为这条真拿过 0 分。
+    // 报告要跟站上口径一致（src/lib/stability.ts 的 resolveStabilityState），
+    // 否则人会以为这条真拿过 0 分。0 分要分两种：evidence_level 已经是 L2 的是
+    // 「测过没通过」，其余是「压根没测过」的占位分。
     const measured =
       typeof record.stabilityScore === "number" &&
       record.stabilityScore > 0 &&
       record.stabilityScore <= 100;
-    lines.push(`- 站上 stability_score：${measured ? record.stabilityScore : "未测（投票催复测）"}`);
+    const failedRetest =
+      record.evidenceLevel === "L2" && record.stabilityScore === 0;
+    const stabilityLabel = measured
+      ? record.stabilityScore
+      : failedRetest
+        ? "0（复测未通过）"
+        : "未测（投票催复测）";
+    lines.push(`- 站上 stability_score：${stabilityLabel}`);
     lines.push(`- 催复测票数：${record.retestVotes}　来源热度：${record.sourceHeatScore ?? "无快照"}`);
     lines.push(`- 出处：${record.sourceUrl ? `<${record.sourceUrl}>` : "—"}`);
     lines.push(`- 复测模型：${record.model}　耗时：${formatElapsed(record)}`);

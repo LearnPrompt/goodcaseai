@@ -5,7 +5,8 @@ import { useState } from "react";
 import { CaseCardStabilityVote } from "@/components/case-card-stability";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import type { CardMediaFit } from "@/lib/card-media-fit";
-import { hasMeasuredStability, formatStabilityScore } from "@/lib/stability";
+import { resolveStabilityState, formatStabilityScore } from "@/lib/stability";
+import { useMessages } from "@/i18n/client";
 
 export type HomeDeckItem = {
   slug: string;
@@ -16,6 +17,8 @@ export type HomeDeckItem = {
   categoryLabel: string;
   /** 原始分数，不是格式化好的文案——未实测时要在这里订阅票数徽标，需要拿到原始值判断。 */
   stabilityScore: number | null;
+  /** 区分「没测过」和「复测未通过」的判别位，见 src/lib/stability.ts。 */
+  evidenceLevel?: string | null;
   mediaType: "image" | "video";
   mediaUrl: string;
   posterUrl?: string;
@@ -48,6 +51,7 @@ export function HomeCaseDeck({
     next: string;
   };
 }) {
+  const messages = useMessages();
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(items.length / PER_PAGE));
   const visible = items.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
@@ -118,9 +122,23 @@ export function HomeCaseDeck({
                 <div className="mt-auto flex items-center justify-between border-t border-[var(--hair)] pt-4 font-mono text-[10px] uppercase tracking-[0.08em]">
                   <span>
                     {labels.stability}{" "}
-                    {hasMeasuredStability(item.stabilityScore)
-                      ? formatStabilityScore(item.stabilityScore, locale)
-                      : <CaseCardStabilityVote caseSlug={item.slug} />}
+                    {(() => {
+                      const state = resolveStabilityState(
+                        item.stabilityScore,
+                        item.evidenceLevel
+                      );
+                      if (state === "measured") {
+                        return formatStabilityScore(item.stabilityScore, locale);
+                      }
+                      if (state === "failed") {
+                        return (
+                          <span className="text-[var(--orange)]">
+                            {messages.stability.failed}
+                          </span>
+                        );
+                      }
+                      return <CaseCardStabilityVote caseSlug={item.slug} />;
+                    })()}
                   </span>
                   <Link
                     href={`/cases/${item.slug}`}
