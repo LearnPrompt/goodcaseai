@@ -115,6 +115,40 @@ export function missingRollbacks(migrations) {
   return migrations.filter((migration) => !migration.rollbackExists).map((migration) => migration.filename);
 }
 
+export async function readRollbackSql(migration, { rollbacksDir = ROLLBACKS_DIR } = {}) {
+  return readFile(path.join(rollbacksDir, migration.rollbackFilename), "utf8");
+}
+
+// 只允许回滚「最后一个已应用的迁移」。中间那个回滚掉，后面依赖它的迁移就悬空了，
+// 而 schema_migrations 仍记着它们已应用——正是本工具要防的那种记录与结构不符。
+// 要退多个就从后往前一个一个退。
+export function selectRollbackTarget(migrations, appliedRows, filename) {
+  if (!filename) {
+    throw new Error("Rollback needs an explicit target: --file=<migration filename>");
+  }
+  const migration = migrations.find((item) => item.filename === filename);
+  if (!migration) {
+    throw new Error(`Unknown migration file: ${filename}`);
+  }
+  if (!migration.rollbackExists) {
+    throw new Error(`Missing rollback file: ${migration.rollbackFilename}`);
+  }
+  const applied = appliedRows.filter((row) =>
+    migrations.some((item) => item.filename === row.filename),
+  );
+  if (!applied.some((row) => row.filename === filename)) {
+    throw new Error(`Migration is not applied, nothing to roll back: ${filename}`);
+  }
+  const latest = applied.reduce((a, b) => (a.version >= b.version ? a : b));
+  if (latest.filename !== filename) {
+    throw new Error(
+      `Only the most recently applied migration can be rolled back. Latest is ${latest.filename}; ` +
+        `roll back newer migrations first.`,
+    );
+  }
+  return migration;
+}
+
 export function buildBaselineRows(migrations) {
   return migrations.map(({ version, filename, checksum }) => ({
     version,

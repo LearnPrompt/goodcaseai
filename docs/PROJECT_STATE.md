@@ -111,7 +111,11 @@
 - 本机 `.env.local` 已配置自己的 Supabase 项目与 `DATABASE_URL`；`PROD_*` 只读值也已配置。
 - `schema.sql` 已回补 `20260807` 两个 migration（`api_keys` / `api_usage` /
   `consume_api_quota` / `case_retests`），与 migrations 目录逐语句一致；两个 migration
-  已在本机库 `--apply`。生产尚未执行，交付 Carl 前须先备份。
+  已在本机库 `--apply`。**生产尚未执行**，交付 Carl 前须先备份。
+- `ops:migrate` 补 `--rollback --file=<迁移> --yes`：执行 rollback 脚本并**同步删除**
+  `schema_migrations` 记录。只允许退最后一个已应用的迁移；不加 `--yes` 只警告不执行。
+  此前只能手工跑 rollback 脚本，会留下「记录说已应用、结构其实没有」的状态。
+- 本机库已完整验证 apply → rollback → 再 apply 往返，结构一致、306 条 cases 无损。
 - 当前使用可解析的 Session pooler host `aws-0-ca-central-1.pooler.supabase.com:5432`；
   已在自己的 Supabase 库成功写入 `schema_migrations`，7 个现有 migration 全部登记，
   status 显示 pending=0。此前认证失败的根因是终端旧的 `DATABASE_URL` 覆盖了 `.env.local`；

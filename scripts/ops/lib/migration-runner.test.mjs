@@ -7,6 +7,7 @@ import {
   hasBalancedExplicitTransaction,
   hasExplicitTransactionControl,
   parseMigrationFilename,
+  selectRollbackTarget,
 } from "./migration-runner.mjs";
 
 test("migration filenames carry a sortable timestamp version", () => {
@@ -46,5 +47,57 @@ test("applied migration checksum drift is rejected", () => {
         [{ filename: "x.sql", checksum: "old" }],
       ),
     /checksum changed/,
+  );
+});
+
+test("rollback only targets the most recently applied migration", () => {
+  const migrations = [
+    { filename: "20260101000000_a.sql", version: "20260101000000", rollbackExists: true, rollbackFilename: "20260101000000_a.rollback.sql" },
+    { filename: "20260202000000_b.sql", version: "20260202000000", rollbackExists: true, rollbackFilename: "20260202000000_b.rollback.sql" },
+  ];
+  const applied = [
+    { filename: "20260101000000_a.sql", version: "20260101000000" },
+    { filename: "20260202000000_b.sql", version: "20260202000000" },
+  ];
+
+  assert.equal(
+    selectRollbackTarget(migrations, applied, "20260202000000_b.sql").filename,
+    "20260202000000_b.sql",
+  );
+
+  // 回滚中间那个会让 b 悬空，且 schema_migrations 仍记着 b 已应用。
+  assert.throws(
+    () => selectRollbackTarget(migrations, applied, "20260101000000_a.sql"),
+    /most recently applied/,
+  );
+
+  // b 退掉之后 a 才轮得到。
+  assert.equal(
+    selectRollbackTarget(migrations, [applied[0]], "20260101000000_a.sql").filename,
+    "20260101000000_a.sql",
+  );
+});
+
+test("rollback refuses unknown, unapplied, and unspecified targets", () => {
+  const migrations = [
+    { filename: "20260101000000_a.sql", version: "20260101000000", rollbackExists: true, rollbackFilename: "20260101000000_a.rollback.sql" },
+    { filename: "20260202000000_b.sql", version: "20260202000000", rollbackExists: true, rollbackFilename: "20260202000000_b.rollback.sql" },
+  ];
+  const applied = [{ filename: "20260101000000_a.sql", version: "20260101000000" }];
+
+  assert.throws(() => selectRollbackTarget(migrations, applied, ""), /explicit target/);
+  assert.throws(() => selectRollbackTarget(migrations, applied, "nope.sql"), /Unknown migration file/);
+  assert.throws(
+    () => selectRollbackTarget(migrations, applied, "20260202000000_b.sql"),
+    /not applied/,
+  );
+  assert.throws(
+    () =>
+      selectRollbackTarget(
+        [{ filename: "20260101000000_a.sql", version: "20260101000000", rollbackExists: false, rollbackFilename: "20260101000000_a.rollback.sql" }],
+        applied,
+        "20260101000000_a.sql",
+      ),
+    /Missing rollback file/,
   );
 });

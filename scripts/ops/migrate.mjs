@@ -9,14 +9,27 @@ import {
   hasExplicitTransactionControl,
   missingRollbacks,
   readMigrationFiles,
+  readRollbackSql,
+  selectRollbackTarget,
 } from "./lib/migration-runner.mjs";
 
-const args = new Set(process.argv.slice(2));
-const modes = ["--baseline", "--apply"];
+const argv = process.argv.slice(2);
+const args = new Set(argv);
+const modes = ["--baseline", "--apply", "--rollback"];
 const selectedModes = modes.filter((mode) => args.has(mode));
+const rollbackFile = argv.find((arg) => arg.startsWith("--file="))?.slice("--file=".length);
+const confirmed = args.has("--yes");
+const known = (arg) => modes.includes(arg) || arg === "--yes" || arg.startsWith("--file=");
 
-if (selectedModes.length > 1 || [...args].some((arg) => !modes.includes(arg))) {
-  console.error("Usage: npm run ops:migrate [-- --baseline|--apply]");
+if (selectedModes.length > 1 || argv.some((arg) => !known(arg))) {
+  console.error(
+    "Usage: npm run ops:migrate [-- --baseline|--apply|--rollback --file=<migration> --yes]",
+  );
+  process.exit(1);
+}
+
+if (selectedModes[0] !== "--rollback" && (rollbackFile || confirmed)) {
+  console.error("--file= and --yes are only valid with --rollback");
   process.exit(1);
 }
 
@@ -111,6 +124,28 @@ async function applyMigration(client, migration) {
   );
 }
 
+async function rollbackMigration(client, migration) {
+  const sql = await readRollbackSql(migration);
+  if (!hasBalancedExplicitTransaction(sql)) {
+    throw new Error(`Rollback has unbalanced transaction statements: ${migration.rollbackFilename}`);
+  }
+  const explicitTransaction = hasExplicitTransactionControl(sql);
+  if (!explicitTransaction) await client.query("begin");
+  try {
+    await client.query(sql);
+    if (!explicitTransaction) await client.query("commit");
+  } catch (error) {
+    if (!explicitTransaction) await client.query("rollback");
+    throw error;
+  }
+  // 记录删在回滚提交之后，与 applyMigration 的顺序对称。这一步失败时结构已经没了、
+  // 记录还在，重跑一次即可——回滚脚本是 drop ... if exists 的幂等写法。
+  // 反过来先删记录的话，中途失败会留下「结构还在但记录没了」，下次 --apply 会重跑迁移。
+  await client.query("delete from public.schema_migrations where filename = $1", [
+    migration.filename,
+  ]);
+}
+
 async function main() {
   const migrations = await readMigrationFiles();
   const rollbackFiles = missingRollbacks(migrations);
@@ -137,6 +172,23 @@ async function main() {
           missingRollbackFiles: current.missingRollbackFiles,
         }),
       );
+      return;
+    }
+
+    if (mode === "--rollback") {
+      const target = selectRollbackTarget(migrations, current.applied, rollbackFile);
+      if (!confirmed) {
+        console.error(
+          `Refusing to roll back ${target.filename} without --yes.\n` +
+            `Rollbacks drop objects and the data in them; read ` +
+            `supabase/rollbacks/${target.rollbackFilename} first, and back up production before running it.`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+      console.log(`Rolling back ${target.filename} via ${target.rollbackFilename}`);
+      await rollbackMigration(client, target);
+      console.log(JSON.stringify({ mode: "rollback", rolledBack: target.filename }));
       return;
     }
 

@@ -2,6 +2,31 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-06 · 补上 ops:migrate 的回滚闭环，回滚脚本首次被真正执行验证
+
+- **发现**：规则要求每个 migration 配一份 rollback，`ops:migrate` 也校验 rollback
+  文件存在——但工具只有 `--baseline` / `--apply` / 只读三种模式，**没有执行 rollback
+  的命令**，所以那些 rollback 脚本从建仓起就没被跑过一次。没跑过的回滚是假的安全网
+- **实测坐实了一个更严重的缺口**：在本机库手工跑两份 20260807 rollback（三张表当时
+  都是 0 行），结构确实被删干净（三表 + `consume_api_quota` 全没），但
+  `schema_migrations` **仍记着这两个已应用**。随后 `ops:migrate` 报 `pending: []`——
+  记录说应用了、结构其实不存在，且 `--apply` 从此永远不会再跑它们。这与
+  `--baseline` 建库那个坑是同一类，只是入口换成了回滚
+- **修法**：`ops:migrate` 新增 `--rollback --file=<迁移文件名> --yes`，执行 rollback
+  脚本后在同一条命令里删掉 `schema_migrations` 记录。约束三条：
+  - 只允许退**最后一个已应用的迁移**（退中间那个会让后面的悬空，而记录仍说它们已应用）
+  - 必须显式给 `--file=`，不提供「退最后一个」这种省事写法
+  - 不加 `--yes` 只打印警告和对应 rollback 文件路径，不执行
+- 删记录放在回滚提交**之后**，与 `applyMigration` 的顺序对称：这一步失败时结构已没、
+  记录还在，重跑一次即可（rollback 是 `drop ... if exists` 幂等写法）；反过来先删记录，
+  中途失败会留下「结构还在但记录没了」，下次 `--apply` 会重跑迁移
+- 回滚目标选择抽成纯函数 `selectRollbackTarget`，node:test 覆盖 LIFO 约束与
+  未指定 / 未知文件 / 未应用 / 缺 rollback 四条拒绝分支
+- **真库端到端验证**：三条拒绝分支各拒一次；成功路径退掉 `20260807010000_case_retests`
+  后表消失且状态重新变回 pending；`--apply` 恢复后 11 张表、`consume_api_quota`、
+  RLS 全在，cases 306 行与回滚前逐条一致
+- 测试 358 → 360
+
 ## 2026-08-06 · 撤掉 GitHub Pages 静态部署 + 对齐 upstream + 钉死 turbopack root
 
 - 撤销本地 `Add GitHub Pages static snapshot deployment`，删 `.github/workflows/`、
