@@ -175,6 +175,7 @@ function makeCreator() {
     primaryCategory: "image",
     sourceFootprint: ["X / 𝕏"],
     totalSourceInteractions: 12345,
+    latestWorkDate: "2026/05/17",
     heroCase: {
       slug: "case-hero",
       title: "代表作标题",
@@ -202,6 +203,7 @@ const CREATOR_CARD_RENDERED_FIELDS = [
   "heroCaseSlug",
   "heroCaseTitle",
   "heroCaseSummary",
+  "latestWorkDate",
 ];
 
 test("toCreatorCardItem 只输出卡片会渲染的字段，不多一个", () => {
@@ -242,4 +244,12 @@ test("toCreatorCardItem 原样保留卡片要显示的内容", () => {
   assert.equal(result.caseCount, source.caseCount);
   assert.equal(result.averageSourceHeatScore, source.averageSourceHeatScore);
   assert.equal(result.averageStabilityScore, source.averageStabilityScore);
+  assert.equal(result.latestWorkDate, source.latestWorkDate);
+});
+
+test("toCreatorCardItem 一条可用日期都没有时 latestWorkDate 是 null，不是占位字符串", () => {
+  const source = makeCreator();
+  source.latestWorkDate = null;
+  const result = toCreatorCardItem(source);
+  assert.equal(result.latestWorkDate, null);
 });
