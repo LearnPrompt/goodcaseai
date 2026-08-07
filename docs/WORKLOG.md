@@ -2,6 +2,43 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-06 · 复审 PR #1/#2 后的五项修复
+
+对已合入 main 的两个发现体验 PR 做了一次复审，修掉五个问题：
+
+- **发布批次不再连坐**：`publish:cases` 命中重复由 `throw` 改为跳过。原写法在
+  逐条写库的循环里抛错，前面的已发布、后面的一条不发，且每次重跑都卡在同一条。
+  现在跳过、继续、末尾列清单并置 `exitCode=1`；被拦候选依然绝不入库。
+- **重复检查不再会静默漏检**：读已发布 Case 改成 `range` 分页（页大小 1000）。
+  PostgREST 默认 1000 行上限是静默截断的，案例过千后漏检且不报错。同时把
+  `prompt_full` 收窄到本批候选涉及的分类（来源 URL 跨分类，仍取全量但只三个短
+  字段），压 Egress。逻辑抽到 `published-content-index.mjs` 并补 3 个测试。
+- **Skill 描述不再做无依据断言**：`deriveEvidenceSteps` 改成每个 Case 最多贡献
+  一句。此前一个 Case 的 `resultBreakdown` 三段就填满全部方法步骤，「N 个 Case
+  里反复出现」实际只有一个 Case 撑着。不足两个 Case 出证据就退回定义模板。
+- **`/en` 不再中英混排**：en 下跳过含中日文的证据句（`resultBreakdown` 缺翻译时
+  会回退中文原文），全跳过则退回英文模板；证据案例引号按语言切换。
+- **`/cases` 恢复类型保护**：`src/lib/creator-diversity.mjs` → `.ts`。原 `.mjs`
+  在 `allowJs` 下无声明，导入后 `caseItems` 退化成 `any[]`，整页失去检查而
+  `tsc` 照样绿。测试改为直接导入 `.ts`，删掉中间的 re-export shim。
+复审的复审又抓到两条，一并修掉：
+
+- **resume 也要触发部署**：判断从 `inserted + updated` 改成
+  `shouldTriggerDeploy(counters)`（含 `resumed`）。insert 成功但候选状态更新失败的
+  那次会抛错退出、走不到部署这步；重跑走 resume 补齐数据却不触发 Deploy Hook，
+  Case 于是停在「库里已发布、详情页 404」。补了恢复路径与全拦截两种情形的测试。
+- **证据案例不再张冠李戴**：`deriveEvidenceSteps` 一并返回贡献证据的 Case，描述
+  改用它们的标题。此前固定取 `cases.slice(0, 2)`，探针可复现「描述引 First/Second
+  move、案例却列 No evidence / Evidence one」。en 下再滤掉标题没英文翻译的，
+  滤空就省掉 `Examples:` 整段——只滤证据句挡不住标题那条混排路径。
+- **Skill 反复出现的计数改按证据计**：匹配定义但没有证据句的 Case 不再被计入描述，
+  中英文都明确写出有证据的 Case / 作者数量，避免「4 个 Case 反复出现」实际只有
+  2 个 Case 出证据的过度断言。
+
+- 验证：`npm test` 384/384、`npm run lint`、`npx tsc --noEmit`、`npm run build`
+  全部通过；另用类型探针实测确认 `any[]` 退化已消除、证据案例与证据句已对齐。
+  未碰数据库与生产数据。
+
 ## 2026-08-06 · 重复内容治理、复测 verdict 闭环与 Supabase smoke
 
 - 发布链路新增可解释的重复拦截：规范化来源 URL 硬拦截，同分类同 Prompt 拦截，同一作者高相似 Prompt 拦截；同批候选也会互相检查。已有数据不做删除或自动合并。

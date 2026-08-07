@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { diversifyByCreator } from "./creator-diversity.mjs";
+import { diversifyByCreator } from "../../../src/lib/creator-diversity.ts";
 
 test("creator diversity keeps all cases and breaks long creator runs", () => {
   const items = [

@@ -4,9 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 import {
   buildCasePayload,
   decidePublish,
+  shouldTriggerDeploy,
 } from "./review/lib/publish-candidate.mjs";
 import { describeLocaleMismatch } from "./review/lib/content-locale.mjs";
 import { findDuplicateContent } from "./review/lib/duplicate-governance.mjs";
+import { loadPublishedContentIndex } from "./review/lib/published-content-index.mjs";
 
 function getArg(name) {
   const match = process.argv.find((arg) => arg.startsWith(`${name}=`));
@@ -16,6 +18,7 @@ function getArg(name) {
 function hasFlag(name) {
   return process.argv.includes(name);
 }
+
 
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -55,28 +58,34 @@ async function main() {
     return;
   }
 
-  const { data: existingCases, error: existingCasesError } = await supabase
-    .from("cases")
-    .select("slug, source_candidate_id, category, source_url, creator_name, prompt_full")
-    .eq("is_published", true);
-  if (existingCasesError) {
-    throw new Error(`读取已发布 Case 以做重复治理失败：${existingCasesError.message}`);
+  const batchCategories = [
+    ...new Set(approvedRows.map((item) => item.category).filter(Boolean)),
+  ];
+  let knownContent;
+  try {
+    knownContent = await loadPublishedContentIndex(supabase, batchCategories);
+  } catch (error) {
+    throw new Error(
+      `读取已发布 Case 以做重复治理失败：${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
-  const knownContent = [...(existingCases || [])];
 
   const counters = {
     inserted: 0,
     updated: 0,
     resumed: 0,
+    duplicateBlocked: 0,
   };
   // 存量候选的 content_locale 是库默认值填的，读出来和人工声明的一模一样，
   // buildCasePayload 只能照单全收。这里把对不上的行喊出来，别让它们悄悄发出去。
   const localeMismatches = [];
+  const duplicateBlocks = [];
   for (const item of approvedRows) {
-    const mismatch = describeLocaleMismatch(item);
-    if (mismatch) {
-      localeMismatches.push({ slug: item.slug, ...mismatch });
-    }
+    // 重复是**跳过这一条**，不是中断整批：循环逐条写库，一 throw 就会让
+    // 后面的候选全都发不出去，而且每次重跑都卡在同一条。闸门仍然是
+    // fail-closed（被拦的绝不入库），只是不再连坐。
     const duplicate = findDuplicateContent({
       candidate: item,
       existingCases: knownContent,
@@ -84,10 +93,16 @@ async function main() {
       ignoreSlug: item.slug,
     });
     if (duplicate) {
-      throw new Error(
-        `发布拦截（${item.slug}）：${duplicate.message}，命中 ${duplicate.existingSlug || "未知 Case"}。`
-      );
+      duplicateBlocks.push({ slug: item.slug, ...duplicate });
+      counters.duplicateBlocked += 1;
+      continue;
     }
+
+    const mismatch = describeLocaleMismatch(item);
+    if (mismatch) {
+      localeMismatches.push({ slug: item.slug, ...mismatch });
+    }
+
     const [{ data: existingByCandidate, error: candidateLookupError }, {
       data: existingBySlug,
       error: slugLookupError,
@@ -193,10 +208,28 @@ async function main() {
   }
 
   console.log(
-    `候选发布完成：inserted=${counters.inserted}, updated=${counters.updated}, resumed=${counters.resumed}。模式=${
+    `候选发布完成：inserted=${counters.inserted}, updated=${counters.updated}, resumed=${counters.resumed}, 重复拦截=${counters.duplicateBlocked}。模式=${
       allowUpdate ? "显式允许更新" : "只追加"
     }`
   );
+
+  if (duplicateBlocks.length > 0) {
+    console.error(
+      `\n⛔ ${duplicateBlocks.length} 条候选被重复治理拦下，未发布（其余已正常发布）：`
+    );
+    for (const item of duplicateBlocks) {
+      console.error(
+        `  ${String(item.slug).slice(0, 38).padEnd(40)} ${item.message}，命中 ${
+          item.existingSlug || "未知 Case"
+        }`
+      );
+    }
+    console.error(
+      "  逐条到 /operator 处理（改来源、改 Prompt 或直接拒绝），处理完再重跑本命令。"
+    );
+    // 已发布的部分是真发布了，但这批没干净跑完，退出码要能被脚本感知。
+    process.exitCode = 1;
+  }
 
   if (localeMismatches.length > 0) {
     console.warn(
@@ -219,8 +252,7 @@ async function main() {
 
   // 详情页是构建期全量预渲染的，新发布的 slug 不重新部署就访问不到。
   // 没配 hook 就只提示一句，不当成失败——库已经写完了。
-  const published = counters.inserted + counters.updated;
-  if (published > 0) {
+  if (shouldTriggerDeploy(counters)) {
     const hookUrl = process.env.VERCEL_DEPLOY_HOOK_URL;
     if (!hookUrl) {
       console.warn(
