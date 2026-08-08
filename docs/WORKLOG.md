@@ -2,6 +2,35 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-08 · 复测生产保护 fail-closed（issue #44）+ apply-verdict 批量模式
+
+- **fail-open → fail-closed**。旧 `assertSafeTarget` 依赖 `PROD_SUPABASE_URL` 存在，
+  而这个值平时不在 `.env.local` 里（现状就是没配），守卫整条静默失效，复测一直在
+  直写生产库；精确串比对还能被尾斜杠绕过。新增
+  `scripts/retest/lib/write-target.mjs`，照 `scripts/ops/lib/supabase-smoke.mjs` 的
+  `assertTestTarget` 口径用 project ref 比对，**`--expect-project` 必填**，
+  认不出 / 没点名 / 点名不一致直接拒绝执行。
+- 生产不堵死：复测写生产是既定事实，合法姿势改成显式
+  `--expect-project=<生产 project ref>`。刻意不给 env 兜底（区别于只读的
+  `test:supabase` 允许 `SUPABASE_TEST_PROJECT_REF`），否则默认值配一次就忘，
+  一年后又变回守卫恒真。
+- 同样的空门在 `run-retest.mjs` 的 `writeToDatabase`（原来零守卫），一并接同一道闸门；
+  `--run` 才拦，`--plan` 只读不受影响，闸门放在调模型之前避免白烧一轮生成额度。
+- **批量模式**：`--file=verdicts.json` 吃裸数组或 `retest-manifest.json` 原样
+  （`records[]` 里人填的 `verdict` / `reviewerNotes` / `reviewer` 都认——这就是运营
+  手上现成的文件，不用再转格式）。逐条写、逐条报成败，单条失败不打断整批，
+  `verdict` 留空按跳过不按失败；收尾只在至少一条真改到已发布 Case 时触发**一次**
+  Deploy Hook，`shouldTriggerRetestDeploy` 的 `updatedCaseCount` 语义随之变成整批计数。
+  另加 `--dry-run`。单条模式除了多一个 `--expect-project` 之外行为不变（失败仍原样
+  抛原始错误、退出码 1）。
+- 顺手修掉 `shouldTriggerRetestDeploy` 里同一类的字符串比对（尾斜杠会把同一个库判成
+  两个，静默吞掉该触发的部署），改成比 project ref，两边都认不出时才退回串比对。
+- 验证：`npx tsc --noEmit`、`npm run lint`（0 error）、`npm test` 428/428；
+  新增 `write-target.test.mjs`（没点名拒绝 / 点名不符拒绝 / 认不出拒绝 / 尾斜杠不再绕过 /
+  点名生产放行）与 `verdict-batch.test.mjs`（全成功 / 部分失败 / 全失败 / 写成功但
+  没改到 Case 时不触发部署 / manifest 解析）。CLI 侧实跑验证了拒绝路径与批量报告，
+  全程只读，未写任何生产数据。
+
 ## 2026-08-08 · 文档残留的 Supabase 项目 ref 清理
 
 - PR #38 已把代码与测试里的真实 Supabase 项目 ref 换成占位符，但
