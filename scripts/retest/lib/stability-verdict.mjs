@@ -1,3 +1,5 @@
+import { resolveWriteTargetRef } from "./write-target.mjs";
+
 export const VERDICT_SCORES = Object.freeze({
   reproduced: 100,
   degraded: 50,
@@ -91,6 +93,9 @@ export function buildCaseStabilityPatch(rows = [], currentEvidenceLevel) {
 /**
  * 复测回写完要不要触发一次部署。
  *
+ * updatedCaseCount 是**这一批**里真正改到已发布 Case 的条数（批量模式下 N 条只
+ * 触发一次部署，见 lib/verdict-batch.mjs）。单条模式就是 0 或 1，语义不变。
+ *
  * 为什么复测也要触发
  * ------------------
  * 「内容只随部署变」这条模型原来只对发布链路成立：scripts/publish-approved-cases.mjs
@@ -104,12 +109,14 @@ export function buildCaseStabilityPatch(rows = [], currentEvidenceLevel) {
  *
  * 两个不触发的条件
  * ----------------
- * 1. 这次没有任何已发布 Case 真被改到（verdict 不足以算分，或该 slug 站上没发布）。
- *    库里那行 case_retests 是写了，但公开页面上一个字都没变，白跑一次部署没意义。
+ * 1. 这一批没有任何已发布 Case 真被改到（verdict 不足以算分，或该 slug 站上没发布）。
+ *    库里那些 case_retests 行是写了，但公开页面上一个字都没变，白跑一次部署没意义。
  * 2. 写的不是站点构建时读的那个库。PROD_SUPABASE_URL 按 .env.example 的口径，是
- *    「从生产只读拉数据到本地库」时才配的值，配了就说明当前写入目标是本地/测试库
- *    （assertSafeTarget 已经挡掉了写目标等于它的情况）。这时候去戳生产的 Deploy Hook，
- *    只会拿没变过的生产数据重建一次生产站，还在终端上骗人说已经触发过了。
+ *    「从生产只读拉数据到本地库」时才配的值，配了就说明当前写入目标八成是本地/测试库。
+ *    这时候去戳生产的 Deploy Hook，只会拿没变过的生产数据重建一次生产站，
+ *    还在终端上骗人说已经触发过了。
+ *    比对走 project ref 而不是字符串：尾斜杠或大小写差一个字符就判成「两个库」，
+ *    会把该触发的部署静默吞掉（同 issue #44 里守卫被绕过的那个根因）。
  */
 export function shouldTriggerRetestDeploy({
   updatedCaseCount = 0,
@@ -117,6 +124,12 @@ export function shouldTriggerRetestDeploy({
   prodSupabaseUrl = "",
 } = {}) {
   if (updatedCaseCount <= 0) return false;
-  if (prodSupabaseUrl && supabaseUrl !== prodSupabaseUrl) return false;
+  if (prodSupabaseUrl) {
+    const targetRef = resolveWriteTargetRef(supabaseUrl);
+    const prodRef = resolveWriteTargetRef(prodSupabaseUrl);
+    // 两边都认得出来就比 ref，有一边认不出就退回原来的字符串比对。
+    const sameTarget = targetRef && prodRef ? targetRef === prodRef : supabaseUrl === prodSupabaseUrl;
+    if (!sameTarget) return false;
+  }
   return true;
 }

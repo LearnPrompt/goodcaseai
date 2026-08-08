@@ -17,12 +17,15 @@
  *
  * 用法
  * ----
- *   node scripts/retest/run-retest.mjs --plan                 # 只算队列，不调模型
- *   node scripts/retest/run-retest.mjs --run                  # 跑全量（默认 image 5 + web 5）
- *   node scripts/retest/run-retest.mjs --run --only=slug-a,slug-b
- *   node scripts/retest/run-retest.mjs --run --limit-image=1 --limit-web=0
- *   node scripts/retest/run-retest.mjs --run --no-upload      # 不传 Blob，只留本地产物
- *   node scripts/retest/run-retest.mjs --run --reuse          # 已有产物的 slug 不重跑模型，断点续跑用
+ *   node scripts/retest/run-retest.mjs --plan                 # 只算队列，不调模型（只读，不用点名项目）
+ *   node scripts/retest/run-retest.mjs --run --expect-project=<ref>   # 跑全量（默认 image 5 + web 5）
+ *   node scripts/retest/run-retest.mjs --run --expect-project=<ref> --only=slug-a,slug-b
+ *   node scripts/retest/run-retest.mjs --run --expect-project=<ref> --limit-image=1 --limit-web=0
+ *   node scripts/retest/run-retest.mjs --run --expect-project=<ref> --no-upload   # 不传 Blob，只留本地产物
+ *   node scripts/retest/run-retest.mjs --run --expect-project=<ref> --reuse       # 已有产物的 slug 不重跑模型，断点续跑用
+ *
+ * --run 会写 case_retests，所以必须用 --expect-project 显式点名写入的 Supabase 项目
+ * （理由见 lib/write-target.mjs）。
  *
  * 落盘位置
  * --------
@@ -42,6 +45,7 @@ import { scoreSourceHeat } from "../../src/lib/source-heat.ts";
 import { buildRetestQueue, countRetestVotes } from "./lib/retest-queue.mjs";
 import { readEnvLocal, createSupabaseReader } from "./lib/env.mjs";
 import { runCodex } from "./lib/codex-runner.mjs";
+import { assertWriteTarget } from "./lib/write-target.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -575,6 +579,22 @@ async function main() {
   const dateStamp = today();
 
   const env = await readEnvLocal(REPO_ROOT);
+
+  // --run 会往 case_retests 插行（writeToDatabase），走和 apply-verdict 同一道闸门：
+  // 必须显式点名写入项目，否则拒绝执行。故意放在调模型之前——跑完十条再拒绝，
+  // 等于白烧一轮生成额度。--plan 只读，不受这道闸门约束。
+  if (!planOnly) {
+    const target = assertWriteTarget({
+      url: env.NEXT_PUBLIC_SUPABASE_URL,
+      expectedProject: getArg("--expect-project"),
+      prodSupabaseUrl: env.PROD_SUPABASE_URL,
+      command: "run-retest --run",
+    });
+    console.log(
+      `写入目标：${target.projectRef}${target.isKnownProduction ? "（PROD_SUPABASE_URL 指向的生产项目）" : ""}\n`
+    );
+  }
+
   const reader = createSupabaseReader(env);
 
   const [cases, reactions] = await Promise.all([
