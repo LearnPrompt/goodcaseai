@@ -12,6 +12,13 @@ import { useMessages } from "@/i18n/client";
  * 视频保持原始 mp4 + controls，播放链路一个字节都不改；唯一新增的是
  * 加载失败/卡死时的兜底 UI（详情页视频挂在第三方 CDN 上，用户网络到
  * 那些域链路不稳时之前只会看到 poster + --:--，没有任何提示）。
+ *
+ * 视频分支额外压了一张同 slug 的本地缩略图 <img>（absolute inset-0，
+ * 叠在 <video> 正下方，DOM 顺序保证 video 画在上层，像素上看不出差异）。
+ * 这不是给用户看的：视频没有 poster 之外的任何 <img> 标签，微信等抓取
+ * 分享卡片时如果降级扫描 HTML 找首张内容图，会跳过这个 case 抓到页面
+ * 别处（比如相关案例列表）的图，等于分享出去的卡片配图是别人的作品。
+ * 加这张影子图只是为了让抓取链路有图可拿，不影响真实播放和视觉。
  */
 export function CaseMedia({
   mediaType,
@@ -143,18 +150,31 @@ export function CaseMedia({
             </div>
           </div>
         ) : (
-          <video
-            key={attempt}
-            ref={videoRef}
-            muted
-            playsInline
-            preload="metadata"
-            poster={posterUrl}
-            controls
-            className="h-full w-full object-cover"
-          >
-            <source src={mediaUrl} type="video/mp4" />
-          </video>
+          <>
+            {thumbnailUrl ? (
+              <Image
+                src={thumbnailUrl}
+                alt=""
+                aria-hidden
+                fill
+                sizes="(min-width: 1280px) 38vw, 100vw"
+                loading="lazy"
+                className="absolute inset-0 object-cover"
+              />
+            ) : null}
+            <video
+              key={attempt}
+              ref={videoRef}
+              muted
+              playsInline
+              preload="metadata"
+              poster={posterUrl}
+              controls
+              className="absolute inset-0 h-full w-full object-cover"
+            >
+              <source src={mediaUrl} type="video/mp4" />
+            </video>
+          </>
         )}
       </div>
     </article>

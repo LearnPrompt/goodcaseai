@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { CaseCard } from "@/components/case-card";
 import { FavoriteButton } from "@/components/favorite-button";
 import { LikeButton } from "@/components/like-button";
@@ -45,9 +46,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const messages = getMessages(locale);
+  const title = `${messages.daily.eyebrow} · ${messages.daily.title}`;
+  const description = messages.daily.description;
+
   return {
-    title: `${messages.daily.eyebrow} · ${messages.daily.title}`,
-    description: messages.daily.description,
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/daily" }),
     alternates: {
       canonical: localizeHref(locale, "/daily"),
       languages: {
