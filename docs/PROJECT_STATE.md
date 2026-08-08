@@ -70,7 +70,7 @@
 - 发布前重复治理已接入 `publish:cases`：同一规范化来源 URL 直接拦截；同分类完全相同的 Prompt 拦截；同一作者的高相似 Prompt 拦截。重复检查是 fail-closed 的发布闸门，不删除已有 Case，也不自动合并内容。
 - 默认 `/cases` 浏览加入创作者多样性：同一作者最多连续出现 2 条；带搜索词时完全保留相关度排序，不做展示层重排。
 - 复测仍由 `scripts/retest/run-retest.mjs` 只产出证据；新增 `npm run retest:verdict -- --id=... --verdict=... --notes=... --operator=... --yes`，人工确认后才写 `case_retests`，再用最近一次有效 verdict 同步 `cases.stability_score` 与 `evidence_level=L2`。`inconclusive` 不会清空已有稳定分，生产目标会被脚本拒绝。
-- 新增 `npm run test:supabase -- --expect-project=<project-ref>` 只读烟测，验证 migration、cases、reactions、retests 表与关键字段；本次已在项目 `rywuhhixnyxpkbxytipj` 验证通过，未执行任何写操作。
+- 新增 `npm run test:supabase -- --expect-project=<project-ref>` 只读烟测，验证 migration、cases、reactions、retests 表与关键字段；本次已在生产项目验证通过，未执行任何写操作。
 - 本次只修改本地代码/文档与测试，未改 Supabase schema、未写生产数据；验证为 376/376 tests、lint、TypeScript、production build、Supabase smoke 与本地浏览器验收全部通过。
 
 ## 发现治理复审后续修复 · 2026-08-06

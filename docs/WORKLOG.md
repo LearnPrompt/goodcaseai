@@ -2,6 +2,13 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-08 · 文档残留的 Supabase 项目 ref 清理
+
+- PR #38 已把代码与测试里的真实 Supabase 项目 ref 换成占位符，但
+  docs/PROJECT_STATE.md（发现治理与复测闭环一节）和本文件 2026-08-06 的
+  smoke 记录里各漏了一处，现改为占位描述。全仓 grep 确认无其他残留。
+- 仅文档改动，不涉及代码、数据库或部署。
+
 ## 2026-08-08 · 边缘缓存调优上线（PR #49）+ 复测管线触发部署
 
 - 八条从未被边缘缓存的路由补 generateStaticParams 静态化；首页等 revalidate
@@ -108,7 +115,7 @@
 - 发布链路新增可解释的重复拦截：规范化来源 URL 硬拦截，同分类同 Prompt 拦截，同一作者高相似 Prompt 拦截；同批候选也会互相检查。已有数据不做删除或自动合并。
 - `/cases` 默认浏览加入创作者多样性，连续同作者最多 2 条；搜索结果不重排，保留已有相关度、命中片段和高亮。
 - 新增 `scripts/retest/apply-verdict.mjs` 与稳定性纯逻辑模块。复测产物仍不自动判定，只有人工输入 verdict、notes、operator 并显式 `--yes` 后才会写测试库，并按最近一次有效人审结果同步稳定分；生产 URL fail closed。
-- 新增 `scripts/ops/supabase-smoke.mjs`：必须显式指定 project ref，只读检查 `schema_migrations`、`cases`、`case_reactions`、`case_retests`。对用户测试项目 `rywuhhixnyxpkbxytipj.supabase.co` 实测通过：最新 migration `20260807010000_case_retests.sql`、306 cases、0 reactions、0 retests。
+- 新增 `scripts/ops/supabase-smoke.mjs`：必须显式指定 project ref，只读检查 `schema_migrations`、`cases`、`case_reactions`、`case_retests`。对用户测试项目（Supabase 项目 ref 不入库，见 PR #38 的占位符约定）实测通过：最新 migration `20260807010000_case_retests.sql`、306 cases、0 reactions、0 retests。
 - 验证：`npm test` 376/376、`npm run lint`、`npx tsc --noEmit`、`npm run build`（1124 static pages）、Supabase smoke；ego-browser 本地验证默认案例浏览和 `q=香水` 搜索高亮/片段。
 
 ## 2026-08-06 · 搜索相关度、证据方法描述与 Skills 分类分组
