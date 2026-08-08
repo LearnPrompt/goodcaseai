@@ -87,3 +87,36 @@ export function buildCaseStabilityPatch(rows = [], currentEvidenceLevel) {
     evidence_level: resolveEvidenceLevel(currentEvidenceLevel),
   };
 }
+
+/**
+ * 复测回写完要不要触发一次部署。
+ *
+ * 为什么复测也要触发
+ * ------------------
+ * 「内容只随部署变」这条模型原来只对发布链路成立：scripts/publish-approved-cases.mjs
+ * 和 /operator 的发布动作都会触发 Deploy Hook，复测这条链路却是直接改 Supabase 里
+ * 已发布 Case 的 stability_score / evidence_level，一次部署都不触发。而这两个字段
+ * 恰好全落在缓存最狠的几个面上：
+ *   - /cases/[slug] 是 dynamicParams=false 的构建期产物，不部署就永远是旧分数
+ *   - 首页和 /cases 列表 revalidate=86400、CDN-Cache-Control s-maxage=86400
+ * 合起来就是「今天判的 verdict，站上最长一天后才看得见」。每日复测是对外卖点，
+ * 这个滞后不该靠 ISR 到期兜——补上这一次部署，模型才对复测也成立。
+ *
+ * 两个不触发的条件
+ * ----------------
+ * 1. 这次没有任何已发布 Case 真被改到（verdict 不足以算分，或该 slug 站上没发布）。
+ *    库里那行 case_retests 是写了，但公开页面上一个字都没变，白跑一次部署没意义。
+ * 2. 写的不是站点构建时读的那个库。PROD_SUPABASE_URL 按 .env.example 的口径，是
+ *    「从生产只读拉数据到本地库」时才配的值，配了就说明当前写入目标是本地/测试库
+ *    （assertSafeTarget 已经挡掉了写目标等于它的情况）。这时候去戳生产的 Deploy Hook，
+ *    只会拿没变过的生产数据重建一次生产站，还在终端上骗人说已经触发过了。
+ */
+export function shouldTriggerRetestDeploy({
+  updatedCaseCount = 0,
+  supabaseUrl = "",
+  prodSupabaseUrl = "",
+} = {}) {
+  if (updatedCaseCount <= 0) return false;
+  if (prodSupabaseUrl && supabaseUrl !== prodSupabaseUrl) return false;
+  return true;
+}

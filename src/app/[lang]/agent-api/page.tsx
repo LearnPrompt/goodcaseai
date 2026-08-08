@@ -2,11 +2,18 @@ import type { Metadata } from "next";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
-import { localizeHref } from "@/i18n/config";
+import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getLocaleFromParams } from "@/i18n/server";
 import { getSkillInstallCommand } from "@/lib/installable-skills";
 import { SITE_ORIGIN } from "@/lib/site";
 import { AGENT_API_CONTACT_PATH, getAgentApiCopy } from "./copy";
+
+// 页面内容全部来自仓库内常量（copy.ts / installable-skills），请求期不取任何数。
+// 不枚举 [lang] 的话 Next 只能在请求时渲染，Vercel 对这类响应下发 private/no-store，
+// 边缘永远 MISS。枚举之后它变成构建期静态页，边缘直接命中，内容随部署更新。
+export function generateStaticParams() {
+  return SUPPORTED_LOCALES.map((lang) => ({ lang }));
+}
 
 type PageParams = Promise<{ lang: string }>;
 

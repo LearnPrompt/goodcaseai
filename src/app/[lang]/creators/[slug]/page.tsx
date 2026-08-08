@@ -15,8 +15,10 @@ import {
 } from "@/lib/cases";
 import { formatAggregateStability } from "@/lib/stability";
 
-// 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
-export const revalidate = 3_600;
+// 内容只在运营发布时变，发布会触发部署，新部署自带一份空的 ISR 缓存。间隔越短，
+// 边缘副本被清掉重推得越频繁，大陆用户吃冷缓存的次数就越多。和案例详情页取同一档：
+// 兜底一天一次，新鲜度交给部署。详细理由见 src/app/[lang]/page.tsx。
+export const revalidate = 86_400;
 
 export async function generateStaticParams() {
   const creators = await getCreatorListData();
