@@ -2,6 +2,21 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-08 · 边缘缓存调优上线（PR #49）+ 复测管线触发部署
+
+- 八条从未被边缘缓存的路由补 generateStaticParams 静态化；首页等 revalidate
+  3600→86400；/daily 保持 1h；三条 searchParams 列表页经 next.config 下发
+  CDN-Cache-Control s-maxage=86400 + swr=604800（此前对 Vercel 是否尊重该头
+  置信度 70%，preview 与生产均实测 MISS→HIT 证实有效）。
+- apply-verdict 成功更新 Case 后自动触发 Deploy Hook（照抄发布链路模式，
+  fail-soft，写测试库跳过）；不加则 dynamicParams=false 的详情页复测分数
+  永远不上屏。经用户确认保留此无人值守部署路径。
+- 生产验证：/changelog、/agent-api 翻 PRERENDER/HIT；/cases 带 CDN 头且
+  二次请求 HIT；/operator 与 /api/* 保持原样未被波及；carlwow.com 同步生效。
+- 已知跟进：apply-verdict 单条即触发一次构建，录入/复测量大后需批量模式
+  （见 PR #49 描述）；复测生产保护空门问题见 issue #44。
+- 验证：tsc / lint / npm test 414/414 / next build / preview + 生产 curl 清单。
+
 ## 2026-08-08 · goodcase.carlwow.com 上线 + 大陆可达性拨测
 
 - **goodcase.carlwow.com 正式上线**：域名绑定到 Vercel goodcaseai 项目（先清掉了

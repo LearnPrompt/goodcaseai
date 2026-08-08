@@ -25,7 +25,13 @@
   已于 2026-08-08 上线（Vercel 绑定 + 火山引擎 DNS CNAME → cname.vercel-dns.com，
   与主域同源同内容），定位是大陆备用入口，.com 后缀保留将来备案可能性；
   2026-08-08 大陆拨测（Globalping 8 探针）两域名均 8/8 可达、DNS 无污染，
-  热缓存 TTFB 中位数 ~400ms、冷缓存可达 2s——边缘缓存命中率是主要优化点
+  热缓存 TTFB 中位数 ~400ms、冷缓存可达 2s
+- 边缘缓存口径（2026-08-08，PR #49）：changelog/connect/agent-api/favorites/
+  submit/feed.xml/llms.txt 已静态化；首页、/models、creator/skill 详情
+  revalidate=86400，/daily 保持 1h；/cases、/skills、/creators 列表页走
+  CDN-Cache-Control s-maxage=86400 + swr=604800（生产已验证边缘 HIT）；
+  复测 apply-verdict 成功更新 Case 后自动触发 Deploy Hook（fail-soft），
+  批量录入/复测量大后需加批量模式避免 N 次构建
 - 媒体状态：全部案例媒体已迁自有 Vercel Blob（goodcase-media，566.7MB/1GB），
   原始 URL 存 scripts/media/blob-migration-manifest.json；流量额度 10GB/月，
   到量升 Pro 或按 manifest 重跑脚本挪 R2
