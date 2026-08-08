@@ -97,7 +97,9 @@ export const MODEL_FAMILIES: ModelFamily[] = [
     slug: "qwen-image",
     label: "Qwen Image",
     media: "image",
-    aliases: ["qwen"],
+    // 中文叫法必须登记：aimap 等外部入口按中文实体名跳转搜索，
+    // 库内数据却基本写英文名，缺这层映射中文查询会整批落空。
+    aliases: ["qwen", "千问", "通义", "通义千问"],
   },
   {
     slug: "gpt-image-1-5",

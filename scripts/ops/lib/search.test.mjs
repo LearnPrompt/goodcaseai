@@ -73,3 +73,69 @@ test("a field that alone covers every token is preferred as the display field", 
   assert.ok(match);
   assert.equal(match.field, "tag");
 });
+
+test("Chinese model alias expands to hit English-named data (千问→Qwen)", () => {
+  // aimap 等外部入口按中文实体名跳转 /cases?q=千问，库内数据写的是英文
+  // 模型名。同义词组扩展后中文查询应命中，且排序、片段、高亮同样生效。
+  const fields = [
+    { key: "title", value: "Qwen Image 海报设计", weight: 140 },
+    { key: "model", value: "Qwen Image", weight: 88 },
+  ];
+  const match = getSearchMatch(fields, "千问");
+  assert.ok(match, "expected 千问 to match Qwen via alias expansion, got null");
+  assert.equal(match.field, "title");
+});
+
+test("alias expansion works for extra synonym groups (智谱→GLM, 可灵→Kling)", () => {
+  const glm = getSearchMatch(
+    [{ key: "model", value: "ChatGLM 4", weight: 88 }],
+    "智谱"
+  );
+  assert.ok(glm, "expected 智谱 to match ChatGLM");
+  const kling = getSearchMatch(
+    [{ key: "model", value: "Kling 2.5", weight: 88 }],
+    "可灵"
+  );
+  assert.ok(kling, "expected 可灵 to match Kling");
+});
+
+test("alias-expanded token cooperates with plain tokens across fields", () => {
+  // 「千问 海报」：千问经别名命中 model 字段的 Qwen，海报命中 title 字段，
+  // 跨字段并集判定应该整体命中。
+  const fields = [
+    { key: "title", value: "极简风格海报", weight: 140 },
+    { key: "model", value: "Qwen Image", weight: 88 },
+  ];
+  const match = getSearchMatch(fields, "千问 海报");
+  assert.ok(match, "expected cross-field match with alias token, got null");
+});
+
+test("alias expansion is exact-term only and does not fuzz specific queries", () => {
+  // 「qwen3」比组内词更具体，不该被扩展；数据里没有 qwen3 就该落空。
+  const match = getSearchMatch(
+    [{ key: "model", value: "千问海报模板", weight: 88 }],
+    "qwen3"
+  );
+  assert.equal(match, null);
+});
+
+test("snippet and highlight follow the alias variant that actually hit", () => {
+  const match = getSearchMatch(
+    [
+      {
+        key: "prompt",
+        value:
+          "A very long prompt describing the workflow in detail before mentioning Qwen Image near the end of the text.",
+        weight: 40,
+      },
+    ],
+    "千问"
+  );
+  assert.ok(match);
+  assert.match(getSearchSnippet(match, "千问", 48), /qwen/i);
+  const parts = splitHighlightedText("Qwen Image 出图流程", "千问");
+  assert.deepEqual(
+    parts.find((part) => part.matched)?.text,
+    "Qwen"
+  );
+});

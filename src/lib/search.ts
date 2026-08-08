@@ -1,3 +1,5 @@
+import { MODEL_FAMILIES } from "./models.ts";
+
 export type SearchField = {
   value?: string | null;
   weight: number;
@@ -23,6 +25,43 @@ function queryTokens(query: string) {
   return normalizeText(query).split(/\s+/).filter(Boolean);
 }
 
+/**
+ * 模型家族之外的中英同义词组。aimap 等外部入口按中文实体名跳转
+ * /cases?q=<名称>，库内案例基本写英文模型名，缺映射时中文查询整批落空。
+ * 只登记「确认指同一产品」的叫法，不做模糊联想；模型家族内的别名组
+ * （models.ts 的 aliases）会一并生效，不要在这里重复登记。
+ */
+const EXTRA_SYNONYM_GROUPS: string[][] = [
+  ["glm", "智谱", "chatglm"],
+  ["minimax", "hailuo", "海螺"],
+  ["doubao", "豆包"],
+  ["kimi", "月之暗面", "moonshot"],
+  // 即梦（Dreamina）是字节的创作入口，视频模型就是 Seedance；
+  // 中文语境下用户只知道「即梦」，映射到 seedance 才搜得到案例。
+  ["seedance", "即梦", "jimeng", "dreamina"],
+];
+
+const SYNONYM_GROUPS: string[][] = [
+  ...MODEL_FAMILIES.map((family) => family.aliases),
+  ...EXTRA_SYNONYM_GROUPS,
+];
+
+/**
+ * 查询词恰好等于某个同义词组里的词时，扩展出整组变体；否则原样返回。
+ * 只做整词相等判定，不做子串触发——「qwen3」不该被扩展成「千问」，
+ * 因为它比组内词更具体，扩展反而会把不相干的结果混进来。
+ */
+function expandTerm(term: string): string[] {
+  const variants = [term];
+  for (const group of SYNONYM_GROUPS) {
+    if (!group.includes(term)) continue;
+    for (const synonym of group) {
+      if (!variants.includes(synonym)) variants.push(synonym);
+    }
+  }
+  return variants;
+}
+
 function countOccurrences(value: string, token: string) {
   if (!token) return 0;
   let count = 0;
@@ -40,7 +79,8 @@ type FieldScore = {
   field: string;
   text: string;
   score: number;
-  tokenMatches: string[];
+  /** 命中的 token 组下标，结果级跨字段并集判定用。 */
+  matchedGroups: number[];
   fullCoverage: boolean;
 };
 
@@ -48,26 +88,48 @@ type FieldScore = {
  * 单字段打分，不做「必须全部 token 命中」的门槛判断——门槛判断挪到结果级
  * （见 getSearchMatch），这里只负责：这个字段命中了多少、分数多高、是否
  * 自己就覆盖了全部 token（fullCoverage，用来判断能不能单独作为展示字段）。
+ *
+ * token 以同义词组为单位：组内任意变体命中即算该 token 命中（千问→qwen）。
+ * 没有同义词的 token 组内只有自己，行为与纯子串匹配完全一致。
  */
-function scoreField(value: string, normalizedQuery: string, tokens: string[], weight: number): FieldScore {
+function scoreField(
+  value: string,
+  phraseVariants: string[],
+  tokenGroups: string[][],
+  weight: number
+): FieldScore {
   const normalizedValue = normalizeText(value);
-  const phraseMatch = normalizedValue.includes(normalizedQuery);
-  const tokenMatches = tokens.filter((token) => normalizedValue.includes(token));
+  const phraseMatch = phraseVariants.some((phrase) =>
+    normalizedValue.includes(phrase)
+  );
+  const matchedVariants: string[] = [];
+  const matchedGroups: number[] = [];
+  tokenGroups.forEach((group, index) => {
+    const hit = group.find((variant) => normalizedValue.includes(variant));
+    if (hit !== undefined) {
+      matchedVariants.push(hit);
+      matchedGroups.push(index);
+    }
+  });
 
-  if (!phraseMatch && tokenMatches.length === 0) {
-    return { field: "", text: value, score: 0, tokenMatches, fullCoverage: false };
+  if (!phraseMatch && matchedGroups.length === 0) {
+    return { field: "", text: value, score: 0, matchedGroups, fullCoverage: false };
   }
 
   const exactPhraseBonus = phraseMatch ? 70 : 0;
-  const startsWithBonus = normalizedValue.startsWith(normalizedQuery) ? 24 : 0;
-  const frequencyBonus = tokenMatches.reduce(
-    (total, token) => total + Math.min(countOccurrences(normalizedValue, token), 3) * 4,
+  const startsWithBonus = phraseVariants.some((phrase) =>
+    normalizedValue.startsWith(phrase)
+  )
+    ? 24
+    : 0;
+  const frequencyBonus = matchedVariants.reduce(
+    (total, variant) => total + Math.min(countOccurrences(normalizedValue, variant), 3) * 4,
     0
   );
-  const score = weight + exactPhraseBonus + startsWithBonus + tokenMatches.length * 16 + frequencyBonus;
-  const fullCoverage = phraseMatch || tokenMatches.length === tokens.length;
+  const score = weight + exactPhraseBonus + startsWithBonus + matchedGroups.length * 16 + frequencyBonus;
+  const fullCoverage = phraseMatch || matchedGroups.length === tokenGroups.length;
 
-  return { field: "", text: value, score, tokenMatches, fullCoverage };
+  return { field: "", text: value, score, matchedGroups, fullCoverage };
 }
 
 /**
@@ -88,20 +150,22 @@ export function getSearchMatch(
   const normalizedQuery = normalizeText(query);
   const tokens = queryTokens(query);
   if (!normalizedQuery || tokens.length === 0) return null;
+  const phraseVariants = expandTerm(normalizedQuery);
+  const tokenGroups = tokens.map(expandTerm);
 
   const fieldScores = fields
     .filter((field): field is SearchField & { value: string } => Boolean(field.value?.trim()))
     .map((field) => ({
-      ...scoreField(field.value, normalizedQuery, tokens, field.weight),
+      ...scoreField(field.value, phraseVariants, tokenGroups, field.weight),
       field: field.key,
     }));
 
-  // 结果级判定：全部 token 是否都在某个字段里找到了归属（跨字段并集）。
-  const coveredTokens = new Set<string>();
+  // 结果级判定：全部 token 组是否都在某个字段里找到了归属（跨字段并集）。
+  const coveredGroups = new Set<number>();
   for (const entry of fieldScores) {
-    for (const token of entry.tokenMatches) coveredTokens.add(token);
+    for (const index of entry.matchedGroups) coveredGroups.add(index);
   }
-  if (coveredTokens.size !== tokens.length) return null;
+  if (coveredGroups.size !== tokenGroups.length) return null;
 
   const hits = fieldScores.filter((entry) => entry.score > 0);
   const fullCoverageHits = hits.filter((entry) => entry.fullCoverage);
@@ -132,7 +196,10 @@ export function getSearchSnippet(match: SearchMatch, query: string, maxLength = 
   if (text.length <= maxLength) return text;
 
   const normalizedText = normalizeText(text);
-  const tokens = [normalizeText(query), ...queryTokens(query)].filter(Boolean);
+  // 展开同义词变体：搜「千问」命中的是「Qwen」时，片段也要定位到 Qwen 附近。
+  const tokens = [normalizeText(query), ...queryTokens(query)]
+    .filter(Boolean)
+    .flatMap(expandTerm);
   const hitIndex = tokens
     .map((token) => normalizedText.indexOf(token))
     .filter((index) => index >= 0)
@@ -144,13 +211,16 @@ export function getSearchSnippet(match: SearchMatch, query: string, maxLength = 
 }
 
 export function splitHighlightedText(text: string, query: string): HighlightPart[] {
-  const tokens = queryTokens(query).sort((a, b) => b.length - a.length);
+  const tokens = queryTokens(query);
   if (!text || tokens.length === 0) return [{ text, matched: false }];
 
+  // 展开同义词变体后再去重、按长度降序（长词优先，避免短词截断长词的高亮）：
+  // 搜「千问」时正文里的「Qwen」也要标亮。
   const phrase = normalizeText(query);
-  const patterns = [phrase, ...tokens].filter(
-    (value, index, values) => values.indexOf(value) === index
-  );
+  const patterns = [phrase, ...tokens]
+    .flatMap(expandTerm)
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .sort((a, b) => b.length - a.length);
   const pattern = new RegExp(`(${patterns.map(escapeRegExp).join("|")})`, "giu");
   return text
     .split(pattern)
