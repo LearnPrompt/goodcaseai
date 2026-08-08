@@ -2,6 +2,20 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-08 · 社交分享卡全站补齐（PR #52）
+
+- socialMetadata() 统一出口，11 个页面接入 og/twitter 元数据；修掉两个线上
+  已存在 bug：creator/skill 详情页因 metadata 浅合并丢 og:image、案例 og 卡
+  中文字体子集漏「完整 Prompt 公开」渲染空白。
+- 案例详情 og 卡左文右图合成（本地缩略图 data URI 内联，satori 零网络请求），
+  竖图不再被裁成腰部横带；站点卡文案改用 messages.ts 既有 tagline。
+- 视频案例微信降级抓图修复：case-media 视频分支垫同 slug 真实 img（video
+  盖其上像素无差），微信分享不再抓到相关推荐里其他案例的图。
+- 已知边界：微信站内完全自定义卡片需公众号 JS-SDK（上线后事项）；站点默认卡
+  og:image URL 无内容哈希，改 tagline 后需去各平台 debugger 手动刷缓存。
+- 验证：tsc / lint / npm test 414/414 / build 1106 页 / preview curl og 标签
+  与 og 图路由抽查。
+
 ## 2026-08-08 · 复测生产保护 fail-closed（issue #44）+ apply-verdict 批量模式
 
 - **fail-open → fail-closed**。旧 `assertSafeTarget` 依赖 `PROD_SUPABASE_URL` 存在，
