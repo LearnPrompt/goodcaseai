@@ -17,8 +17,13 @@
 - 审核状态：候选通过 review:candidates 人工决策，再由 publish:cases 发布
 - Agent API 状态：`/api/public/*` 免 key 匿名可用不变（新增按 IP 60 次/小时
   内存软限）；带 `gc_` 开头的 key 走日配额，key 由运营手动签发
-  （`npm run api-keys`）。迁移 `20260807000000_agent_api_keys` **尚未执行**，
-  当前所有请求都走降级后的免 key 路径；文档页 `/agent-api`
+  （`npm run api-keys`）。**2026-08-08 核实更正：迁移
+  `20260807000000_agent_api_keys` 早已在生产执行完毕**（api_keys / api_usage
+  表与 consume_api_quota 函数均在，库里留有 8/7 创建并吊销的 smoke-test key），
+  此前记录的「尚未执行」是陈旧信息。线上实测伪造 `gc_` key 返回 401、
+  免 key 匿名返回 200，双档行为符合设计，非降级模式；文档页 `/agent-api`。
+  待办只剩按需签发正式 key（`npm run api-keys`，只需现有 service role key，
+  不需要 DATABASE_URL）
 - 部署状态：goodcase.ai 与 test.goodcase.ai 代码/数据完全一致（staging 持续
   合入 main）；详情页构建期全量预渲染 + dynamicParams=false，发布/下架必须
   触发部署（Deploy Hook 两环境已配好并接入发布链路）；goodcase.carlwow.com
@@ -271,3 +276,13 @@ migration 也登记成已应用——记录说应用了，结构其实不存在�
 建出，306 条 cases 与其余各表行数逐表核对无一丢失，`/api/reactions` 从
 `available:false` 转为 `available:true`。做法确认为重跑 schema.sql（幂等）而不是删
 `schema_migrations` 记录再 `--apply`。其它按旧文档 baseline 建成的开发库同样处理。
+
+## 迁移记账基线未初始化 · 2026-08-08
+
+- 生产库尚无 `schema_migrations` 表（PostgREST 探测 404）：ops:migrate 工具是
+  2026-08-08 才随 PR #38 合入的，此前所有迁移都是手工执行，没有记账
+- 后果：首次跑 `npm run ops:migrate -- --status` 会报 schema_migrations 缺失，
+  需先跑 `--baseline` 把九个迁移文件全部记为已应用（生产实测 api_keys /
+  api_usage / case_reactions / case_retests / cases 均存在，与文件一致）
+- `--baseline` 需要 `DATABASE_URL`（Session pooler 连接串 +
+  数据库密码），当前 `.env.local` 未配置。不阻塞上线，下次要加新迁移前补上即可
