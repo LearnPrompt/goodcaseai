@@ -2,6 +2,25 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-08 · 搜索中英同义词扩展（服务 aimap 中文实体名导流）
+
+- 背景：aimap.carlwow.com 节点面板按 `/cases?q=<URL编码实体名>` 跳转，实体名
+  以中文为主；`q` 参数消费本身早已接通（线上实测 ?q=Claude 298→25 条、
+  搜索框回填、中文与空格解码正常），但搜索是纯子串匹配，中文名（千问 0 条）
+  搜不到英文命名的案例（Qwen 7 条）。
+- `src/lib/search.ts`：查询 token 以同义词组为单位扩展——组内任意变体命中即算
+  该 token 命中；组来源 = models.ts 各模型家族的 aliases（互为同义）+ 补充表
+  （glm/智谱、minimax/海螺/hailuo、doubao/豆包、kimi/月之暗面、seedance/即梦）。
+  只做整词相等触发（qwen3 不会被扩展成千问）；片段定位与关键词高亮跟随实际
+  命中的变体（搜「千问」能高亮正文里的「Qwen」）。无同义词的查询行为与改前
+  逐分逐项一致。案例、Skill、Creator 搜索与 /api/public/cases 同一条链路受益。
+- `src/lib/models.ts`：qwen-image 家族补「千问 / 通义 / 通义千问」别名
+  （可灵→kling 原本就有）。
+- 本地产物服务器实测：千问=qwen=5、可灵=kling=5、即梦=seedance=2 完全对齐；
+  qwen3 落空符合预期；Claude/Claude Code 无回归。生产库 GLM、MiniMax 有数据，
+  部署后 智谱/海螺 即可命中。
+- 验证：`npm run lint`、`npm test`（419/419，新增 5 条别名扩展回归测试）、
+  `npm run build` 全部通过。未改数据库、生产数据；部署走常规 PR → main。
 ## 2026-08-08 · 社交分享卡全站补齐（PR #52）
 
 - socialMetadata() 统一出口，11 个页面接入 og/twitter 元数据；修掉两个线上

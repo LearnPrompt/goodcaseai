@@ -14,6 +14,12 @@ export type ModelFamily = {
    * 用来匹配 case.recommendedModels 的小写关键词。
    * 线上数据里同一个模型有多种写法（gpt image 2 / gpt-image-2 / gemini-omni），
    * 所以这里必须人工维护，不能直接拿原始字段渲染。
+   *
+   * 注意：这个字段同时被 src/lib/search.ts 当作搜索同义词组消费
+   * （SYNONYM_GROUPS 直接拼接所有 family 的 aliases）。改这里会同时影响
+   * 模型筛选（caseMatchesModel，子串匹配）和搜索——两处的语义要求并不一样：
+   * 筛选需要精确到不误伤别的模型，搜索允许更宽的联想词。只适合筛选场景的
+   * 宽泛词不要塞进这里，去 search.ts 的 EXTRA_SYNONYM_GROUPS 单独登记。
    */
   aliases: string[];
   badge?: ModelBadge;
@@ -97,7 +103,13 @@ export const MODEL_FAMILIES: ModelFamily[] = [
     slug: "qwen-image",
     label: "Qwen Image",
     media: "image",
-    aliases: ["qwen"],
+    // 中文叫法必须登记：aimap 等外部入口按中文实体名跳转搜索，
+    // 库内数据却基本写英文名，缺这层映射中文查询会整批落空。
+    // 裸词「通义」故意不收录：它会把「通义万相」（Wan，阿里视频模型）、
+    // 「通义听悟」误判进 Qwen Image 的模型筛选/模型页归类（子串匹配）。
+    // 「通义」在搜索里命中 Qwen 仍然是想要的，那层映射只登记在
+    // src/lib/search.ts 的 EXTRA_SYNONYM_GROUPS，不会流到这里的消费方。
+    aliases: ["qwen", "千问", "通义千问"],
   },
   {
     slug: "gpt-image-1-5",

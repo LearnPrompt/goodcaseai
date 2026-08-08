@@ -15,6 +15,10 @@
 - 移动端口径：灰度回彩只在 hover:hover 设备生效，触屏直接彩色；
   提示语语言偏好按具体语言存储（original/zh/en，按界面语言分桶）
 - 审核状态：候选通过 review:candidates 人工决策，再由 publish:cases 发布
+- 搜索状态：`q` 搜索带中英同义词扩展（models.ts 模型家族别名组 +
+  search.ts 补充表：千问/通义→qwen、可灵→kling、智谱→glm、海螺→minimax、
+  豆包→doubao、即梦→seedance 等），整词相等才扩展、不做模糊联想；
+  服务 aimap.carlwow.com 节点面板按中文实体名跳转 /cases?q= 的导流
 - Agent API 状态：`/api/public/*` 免 key 匿名可用不变（新增按 IP 60 次/小时
   内存软限）；带 `gc_` 开头的 key 走日配额，key 由运营手动签发
   （`npm run api-keys`）。**2026-08-08 核实更正：迁移
