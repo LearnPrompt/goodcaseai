@@ -5,6 +5,7 @@ import { readEnvLocal } from "./lib/env.mjs";
 import {
   buildCaseStabilityPatch,
   buildVerdictUpdate,
+  shouldTriggerRetestDeploy,
   VALID_VERDICTS,
 } from "./lib/stability-verdict.mjs";
 
@@ -90,6 +91,7 @@ async function main() {
     currentCase?.evidence_level ?? undefined
   );
   if (!patch) {
+    // 只动了 case_retests，公开页面上的分数一个字没变，所以这里不触发部署。
     console.log(`verdict 已记录：${updatedRetest.case_slug}，当前仍没有可计算的稳定性分。`);
     return;
   }
@@ -106,6 +108,7 @@ async function main() {
     );
   }
   if (!updatedCase) {
+    // 同上：站上没有这条 Case，没有任何页面需要重建。
     console.warn(`verdict 已写入，但 ${updatedRetest.case_slug} 当前没有已发布 Case，未同步分数。`);
     return;
   }
@@ -113,6 +116,54 @@ async function main() {
   console.log(
     `复测 verdict 已写入：${updatedRetest.case_slug} → stability_score=${updatedCase.stability_score}, evidence_level=${updatedCase.evidence_level}`
   );
+
+  // 走到这里说明确实改到了一条已发布 Case。分数改在库里，页面在构建期和边缘各缓存了
+  // 一份，不补一次部署这条 verdict 最长一天后才会出现在站上——理由见
+  // shouldTriggerRetestDeploy 的注释。
+  //
+  // 全程 fail-soft：verdict 已经落库了，部署没触发不该把这次写库报成失败，
+  // 否则运营只会照着报错重跑同一条（还得加 --force），把已经正确的数据再改一遍。
+  // 所以下面无论怎么失败都只打警告，不设 exitCode，只是必须把「站上还没更新」说清楚。
+  if (
+    !shouldTriggerRetestDeploy({
+      updatedCaseCount: 1,
+      supabaseUrl: url,
+      prodSupabaseUrl: env.PROD_SUPABASE_URL,
+    })
+  ) {
+    console.log("写入目标不是站点构建时读的库，跳过部署触发。");
+    return;
+  }
+
+  // .env.local 是这个命令的既定配置来源（见 readEnvLocal），但 cron / CI 里
+  // 这个值通常只在进程环境里，两处都认。
+  const hookUrl = env.VERCEL_DEPLOY_HOOK_URL || process.env.VERCEL_DEPLOY_HOOK_URL;
+  const staleWarning =
+    `⚠️  边缘缓存未刷新：${updatedRetest.case_slug} 的新分数最长滞后 24h 才会出现在首页 / 案例库 / 详情页。\n` +
+    "    手动触发一次部署即可立刻生效（Vercel 控制台 Redeploy，或 curl -X POST $VERCEL_DEPLOY_HOOK_URL）。";
+
+  if (!hookUrl) {
+    console.warn(`\n${staleWarning}\n    根因：未配置 VERCEL_DEPLOY_HOOK_URL。`);
+    return;
+  }
+
+  try {
+    const res = await fetch(hookUrl, {
+      method: "POST",
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (res.ok) {
+      console.log("\n已触发部署，几分钟后新的复测结果在站上生效。");
+    } else {
+      console.warn(`\n${staleWarning}\n    根因：部署触发失败（HTTP ${res.status}）。`);
+    }
+  } catch (error) {
+    console.warn(
+      `\n${staleWarning}\n    根因：部署触发失败（${
+        error instanceof Error ? error.message : String(error)
+      }）。`
+    );
+  }
 }
 
 main().catch((error) => {

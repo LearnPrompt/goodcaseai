@@ -1,8 +1,19 @@
 import { SITE_ORIGIN } from "@/lib/site";
-import { localizeHref, normalizeLocale } from "@/i18n/config";
+import {
+  localizeHref,
+  normalizeLocale,
+  SUPPORTED_LOCALES,
+} from "@/i18n/config";
 
-// 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
+// 正文是仓库内常量拼出来的，只随部署变；这里当兜底，一小时一次足够。
+// 注意边缘 TTL 不由这个值决定：下面 GET 里显式返回了 s-maxage=300，那份更优先。
 export const revalidate = 3_600;
+
+// [lang] 是动态段，不枚举的话上面的 revalidate 一行都不生效，整个路由退回请求时渲染，
+// 边缘永远 MISS——一个纯静态文本文件没必要每次都跑一趟函数。
+export function generateStaticParams() {
+  return SUPPORTED_LOCALES.map((lang) => ({ lang }));
+}
 
 export async function GET(
   _request: Request,

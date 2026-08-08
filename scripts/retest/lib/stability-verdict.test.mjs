@@ -5,6 +5,7 @@ import {
   buildVerdictUpdate,
   resolveEvidenceLevel,
   selectLatestConclusiveVerdict,
+  shouldTriggerRetestDeploy,
 } from "./stability-verdict.mjs";
 
 test("verdict update requires a human note and operator", () => {
@@ -69,4 +70,42 @@ test("已经是 L2 的案例复测后不会被改写成别的等级", () => {
     stability_score: 100,
     evidence_level: "L3",
   });
+});
+
+test("改到了已发布 Case 才触发部署", () => {
+  const prodTarget = { supabaseUrl: "https://live.supabase.co" };
+  assert.equal(
+    shouldTriggerRetestDeploy({ updatedCaseCount: 1, ...prodTarget }),
+    true
+  );
+  // verdict 只落进 case_retests（分数算不出来 / 站上没这条 Case）时公开页面没变化，
+  // 不该白跑一次部署。
+  assert.equal(
+    shouldTriggerRetestDeploy({ updatedCaseCount: 0, ...prodTarget }),
+    false
+  );
+  assert.equal(shouldTriggerRetestDeploy({}), false);
+  assert.equal(shouldTriggerRetestDeploy(), false);
+});
+
+test("写的是本地测试库时不去戳生产的 Deploy Hook", () => {
+  // 配了 PROD_SUPABASE_URL 就说明当前写入目标是本地库（见 .env.example 的口径），
+  // apply-verdict 的 assertSafeTarget 也只放行写目标 !== 它的情况。
+  assert.equal(
+    shouldTriggerRetestDeploy({
+      updatedCaseCount: 1,
+      supabaseUrl: "http://127.0.0.1:54321",
+      prodSupabaseUrl: "https://live.supabase.co",
+    }),
+    false
+  );
+  // 没配 PROD_SUPABASE_URL 时写入目标就是站点唯一的库，照常触发。
+  assert.equal(
+    shouldTriggerRetestDeploy({
+      updatedCaseCount: 1,
+      supabaseUrl: "https://live.supabase.co",
+      prodSupabaseUrl: "",
+    }),
+    true
+  );
 });

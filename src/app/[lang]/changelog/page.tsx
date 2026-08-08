@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { SiteShell } from "@/components/site-shell";
-import { localizeHref } from "@/i18n/config";
+import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
 import { getLocaleFromParams } from "@/i18n/server";
 import { CHANGELOG, CHANGELOG_EN } from "@/lib/changelog";
+
+// 页面内容全部来自仓库内常量，请求期不取任何数。不枚举 [lang] 的话 Next 只能
+// 在请求时渲染，Vercel 对这类响应下发 private/no-store，边缘永远 MISS——实测
+// /changelog 每次访问都是 x-vercel-cache: MISS。枚举之后它变成构建期静态页，
+// 边缘直接命中，内容随部署更新。
+export function generateStaticParams() {
+  return SUPPORTED_LOCALES.map((lang) => ({ lang }));
+}
 
 type PageParams = Promise<{ lang: string }>;
 
