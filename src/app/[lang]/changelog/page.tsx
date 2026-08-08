@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { SiteShell } from "@/components/site-shell";
 import { localizeHref, SUPPORTED_LOCALES } from "@/i18n/config";
@@ -22,11 +23,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const isEnglish = locale === "en";
+  const title = isEnglish ? "Changelog" : "更新日志 · 好案例";
+  const description = isEnglish
+    ? "GoodCase.ai product updates across search, favorites, RSS, open API, Skill access, and more."
+    : "GoodCase.ai 的产品更新日志：搜索、收藏、RSS、公开 API、Skill 接入等功能的上线记录，用人话说清楚每次变化。";
+
   return {
-    title: isEnglish ? "Changelog" : "更新日志 · 好案例",
-    description: isEnglish
-      ? "GoodCase.ai product updates across search, favorites, RSS, open API, Skill access, and more."
-      : "GoodCase.ai 的产品更新日志：搜索、收藏、RSS、公开 API、Skill 接入等功能的上线记录，用人话说清楚每次变化。",
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/changelog" }),
     alternates: {
       canonical: localizeHref(locale, "/changelog"),
       languages: {

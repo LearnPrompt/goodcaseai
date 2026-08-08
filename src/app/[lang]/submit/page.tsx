@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
 import { SubmitForm } from "@/components/submit-form";
@@ -21,11 +22,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const isEnglish = locale === "en";
+  const title = isEnglish ? "Submit a Case" : "提交案例 · 好案例";
+  const description = isEnglish
+    ? "Submit an AI case you found or reproduced. Approved cases enter the public library."
+    : "把你见过或复刻成功的 AI 好案例投稿给 GoodCase.ai，审核通过后进入案例库。";
+
   return {
-    title: isEnglish ? "Submit a Case" : "提交案例 · 好案例",
-    description: isEnglish
-      ? "Submit an AI case you found or reproduced. Approved cases enter the public library."
-      : "把你见过或复刻成功的 AI 好案例投稿给 GoodCase.ai，审核通过后进入案例库。",
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/submit" }),
     alternates: {
       canonical: localizeHref(locale, "/submit"),
       languages: {

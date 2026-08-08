@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { notFound } from "next/navigation";
 import { CaseCard } from "@/components/case-card";
 import { PageHero } from "@/components/page-hero";
@@ -65,19 +66,13 @@ export async function generateMetadata({
         "x-default": `/skills/${slug}`,
       },
     },
-    openGraph: {
+    ...socialMetadata({
+      locale,
+      title: `${skill.title} · Skill`,
+      description,
+      path: `/skills/${slug}`,
       type: "article",
-      locale: locale === "en" ? "en_US" : "zh_CN",
-      siteName: "GoodCase.ai",
-      url: localizeHref(locale, `/skills/${slug}`),
-      title: `${skill.title} · Skill`,
-      description,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${skill.title} · Skill`,
-      description,
-    },
+    }),
   };
 }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
 import { LocalizedLink as Link } from "@/components/localized-link";
@@ -26,11 +27,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const isEnglish = locale === "en";
+  const title = isEnglish ? "Browse cases by model" : "按模型浏览案例";
+  const description = isEnglish
+    ? "Every AI model covered by GoodCase, with the number of published cases and full prompts behind each one."
+    : "GoodCase 已覆盖的 AI 模型，每个模型下都有已发布 Case 与完整 Prompt。";
+
   return {
-    title: isEnglish ? "Browse cases by model" : "按模型浏览案例",
-    description: isEnglish
-      ? "Every AI model covered by GoodCase, with the number of published cases and full prompts behind each one."
-      : "GoodCase 已覆盖的 AI 模型，每个模型下都有已发布 Case 与完整 Prompt。",
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/models" }),
     alternates: {
       canonical: localizeHref(locale, "/models"),
       languages: {

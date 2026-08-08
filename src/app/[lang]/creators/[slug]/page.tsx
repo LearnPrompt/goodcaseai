@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { notFound } from "next/navigation";
 import { CaseCard } from "@/components/case-card";
 import { CreatorAvatar } from "@/components/creator-avatar";
@@ -62,19 +63,13 @@ export async function generateMetadata({
         "x-default": `/creators/${slug}`,
       },
     },
-    openGraph: {
+    ...socialMetadata({
+      locale,
+      title: creator.name,
+      description,
+      path: `/creators/${slug}`,
       type: "profile",
-      locale: locale === "en" ? "en_US" : "zh_CN",
-      siteName: "GoodCase.ai",
-      url: localizeHref(locale, `/creators/${slug}`),
-      title: creator.name,
-      description,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: creator.name,
-      description,
-    },
+    }),
   };
 }
 
