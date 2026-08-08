@@ -22,7 +22,10 @@
 - 部署状态：goodcase.ai 与 test.goodcase.ai 代码/数据完全一致（staging 持续
   合入 main）；详情页构建期全量预渲染 + dynamicParams=false，发布/下架必须
   触发部署（Deploy Hook 两环境已配好并接入发布链路）；goodcase.carlwow.com
-  尚未解析或上线
+  已于 2026-08-08 上线（Vercel 绑定 + 火山引擎 DNS CNAME → cname.vercel-dns.com，
+  与主域同源同内容），定位是大陆备用入口，.com 后缀保留将来备案可能性；
+  2026-08-08 大陆拨测（Globalping 8 探针）两域名均 8/8 可达、DNS 无污染，
+  热缓存 TTFB 中位数 ~400ms、冷缓存可达 2s——边缘缓存命中率是主要优化点
 - 媒体状态：全部案例媒体已迁自有 Vercel Blob（goodcase-media，566.7MB/1GB），
   原始 URL 存 scripts/media/blob-migration-manifest.json；流量额度 10GB/月，
   到量升 Pro 或按 manifest 重跑脚本挪 R2

@@ -2,6 +2,22 @@
 
 > 追加式变更日志，最新的在最上面。每次代码或文档修改收尾时补一条。
 
+## 2026-08-08 · goodcase.carlwow.com 上线 + 大陆可达性拨测
+
+- **goodcase.carlwow.com 正式上线**：域名绑定到 Vercel goodcaseai 项目（先清掉了
+  一条早期遗留的无效绑定），火山引擎 DNS 加 CNAME → cname.vercel-dns.com，
+  证书自动签发，与主域同源同内容。定位是大陆备用入口；carlwow.com 的 DNS 托管
+  在火山引擎，将来做分区解析（境内外不同入口）基础设施现成。
+- **大陆可达性拨测（Globalping，大陆 8 探针 + 境外基线）**：goodcase.ai 与
+  Blob 媒体域名均未被墙（8/8 返回 200），DNS 无污染；Blob 解析直达 AWS
+  新加坡/东京，TTFB 130-380ms 表现良好。首页冷缓存 TTFB 大陆 1.8-2.1s、
+  香港 1.1s、东京 0.3-0.6s——慢是全亚洲边缘缓存命中问题不是 GFW 问题；
+  边缘缓存焐热后大陆 TTFB 降到 ~400ms。完整报告存主控本地
+  （goodcase-china-accessibility-report-2026-08-08.md）。
+- **结论对齐**：境内镜像从「待触发」降级为「观察项」；下一步优化方向是加长
+  静态页 s-maxage + stale-while-revalidate 提高边缘命中率。
+- 本条为文档更新，未改代码、数据库、生产数据或部署配置。
+
 ## 2026-08-07 · 修复 PR 审查指出的依赖、忽略规则、TLS 与分页问题
 
 - 将 `pg` 从生产 `dependencies` 移到 `devDependencies`，并用 `npm install --package-lock-only --ignore-scripts --offline` 同步 lockfile；生产依赖审计不再把迁移 CLI 的驱动算入范围。
