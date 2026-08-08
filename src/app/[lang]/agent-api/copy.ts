@@ -151,7 +151,10 @@ const zh: Copy = {
     "装好之后直接问你的 AI「最近有什么好案例」，它会自己来查，而不是凭训练数据编一个。",
   params: [
     ["category", "image / video / web / copy / hardware，传别的值返回 400。"],
-    ["q", "关键词，匹配标题 / 摘要 / 创作者，大小写不敏感，中英文都行。"],
+    [
+      "q",
+      "关键词，匹配标题 / 摘要 / 创作者，大小写不敏感，中英文都行。支持中英同义词扩展（如 千问→Qwen）。",
+    ],
     ["take", "返回条数 1-50，默认 20，越界自动钳制。"],
     ["locale", "内容语言：zh-CN 或 en，默认 zh-CN。"],
   ],
@@ -241,7 +244,10 @@ const en: Copy = {
     "Then ask your AI what good cases are new, and it will look them up instead of inventing one from training data.",
   params: [
     ["category", "image / video / web / copy / hardware; anything else returns 400."],
-    ["q", "Keyword across title, summary, and creator. Case-insensitive."],
+    [
+      "q",
+      "Keyword across title, summary, and creator. Case-insensitive. Expands Chinese/English synonyms (e.g. 千问 → Qwen).",
+    ],
     ["take", "1–50 items, defaults to 20, out-of-range values are clamped."],
     ["locale", "Content language: zh-CN or en. Defaults to zh-CN."],
   ],

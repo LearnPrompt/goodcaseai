@@ -36,9 +36,20 @@ const EXTRA_SYNONYM_GROUPS: string[][] = [
   ["minimax", "hailuo", "海螺"],
   ["doubao", "豆包"],
   ["kimi", "月之暗面", "moonshot"],
-  // 即梦（Dreamina）是字节的创作入口，视频模型就是 Seedance；
-  // 中文语境下用户只知道「即梦」，映射到 seedance 才搜得到案例。
+  // 即梦（Dreamina）是字节的创作入口，背后同时有 Seedance（视频）和
+  // Seedream（图像）两个模型。故意拆成两组、不合并成一组：
+  // expandTerm 是跨组累加的，「即梦」在两组里都出现，所以搜「即梦」会
+  // 展开到 seedance + seedream（平台词覆盖两个模型，符合预期）；而
+  // 「seedance」只出现在第一组，展开时不会带出 seedream，避免把
+  // 视频模型的搜索结果误拉进图像模型（反之亦然）。
   ["seedance", "即梦", "jimeng", "dreamina"],
+  ["seedream", "即梦", "jimeng", "dreamina"],
+  // 裸词「通义」只登记在这里，不进 models.ts 的 qwen-image aliases：
+  // 那个字段同时驱动 caseMatchesModel 的子串匹配，裸「通义」会把
+  // 「通义万相」「通义听悟」误判进 Qwen Image。搜索场景没有这个问题
+  // （用户搜「通义」找到 Qwen 案例是想要的），所以映射单独放这里，
+  // 合成 SYNONYM_GROUPS 时也不会流向 models.ts 的消费方。
+  ["通义", "qwen", "千问", "通义千问"],
 ];
 
 const SYNONYM_GROUPS: string[][] = [

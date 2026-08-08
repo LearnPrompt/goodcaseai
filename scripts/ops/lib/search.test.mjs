@@ -119,6 +119,55 @@ test("alias expansion is exact-term only and does not fuzz specific queries", ()
   assert.equal(match, null);
 });
 
+test("bare 通义 expands to hit Qwen data, without going through models.ts aliases", () => {
+  // models.ts 的 qwen-image aliases 故意不收录裸「通义」（会污染
+  // caseMatchesModel 的模型筛选），这个映射只登记在 search.ts 的
+  // EXTRA_SYNONYM_GROUPS。这里锁住搜索侧行为：搜「通义」仍然要能命中
+  // Qwen 数据。
+  const match = getSearchMatch(
+    [{ key: "title", value: "Qwen Image 海报设计", weight: 140 }],
+    "通义"
+  );
+  assert.ok(match, "expected 通义 to match Qwen via EXTRA_SYNONYM_GROUPS, got null");
+});
+
+test("即梦 expands to both seedance and seedream, but seedance does not pull in seedream", () => {
+  // 即梦（Dreamina）是平台词，背后同时有 Seedance（视频）和 Seedream（图像）
+  // 两个模型，故意拆成两个同义词组：expandTerm 跨组累加，「即梦」在两组
+  // 里都出现，两个方向都该命中；而「seedance」只在一组里，不该带出
+  // seedream（反之亦然）。
+  const seedanceHit = getSearchMatch(
+    [{ key: "model", value: "Seedance 2.5", weight: 88 }],
+    "即梦"
+  );
+  const seedreamHit = getSearchMatch(
+    [{ key: "model", value: "Seedream 4.0", weight: 88 }],
+    "即梦"
+  );
+  assert.ok(seedanceHit, "expected 即梦 to match Seedance");
+  assert.ok(seedreamHit, "expected 即梦 to match Seedream");
+
+  const seedanceQueryOnSeedream = getSearchMatch(
+    [{ key: "model", value: "Seedream 4.0", weight: 88 }],
+    "seedance"
+  );
+  assert.equal(
+    seedanceQueryOnSeedream,
+    null,
+    "searching seedance should not match seedream-only data"
+  );
+
+  const seedreamQueryOnSeedance = getSearchMatch(
+    [{ key: "model", value: "Seedance 2.5", weight: 88 }],
+    "seedream"
+  );
+  assert.equal(
+    seedreamQueryOnSeedance,
+    null,
+    "searching seedream should not match seedance-only data"
+  );
+});
+
 test("snippet and highlight follow the alias variant that actually hit", () => {
   const match = getSearchMatch(
     [
