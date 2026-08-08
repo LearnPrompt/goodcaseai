@@ -21,8 +21,13 @@
   服务 aimap.carlwow.com 节点面板按中文实体名跳转 /cases?q= 的导流
 - Agent API 状态：`/api/public/*` 免 key 匿名可用不变（新增按 IP 60 次/小时
   内存软限）；带 `gc_` 开头的 key 走日配额，key 由运营手动签发
-  （`npm run api-keys`）。迁移 `20260807000000_agent_api_keys` **尚未执行**，
-  当前所有请求都走降级后的免 key 路径；文档页 `/agent-api`
+  （`npm run api-keys`）。**2026-08-08 核实更正：迁移
+  `20260807000000_agent_api_keys` 早已在生产执行完毕**（api_keys / api_usage
+  表与 consume_api_quota 函数均在，库里留有 8/7 创建并吊销的 smoke-test key），
+  此前记录的「尚未执行」是陈旧信息。线上实测伪造 `gc_` key 返回 401、
+  免 key 匿名返回 200，双档行为符合设计，非降级模式；文档页 `/agent-api`。
+  待办只剩按需签发正式 key（`npm run api-keys`，只需现有 service role key，
+  不需要 DATABASE_URL）
 - 部署状态：goodcase.ai 与 test.goodcase.ai 代码/数据完全一致（staging 持续
   合入 main）；详情页构建期全量预渲染 + dynamicParams=false，发布/下架必须
   触发部署（Deploy Hook 两环境已配好并接入发布链路）；goodcase.carlwow.com
@@ -35,12 +40,40 @@
   revalidate=86400，/daily 保持 1h；/cases、/skills、/creators 列表页走
   CDN-Cache-Control s-maxage=86400 + swr=604800（生产已验证边缘 HIT）；
   复测 apply-verdict 成功更新 Case 后自动触发 Deploy Hook（fail-soft），
-  批量录入/复测量大后需加批量模式避免 N 次构建
+  批量模式整批只触发一次（见「复测写库闸门与批量模式」）
+- 复测写库口径（2026-08-08，issue #44）：`scripts/retest/` 下所有写库入口
+  （`retest:verdict`、`run-retest --run`）必须显式 `--expect-project=<project-ref>`
+  点名写入的 Supabase 项目，认不出 / 没点名 / 点名不一致一律拒绝执行；
+  写生产不是禁区，但必须把生产 ref 打在命令行上
 - 媒体状态：全部案例媒体已迁自有 Vercel Blob（goodcase-media，566.7MB/1GB），
   原始 URL 存 scripts/media/blob-migration-manifest.json；流量额度 10GB/月，
   到量升 Pro 或按 manifest 重跑脚本挪 R2
 - 溯源状态：youmind #reversed 锚点三道闸在管线（适配器保留锚点、双层拦截、
   入库窗口命中率比对）；已发布 youmind 案例 223 条全部核对，29 条编造已下架
+
+## 复测写库闸门与批量模式 · 2026-08-08（issue #44）
+
+- **闸门改成 fail-closed**。旧的 `assertSafeTarget` 写成
+  `if (env.PROD_SUPABASE_URL && url === env.PROD_SUPABASE_URL) throw`，而
+  `PROD_SUPABASE_URL` 按 `.env.example` 的口径只在「一次性从生产只读拉数据」时才配，
+  平时不在 `.env.local` 里 → 整条守卫静默失效，复测一直在直写生产库且终端零提示；
+  就算配了，精确串比对也认不出尾斜杠 / 大小写差异。现在统一到
+  `scripts/retest/lib/write-target.mjs`：用 `projectRefFromUrl` 提 project ref 比对，
+  **必须显式 `--expect-project=<ref>`**，认不出目标 / 没点名 / 点名不一致直接抛错。
+- **生产不是禁区，但要点名**。复测回写生产是既定运营事实，把生产堵死等于让复测流程
+  停摆，所以合法姿势是 `--expect-project=<生产 project ref>` 显式点名，
+  而不是靠某个环境变量恰好没配。刻意不做 env 兜底（区别于只读的 `test:supabase`）：
+  任何存在 `.env.local` 里的默认值都会被配一次然后忘掉，一年后又变回守卫恒真。
+- **覆盖面**：`scripts/retest/` 下两个写库入口都过同一道闸门——`retest:verdict`，
+  以及 `run-retest --run`（它的 `writeToDatabase` 原来一道守卫都没有）。`--plan` 只读，
+  不受约束；闸门放在调模型之前，避免跑完十条再拒绝白烧额度。
+- **批量模式**：`npm run retest:verdict -- --expect-project=<ref> --file=verdicts.json --yes`。
+  文件吃裸数组或 `retest-manifest.json` 原样（`records[]` 里人填的
+  `verdict` / `reviewerNotes` / `reviewer` 都认），逐条写、逐条报成败，
+  单条失败不打断整批，`verdict` 留空的行按「跳过」不按「失败」。
+  收尾**只在至少一条真改到已发布 Case 时触发一次** Deploy Hook——
+  `shouldTriggerRetestDeploy` 的 `updatedCaseCount` 语义从单条变成整批计数。
+  另有 `--dry-run` 只校验不写库。单条模式（`--id`）行为不变。
 
 ## upstream 同步 · 2026-08-07
 
@@ -73,7 +106,7 @@
 
 - 发布前重复治理已接入 `publish:cases`：同一规范化来源 URL 直接拦截；同分类完全相同的 Prompt 拦截；同一作者的高相似 Prompt 拦截。重复检查是 fail-closed 的发布闸门，不删除已有 Case，也不自动合并内容。
 - 默认 `/cases` 浏览加入创作者多样性：同一作者最多连续出现 2 条；带搜索词时完全保留相关度排序，不做展示层重排。
-- 复测仍由 `scripts/retest/run-retest.mjs` 只产出证据；新增 `npm run retest:verdict -- --id=... --verdict=... --notes=... --operator=... --yes`，人工确认后才写 `case_retests`，再用最近一次有效 verdict 同步 `cases.stability_score` 与 `evidence_level=L2`。`inconclusive` 不会清空已有稳定分，生产目标会被脚本拒绝。
+- 复测仍由 `scripts/retest/run-retest.mjs` 只产出证据；新增 `npm run retest:verdict -- --id=... --verdict=... --notes=... --operator=... --yes`，人工确认后才写 `case_retests`，再用最近一次有效 verdict 同步 `cases.stability_score` 与 `evidence_level=L2`。`inconclusive` 不会清空已有稳定分。（2026-08-08 起调用方式有变，见上方「复测写库闸门与批量模式」：`--expect-project` 必填，写生产要显式点名。）
 - 新增 `npm run test:supabase -- --expect-project=<project-ref>` 只读烟测，验证 migration、cases、reactions、retests 表与关键字段；本次已在生产项目验证通过，未执行任何写操作。
 - 本次只修改本地代码/文档与测试，未改 Supabase schema、未写生产数据；验证为 376/376 tests、lint、TypeScript、production build、Supabase smoke 与本地浏览器验收全部通过。
 
@@ -148,9 +181,11 @@
 
 ## 额度警报 · 2026-08-04
 
-- Supabase Free Plan 上个账期 Egress 超限，宽限期到 2026-09-01。08-05 承压
-  改造后：详情页运行期零 Supabase、列表页取数 0.61MB + 跨请求缓存窗口内
-  稳态零回源，主要泄漏源已掐断；9 月前回 Usage 页确认曲线回落
+- Supabase Free Plan 上个账期 Egress 超限。**2026-08-08 实况更正：宽限期
+  当天到期（非此前记录的 09-01），且本账期（7/27-8/27）Egress 已 26.7GB/5GB
+  （535%）——08-05 承压改造未压住，超限仍在扩大。结论：周一全网上线前必须
+  升 Pro（含 250GB Egress），否则 Fair Use 限制生效后请求返 402，构建与
+  API 全断。Egress 根因（疑 Agent API 被爬或构建期拉取偏重）上线后排查**
 - Vercel Blob（Hobby）：存储 566.7MB/1GB、流量 10GB/月、写操作 500/2000·月。
   流量是下一个天花板，播放量上来后需升级或迁 R2
 - BLOB_READ_WRITE_TOKEN 曾进聊天记录，待在 Vercel 后台轮换（公开读不受影响）
@@ -245,3 +280,13 @@ migration 也登记成已应用——记录说应用了，结构其实不存在�
 建出，306 条 cases 与其余各表行数逐表核对无一丢失，`/api/reactions` 从
 `available:false` 转为 `available:true`。做法确认为重跑 schema.sql（幂等）而不是删
 `schema_migrations` 记录再 `--apply`。其它按旧文档 baseline 建成的开发库同样处理。
+
+## 迁移记账基线未初始化 · 2026-08-08
+
+- 生产库尚无 `schema_migrations` 表（PostgREST 探测 404）：ops:migrate 工具是
+  2026-08-08 才随 PR #38 合入的，此前所有迁移都是手工执行，没有记账
+- 后果：首次跑 `npm run ops:migrate -- --status` 会报 schema_migrations 缺失，
+  需先跑 `--baseline` 把九个迁移文件全部记为已应用（生产实测 api_keys /
+  api_usage / case_reactions / case_retests / cases 均存在，与文件一致）
+- `--baseline` 需要 `DATABASE_URL`（Session pooler 连接串 +
+  数据库密码），当前 `.env.local` 未配置。不阻塞上线，下次要加新迁移前补上即可

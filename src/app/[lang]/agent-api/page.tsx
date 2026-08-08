@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
@@ -24,9 +25,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const copy = getAgentApiCopy(locale);
+  const title = copy.metaTitle;
+  const description = copy.metaDescription;
+
   return {
-    title: copy.metaTitle,
-    description: copy.metaDescription,
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/agent-api" }),
     alternates: {
       canonical: localizeHref(locale, "/agent-api"),
       languages: {

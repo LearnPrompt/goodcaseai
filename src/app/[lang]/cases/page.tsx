@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { CaseCard } from "@/components/case-card";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
@@ -42,11 +43,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const isEnglish = locale === "en";
+  const title = isEnglish ? "Case Library" : "案例库";
+  const description = isEnglish
+    ? "Browse AI cases with finished work, creators, methods, original sources, and reproduction evidence."
+    : "浏览有作品、作者、方法、原始来源与复测证据的 AI Case。";
+
   return {
-    title: isEnglish ? "Case Library" : "案例库",
-    description: isEnglish
-      ? "Browse AI cases with finished work, creators, methods, original sources, and reproduction evidence."
-      : "浏览有作品、作者、方法、原始来源与复测证据的 AI Case。",
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/cases" }),
     alternates: {
       canonical: localizeHref(locale, "/cases"),
       languages: {

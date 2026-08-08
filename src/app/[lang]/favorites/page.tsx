@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
 import { FavoritesList } from "@/components/favorites-list";
@@ -21,11 +22,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const isEnglish = locale === "en";
+  const title = isEnglish ? "My Favorites" : "我的收藏 · 好案例";
+  const description = isEnglish
+    ? "Cases you save on GoodCase.ai stay in this browser and require no account."
+    : "你在 GoodCase.ai 收藏的 AI 案例都在这里，收藏保存在本机浏览器，免登录即可使用。";
+
   return {
-    title: isEnglish ? "My Favorites" : "我的收藏 · 好案例",
-    description: isEnglish
-      ? "Cases you save on GoodCase.ai stay in this browser and require no account."
-      : "你在 GoodCase.ai 收藏的 AI 案例都在这里，收藏保存在本机浏览器，免登录即可使用。",
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/favorites" }),
     alternates: {
       canonical: localizeHref(locale, "/favorites"),
       languages: {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { PageHero } from "@/components/page-hero";
 import { FeedbackForm } from "@/components/feedback-form";
@@ -24,11 +25,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const isEnglish = locale === "en";
+  const title = isEnglish ? "Connect" : "接入";
+  const description = isEnglish
+    ? "Connect GoodCase.ai to your workflow with an Agent Skill, RSS, or an open REST API—no API key required."
+    : "把 GoodCase.ai 接进你的工作流：Agent Skill 一行安装、RSS 订阅与公开 REST API，匿名免 Key。";
+
   return {
-    title: isEnglish ? "Connect" : "接入",
-    description: isEnglish
-      ? "Connect GoodCase.ai to your workflow with an Agent Skill, RSS, or an open REST API—no API key required."
-      : "把 GoodCase.ai 接进你的工作流：Agent Skill 一行安装、RSS 订阅与公开 REST API，匿名免 Key。",
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/connect" }),
     alternates: {
       canonical: localizeHref(locale, "/connect"),
       languages: {

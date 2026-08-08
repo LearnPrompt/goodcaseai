@@ -78,8 +78,13 @@ test("改到了已发布 Case 才触发部署", () => {
     shouldTriggerRetestDeploy({ updatedCaseCount: 1, ...prodTarget }),
     true
   );
+  // 批量模式下这个数是整批的计数：改到 N 条也只在收尾触发一次。
+  assert.equal(
+    shouldTriggerRetestDeploy({ updatedCaseCount: 12, ...prodTarget }),
+    true
+  );
   // verdict 只落进 case_retests（分数算不出来 / 站上没这条 Case）时公开页面没变化，
-  // 不该白跑一次部署。
+  // 不该白跑一次部署。整批都是这种情况时同理。
   assert.equal(
     shouldTriggerRetestDeploy({ updatedCaseCount: 0, ...prodTarget }),
     false
@@ -89,8 +94,7 @@ test("改到了已发布 Case 才触发部署", () => {
 });
 
 test("写的是本地测试库时不去戳生产的 Deploy Hook", () => {
-  // 配了 PROD_SUPABASE_URL 就说明当前写入目标是本地库（见 .env.example 的口径），
-  // apply-verdict 的 assertSafeTarget 也只放行写目标 !== 它的情况。
+  // 配了 PROD_SUPABASE_URL 就说明当前写入目标八成是本地库（见 .env.example 的口径）。
   assert.equal(
     shouldTriggerRetestDeploy({
       updatedCaseCount: 1,
@@ -105,6 +109,15 @@ test("写的是本地测试库时不去戳生产的 Deploy Hook", () => {
       updatedCaseCount: 1,
       supabaseUrl: "https://live.supabase.co",
       prodSupabaseUrl: "",
+    }),
+    true
+  );
+  // 同一个项目的两种写法（尾斜杠）不该被判成两个库，否则该触发的部署被静默吞掉。
+  assert.equal(
+    shouldTriggerRetestDeploy({
+      updatedCaseCount: 1,
+      supabaseUrl: "https://live.supabase.co/",
+      prodSupabaseUrl: "https://live.supabase.co",
     }),
     true
   );

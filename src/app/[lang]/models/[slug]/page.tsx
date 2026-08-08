@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { notFound } from "next/navigation";
 import { CaseCard } from "@/components/case-card";
 import { FavoriteButton } from "@/components/favorite-button";
@@ -79,6 +80,12 @@ export async function generateMetadata({
   return {
     title,
     description,
+    ...socialMetadata({
+      locale,
+      title,
+      description,
+      path: `/models/${family.slug}`,
+    }),
     alternates: {
       canonical: localizeHref(locale, `/models/${family.slug}`),
       languages: {

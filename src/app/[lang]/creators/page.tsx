@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { CreatorCard } from "@/components/creator-card";
 import { toCreatorCardItem } from "@/lib/creator-card-item";
 import { PageHero } from "@/components/page-hero";
@@ -30,11 +31,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const isEnglish = locale === "en";
+  const title = isEnglish ? "Creators" : "创作者";
+  const description = isEnglish
+    ? "Evaluate AI creators through representative work, prompts, model choices, and reusable methods."
+    : "先看值得长期跟的 AI 创作者，再从代表案例切进去，学习 Prompt、模型选择与可复用方法。";
+
   return {
-    title: isEnglish ? "Creators" : "创作者",
-    description: isEnglish
-      ? "Evaluate AI creators through representative work, prompts, model choices, and reusable methods."
-      : "先看值得长期跟的 AI 创作者，再从代表案例切进去，学习 Prompt、模型选择与可复用方法。",
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/creators" }),
     alternates: {
       canonical: localizeHref(locale, "/creators"),
       languages: {

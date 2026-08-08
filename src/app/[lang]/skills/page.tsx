@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { socialMetadata } from "@/lib/social-metadata";
 import { PageHero } from "@/components/page-hero";
 import { SiteShell } from "@/components/site-shell";
 import { SearchBox } from "@/components/search-box";
@@ -51,11 +52,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const locale = await getLocaleFromParams(params);
   const isEnglish = locale === "en";
+  const title = isEnglish ? "Installable Agent Skills" : "可安装 Agent Skills";
+  const description = isEnglish
+    ? "Install evidence-derived Agent Skills built from published GoodCase examples."
+    : "把已发布 GoodCase 证据沉淀为经过校验、可真正安装的 Agent Skills。";
+
   return {
-    title: isEnglish ? "Installable Agent Skills" : "可安装 Agent Skills",
-    description: isEnglish
-      ? "Install evidence-derived Agent Skills built from published GoodCase examples."
-      : "把已发布 GoodCase 证据沉淀为经过校验、可真正安装的 Agent Skills。",
+    title,
+    description,
+    ...socialMetadata({ locale, title, description, path: "/skills" }),
     alternates: {
       canonical: localizeHref(locale, "/skills"),
       languages: {

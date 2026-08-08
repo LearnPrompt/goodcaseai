@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { loadChineseFont } from "@/lib/og-font";
 import { SITE_HOST } from "@/lib/site";
 import { normalizeLocale } from "@/i18n/config";
+import { getMessages } from "@/i18n/messages";
 
 // 内容只在运营发布时变，发布会触发部署重新生成；这里当兜底，一小时一次足够。
 export const revalidate = 3_600;
@@ -13,8 +14,22 @@ export const size = {
 };
 export const contentType = "image/png";
 
-const TAGLINE_ZH = "从真实作品，回到作者与方法";
-const TAGLINE_EN = "Evidence-first AI case library";
+/**
+ * 站点默认分享卡。全站除案例详情页外都用它（Next 的文件式 metadata 约定：
+ * 本文件覆盖 [lang] 段及其所有子路由，除非子段自己也放了 opengraph-image）。
+ *
+ * 卡上的定位文案取自 i18n/messages.ts 的 site.tagline / site.description，
+ * 不在这里另起口号——分享卡说的话必须和站内说的是同一句。
+ */
+
+/** description 常写成「tagline：展开说明」，卡上已经单独放了 tagline，去掉重复的前缀。 */
+function subline(tagline: string, description: string) {
+  const separator = description.slice(tagline.length, tagline.length + 1);
+  if (description.startsWith(tagline) && (separator === "：" || separator === ":")) {
+    return description.slice(tagline.length + 1).trim() || description;
+  }
+  return description;
+}
 
 export default async function Image({
   params,
@@ -22,9 +37,24 @@ export default async function Image({
   params: Promise<{ lang: string }>;
 }) {
   const locale = normalizeLocale((await params).lang);
+  const messages = getMessages(locale);
+  const enMessages = getMessages("en");
   const isEnglish = locale === "en";
-  const fontData = isEnglish ? null : await loadChineseFont(TAGLINE_ZH);
-  const tagline = isEnglish ? TAGLINE_EN : fontData ? TAGLINE_ZH : TAGLINE_EN;
+
+  const headline = messages.site.tagline;
+  const detail = subline(headline, messages.site.description);
+
+  // 中文字形按需子集下载，卡上出现的每个中文字都要在这串里，否则渲染成空格。
+  const fontData = isEnglish
+    ? null
+    : await loadChineseFont(`${headline}${detail}`);
+
+  // 中文字体没拉下来时整卡退回英文，避免出一张全是豆腐块的图。
+  const useChinese = !isEnglish && Boolean(fontData);
+  const displayHeadline = useChinese ? headline : enMessages.site.tagline;
+  const displayDetail = useChinese
+    ? detail
+    : subline(enMessages.site.tagline, enMessages.site.description);
 
   return new ImageResponse(
     (
@@ -37,7 +67,7 @@ export default async function Image({
           justifyContent: "space-between",
           backgroundColor: "#0a0a0a",
           padding: "72px 80px",
-          fontFamily: fontData ? "Noto Sans SC" : "sans-serif",
+          fontFamily: useChinese ? "Noto Sans SC" : "sans-serif",
         }}
       >
         <div
@@ -87,14 +117,26 @@ export default async function Image({
         <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
           <div
             style={{
-              fontSize: "84px",
+              fontSize: displayHeadline.length > 22 ? "68px" : "84px",
               fontWeight: 500,
               lineHeight: 1.05,
               color: "#fafaf7",
               letterSpacing: "-0.03em",
+              display: "flex",
             }}
           >
-            {tagline}
+            {displayHeadline}
+          </div>
+          <div
+            style={{
+              fontSize: "30px",
+              lineHeight: 1.4,
+              color: "#a3a39e",
+              display: "flex",
+              maxWidth: "960px",
+            }}
+          >
+            {displayDetail}
           </div>
           <div
             style={{
@@ -110,7 +152,7 @@ export default async function Image({
                 backgroundColor: "#c2410c",
               }}
             />
-            <div style={{ fontSize: "26px", color: "#a3a39e" }}>{SITE_HOST}</div>
+            <div style={{ fontSize: "26px", color: "#6b6b66" }}>{SITE_HOST}</div>
           </div>
         </div>
       </div>
